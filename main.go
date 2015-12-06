@@ -30,7 +30,7 @@ func init() {
 
 type call struct {
 	params  []interface{}
-	results []ast.Expr
+	results []interface{}
 }
 
 var toToken = map[string]token.Token{
@@ -50,7 +50,7 @@ var toToken = map[string]token.Token{
 	"float64": token.FLOAT,
 }
 
-func argEqual(t1 types.Type, a2 interface{}) bool {
+func paramEqual(t1 types.Type, a2 interface{}) bool {
 	switch x := a2.(type) {
 	case string:
 		return t1.String() == x
@@ -76,19 +76,37 @@ func paramsMatch(types1 []types.Type, args2 []interface{}) bool {
 	}
 	for i, t1 := range types1 {
 		a2 := args2[i]
-		if !argEqual(t1, a2) {
+		if !paramEqual(t1, a2) {
 			return false
 		}
 	}
 	return true
 }
 
-func resultsMatch(types1 []types.Type, exps2 []ast.Expr) bool {
+func resultEqual(t1 types.Type, e2 interface{}) bool {
+	switch x := e2.(type) {
+	case string:
+		return t1.String() == x
+	case nil:
+		// assigning to _
+		return true
+	default:
+		return false
+	}
+}
+
+func resultsMatch(types1 []types.Type, exps2 []interface{}) bool {
 	if len(exps2) == 0 {
 		return true
 	}
 	if len(types1) != len(exps2) {
 		return false
+	}
+	for i, t1 := range types1 {
+		e2 := exps2[i]
+		if !resultEqual(t1, e2) {
+			return false
+		}
 	}
 	return true
 }
@@ -188,7 +206,7 @@ func (v *Visitor) getFuncType(fd *ast.FuncDecl) *types.Func {
 	return nil
 }
 
-type assignCall struct{
+type assignCall struct {
 	left  []ast.Expr
 	right *ast.CallExpr
 }
@@ -300,7 +318,7 @@ func (v *Visitor) descType(e ast.Expr) interface{} {
 	}
 }
 
-func (v *Visitor) onCall(to []ast.Expr, ce *ast.CallExpr) {
+func (v *Visitor) onCall(results []ast.Expr, ce *ast.CallExpr) {
 	sel, ok := ce.Fun.(*ast.SelectorExpr)
 	if !ok {
 		return
@@ -312,8 +330,9 @@ func (v *Visitor) onCall(to []ast.Expr, ce *ast.CallExpr) {
 	right := sel.Sel
 	vname := left.Name
 	fname := right.Name
-	c := call{
-		results: to,
+	c := call{}
+	for _, r := range results {
+		c.results = append(c.results, v.descType(r))
 	}
 	for _, a := range ce.Args {
 		c.params = append(c.params, v.descType(a))
