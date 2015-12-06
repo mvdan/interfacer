@@ -4,7 +4,6 @@
 package main
 
 import (
-	"bytes"
 	"fmt"
 	"go/ast"
 	"go/importer"
@@ -14,31 +13,97 @@ import (
 	"io"
 	"log"
 	"os"
+	"regexp"
+	"strings"
 )
 
 var known = map[string][]string{
-	"io.Closer": {"Close()"},
-	"io.ReadCloser": {"Read([]byte)", "Close()"},
-	"io.ReadWriter": {"Read([]byte)", "Write([]byte)"},
-	"io.Reader": {"Read([]byte)"},
+	"io.Closer":      {"Close()"},
+	"io.ReadCloser":  {"Read([]byte)", "Close()"},
+	"io.ReadWriter":  {"Read([]byte)", "Write([]byte)"},
+	"io.Reader":      {"Read([]byte)"},
+	"io.Seeker":      {"Seek(int64, int)"},
 	"io.WriteCloser": {"Write([]byte)", "Close()"},
-	"io.Writer": {"Write([]byte)"},
+	"io.Writer":      {"Write([]byte)"},
 }
 
-func interfaceMatching(methods map[string]struct{}) string {
-	matches := func(funcs []string) bool {
-		if len(methods) > len(funcs) {
+type method struct {
+	args []interface{}
+}
+
+var parsed map[string]map[string]method
+
+var funcRegex = regexp.MustCompile(`^(.*)\((.*)\)`)
+
+func init() {
+	parsed = make(map[string]map[string]method, len(known))
+	for iface, declStrs := range known {
+		parsed[iface] = make(map[string]method, len(declStrs))
+		for _, s := range declStrs {
+			parts := funcRegex.FindStringSubmatch(s)
+			name := parts[1]
+			m := method{}
+			for _, t := range strings.Split(parts[2], ", ") {
+				if t == "" {
+					continue
+				}
+				m.args = append(m.args, t)
+			}
+			parsed[iface][name] = m
+		}
+	}
+}
+
+var toToken = map[string]token.Token{
+	"int":   token.INT,
+	"int32": token.INT,
+	"int64": token.INT,
+}
+
+func argEqual(s1 string, a2 interface{}) bool {
+	switch x := a2.(type) {
+	case string:
+		return s1 == x
+	case token.Token:
+		return toToken[s1] == x
+	default:
+		fmt.Printf("%T\n", x)
+		return false
+	}
+}
+
+func argsMatch(args1, args2 []interface{}) bool {
+	if len(args1) != len(args2) {
+		return false
+	}
+	for i, a1 := range args1 {
+		a2 := args2[i]
+		s1 := a1.(string)
+		if !argEqual(s1, a2) {
 			return false
 		}
-		for _, f := range funcs {
-			if _, e := methods[f]; !e {
+	}
+	return true
+}
+
+func interfaceMatching(methods map[string]method) string {
+	matchesIface := func(decls map[string]method) bool {
+		if len(methods) > len(decls) {
+			return false
+		}
+		for n, d := range decls {
+			m, e := methods[n]
+			if !e {
+				return false
+			}
+			if !argsMatch(d.args, m.args) {
 				return false
 			}
 		}
 		return true
 	}
-	for name, funcs := range known {
-		if matches(funcs) {
+	for name, decls := range parsed {
+		if matchesIface(decls) {
 			return name
 		}
 	}
@@ -46,12 +111,12 @@ func interfaceMatching(methods map[string]struct{}) string {
 }
 
 func main() {
-	parseFile(os.Stdin, os.Stdout)
+	parseFile("stdin.go", os.Stdin, os.Stdout)
 }
 
-func parseFile(r io.Reader, w io.Writer) {
+func parseFile(name string, r io.Reader, w io.Writer) {
 	fset := token.NewFileSet()
-	f, err := parser.ParseFile(fset, "stdin.go", r, 0)
+	f, err := parser.ParseFile(fset, name, r, 0)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -78,7 +143,7 @@ type Visitor struct {
 	nodes []ast.Node
 
 	args map[string]types.Type
-	used map[string]map[string]struct{}
+	used map[string]map[string]method
 }
 
 func (v *Visitor) Visit(node ast.Node) ast.Visitor {
@@ -98,7 +163,7 @@ func (v *Visitor) Visit(node ast.Node) ast.Visitor {
 			p := params.At(i)
 			v.args[p.Name()] = p.Type()
 		}
-		v.used = make(map[string]map[string]struct{}, 0)
+		v.used = make(map[string]map[string]method, 0)
 	case *ast.BlockStmt:
 	case *ast.ExprStmt:
 	case *ast.CallExpr:
@@ -133,9 +198,9 @@ func (v *Visitor) Visit(node ast.Node) ast.Visitor {
 	return v
 }
 
-func getType(scope *types.Scope, name string) string {
+func getType(scope *types.Scope, name string) interface{} {
 	if scope == nil {
-		return ""
+		return nil
 	}
 	obj := scope.Lookup(name)
 	if obj == nil {
@@ -145,17 +210,19 @@ func getType(scope *types.Scope, name string) string {
 	case *types.Var:
 		return x.Type().String()
 	default:
-		return ""
+		return nil
 	}
 }
 
-func (v *Visitor) typeStr(e ast.Expr) string {
+func (v *Visitor) descType(e ast.Expr) interface{} {
 	switch x := e.(type) {
 	case *ast.Ident:
 		scope := v.scopes[len(v.scopes)-1]
 		return getType(scope, x.Name)
+	case *ast.BasicLit:
+		return x.Kind
 	default:
-		return ""
+		return nil
 	}
 }
 
@@ -171,18 +238,12 @@ func (v *Visitor) onCall(c *ast.CallExpr) {
 	right := sel.Sel
 	vname := left.Name
 	fname := right.Name
-	var b bytes.Buffer
-	fmt.Fprintf(&b, "%s(", fname)
-	for i, a := range c.Args {
-		if i > 0 {
-			fmt.Fprintf(&b, ", ")
-		}
-		fmt.Fprintf(&b, v.typeStr(a))
+	m := method{}
+	for _, a := range c.Args {
+		m.args = append(m.args, v.descType(a))
 	}
-	fmt.Fprintf(&b, ")")
-	fulltype := b.String()
 	if _, e := v.used[vname]; !e {
-		v.used[vname] = make(map[string]struct{}, 0)
+		v.used[vname] = make(map[string]method)
 	}
-	v.used[vname][fulltype] = struct{}{}
+	v.used[vname][fname] = m
 }

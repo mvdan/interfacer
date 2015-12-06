@@ -29,7 +29,7 @@ func TestAll(t *testing.T) {
 			t.Fatal(err)
 		}
 		var b bytes.Buffer
-		parseFile(f, &b)
+		parseFile(inPath, f, &b)
 		exp := string(expBytes)
 		got := b.String()
 		if exp != got {

@@ -19,3 +19,9 @@ func FooArgsMake(rc io.ReadCloser) {
 	rc.Read(b)
 	rc.Close()
 }
+
+func FooArgsLit(rs io.ReadSeeker) {
+	b := make([]byte, 10)
+	rs.Read(b)
+	rs.Seek(20, 0)
+}
