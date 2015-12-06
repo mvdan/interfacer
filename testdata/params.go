@@ -25,6 +25,15 @@ func ArgsLitWrong(rs io.ReadSeeker) {
 	rs.Seek(20, 0)
 }
 
+func ArgsLit2(rs io.ReadSeeker) {
+	rs.Read([]byte{})
+	rs.Seek(20, 0)
+}
+
+func ArgsLit2Wrong(rs io.ReadSeeker) {
+	rs.Read([]byte{})
+}
+
 func ArgsNil(rs io.ReadSeeker) {
 	rs.Read(nil)
 	rs.Seek(20, 0)
