@@ -29,6 +29,11 @@ func ArgsLit(rs io.ReadSeeker) {
 	rs.Seek(20, 0)
 }
 
+func ArgsNil(rs io.ReadSeeker) {
+	rs.Read(nil)
+	rs.Seek(20, 0)
+}
+
 type st struct{}
 
 func (s *st) Basic(c io.Closer) {

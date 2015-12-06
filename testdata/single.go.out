@@ -2,5 +2,6 @@ testdata/single.go:7: rc can be io.Closer
 testdata/single.go:11: rc can be io.Reader
 testdata/single.go:16: rc can be io.Reader
 testdata/single.go:21: rs can be io.Seeker
-testdata/single.go:27: rc can be io.Closer
-testdata/single.go:31: rc can be io.Reader
+testdata/single.go:25: rs can be io.Reader
+testdata/single.go:31: rc can be io.Closer
+testdata/single.go:35: rc can be io.Reader

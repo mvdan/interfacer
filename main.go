@@ -111,6 +111,15 @@ func argEqual(t1 types.Type, a2 interface{}) bool {
 		return t1.String() == x
 	case token.Token:
 		return toToken[t1.String()] == x
+	case nil:
+		switch t1.(type) {
+		case *types.Slice:
+			return true
+		case *types.Map:
+			return true
+		default:
+			return false
+		}
 	default:
 		return false
 	}
