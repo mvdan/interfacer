@@ -13,8 +13,6 @@ import (
 	"io"
 	"log"
 	"os"
-	"regexp"
-	"strings"
 )
 
 type method struct {
@@ -22,42 +20,6 @@ type method struct {
 }
 
 var parsed map[string]map[string]method
-
-var (
-	fClose = "Close()"
-	fRead  = "Read([]byte)"
-	fWrite = "Write([]byte)"
-	fSeek  = "Seek(int64, int)"
-	known  = map[string][]string{
-		"io.Closer":      {fClose},
-		"io.ReadCloser":  {fRead, fClose},
-		"io.ReadWriter":  {fRead, fWrite},
-		"io.Reader":      {fRead},
-		"io.Seeker":      {fSeek},
-		"io.WriteCloser": {fWrite, fClose},
-		"io.Writer":      {fWrite},
-	}
-)
-
-func manualInit() {
-	funcRegex := regexp.MustCompile(`^(.*)\((.*)\)`)
-	parsed = make(map[string]map[string]method, len(known))
-	for iface, declStrs := range known {
-		parsed[iface] = make(map[string]method, len(declStrs))
-		for _, s := range declStrs {
-			parts := funcRegex.FindStringSubmatch(s)
-			name := parts[1]
-			m := method{}
-			for _, t := range strings.Split(parts[2], ", ") {
-				if t == "" {
-					continue
-				}
-				m.args = append(m.args, t)
-			}
-			parsed[iface][name] = m
-		}
-	}
-}
 
 var suggested = [...]string{
 	"io.Closer",
@@ -70,31 +32,57 @@ var suggested = [...]string{
 }
 
 func typesInit() {
-	parsed = make(map[string]map[string]method, len(suggested))
-	pkg := types.NewPackage(".", "main")
-	imp := importer.Default()
-	p1, err := imp.Import("io")
+	fset := token.NewFileSet()
+	// Simple program that imports and uses all needed packages
+	const typesProgram = `
+	package types
+	import "io"
+	func foo(r io.Reader) {
+	}
+	`
+	f, err := parser.ParseFile(fset, "foo.go", typesProgram, 0)
 	if err != nil {
 		log.Fatal(err)
 	}
-	pkg.SetImports([]*types.Package{p1})
-	fmt.Println(pkg.Imports())
-	fset := token.NewFileSet()
+
+	conf := types.Config{Importer: importer.Default()}
+	pkg, err := conf.Check("", fset, []*ast.File{f}, nil)
+	if err != nil {
+		log.Fatal(err)
+	}
+	pos := pkg.Scope().Lookup("foo").Pos()
+
+	parsed = make(map[string]map[string]method, len(suggested))
 	for _, v := range suggested {
-		tv, err := types.Eval(fset, pkg, token.NoPos, v)
+		tv, err := types.Eval(fset, pkg, pos, v)
 		if err != nil {
 			log.Fatal(err)
 		}
-		fmt.Println(tv)
+		t := tv.Type
+		if !types.IsInterface(t) {
+			log.Fatalf("%s is not an interface", v)
+		}
+		named := t.(*types.Named)
+		ifname := named.String()
+		iface := named.Underlying().(*types.Interface)
+		parsed[ifname] = make(map[string]method, iface.NumMethods())
+		for i := 0; i < iface.NumMethods(); i++ {
+			m := method{}
+			f := iface.Method(i)
+			fname := f.Name()
+			sign := f.Type().(*types.Signature)
+			params := sign.Params()
+			for i := 0; i < params.Len(); i++ {
+				p := params.At(i)
+				m.args = append(m.args, p.Type())
+			}
+			parsed[ifname][fname] = m
+		}
 	}
 }
 
 func init() {
-	manualInit()
-	// Should be much simpler via go/types, but even if we pass it
-	// the imported "io" package, it still errors:
-	// 	undeclared name: io
-	//typesInit()
+	typesInit()
 }
 
 var toToken = map[string]token.Token{
@@ -103,14 +91,13 @@ var toToken = map[string]token.Token{
 	"int64": token.INT,
 }
 
-func argEqual(s1 string, a2 interface{}) bool {
+func argEqual(t1 types.Type, a2 interface{}) bool {
 	switch x := a2.(type) {
 	case string:
-		return s1 == x
+		return t1.String() == x
 	case token.Token:
-		return toToken[s1] == x
+		return toToken[t1.String()] == x
 	default:
-		fmt.Printf("%T\n", x)
 		return false
 	}
 }
@@ -121,8 +108,8 @@ func argsMatch(args1, args2 []interface{}) bool {
 	}
 	for i, a1 := range args1 {
 		a2 := args2[i]
-		s1 := a1.(string)
-		if !argEqual(s1, a2) {
+		t1 := a1.(types.Type)
+		if !argEqual(t1, a2) {
 			return false
 		}
 	}
