@@ -190,14 +190,46 @@ type Visitor struct {
 	used map[string]map[string]method
 }
 
+func scopeName(e ast.Expr) string {
+	switch x := e.(type) {
+	case *ast.Ident:
+		return x.Name
+	case *ast.StarExpr:
+		return scopeName(x.X)
+	default:
+		return ""
+	}
+}
+
+func (v *Visitor) getFuncType(fd *ast.FuncDecl) *types.Func {
+	name := fd.Name.Name
+	scope := v.scopes[len(v.scopes)-1]
+	if fd.Recv == nil {
+		return scope.Lookup(name).(*types.Func)
+	}
+	if len(fd.Recv.List) > 1 {
+		return nil
+	}
+	tname := scopeName(fd.Recv.List[0].Type)
+	st := scope.Lookup(tname).(*types.TypeName)
+	named := st.Type().(*types.Named)
+	for i := 0; i < named.NumMethods(); i++ {
+		f := named.Method(i)
+		if f.Name() == name {
+			return f
+		}
+	}
+	return nil
+}
+
 func (v *Visitor) Visit(node ast.Node) ast.Visitor {
 	switch x := node.(type) {
 	case *ast.File:
 	case *ast.FuncDecl:
-		name := x.Name.Name
-		scope := v.scopes[len(v.scopes)-1]
-		f := scope.Lookup(name).(*types.Func)
-
+		f := v.getFuncType(x)
+		if f == nil {
+			return nil
+		}
 		v.scopes = append(v.scopes, f.Scope())
 		sign := f.Type().(*types.Signature)
 		v.args = typeMap(sign.Params())
