@@ -4,6 +4,7 @@
 package main
 
 import (
+	"bytes"
 	"fmt"
 	"go/ast"
 	"go/importer"
@@ -16,7 +17,7 @@ import (
 )
 
 var known = map[string][]string{
-	"io.Closer": {"Close"},
+	"io.Closer": {"Close()"},
 }
 
 func interfaceMatching(methods map[string]struct{}) string {
@@ -57,19 +58,19 @@ func parseFile(r io.Reader, w io.Writer) {
 	}
 
 	v := &Visitor{
-		w:     w,
-		fset:  fset,
-		scope: pkg.Scope(),
+		w:      w,
+		fset:   fset,
+		scopes: []*types.Scope{pkg.Scope()},
 	}
 	ast.Walk(v, f)
 }
 
 type Visitor struct {
-	w     io.Writer
-	fset  *token.FileSet
-	scope *types.Scope
+	w      io.Writer
+	fset   *token.FileSet
+	scopes []*types.Scope
 
-	stack []ast.Node
+	nodes []ast.Node
 
 	args map[string]types.Type
 	used map[string]map[string]struct{}
@@ -80,9 +81,13 @@ func (v *Visitor) Visit(node ast.Node) ast.Visitor {
 	case *ast.File:
 	case *ast.FuncDecl:
 		name := x.Name.Name
-		f := v.scope.Lookup(name).(*types.Func)
+		scope := v.scopes[len(v.scopes)-1]
+		f := scope.Lookup(name).(*types.Func)
+
+		v.scopes = append(v.scopes, f.Scope())
 		sign := f.Type().(*types.Signature)
 		params := sign.Params()
+
 		v.args = make(map[string]types.Type, params.Len())
 		for i := 0; i < params.Len(); i++ {
 			p := params.At(i)
@@ -94,11 +99,12 @@ func (v *Visitor) Visit(node ast.Node) ast.Visitor {
 	case *ast.CallExpr:
 		v.onCall(x)
 	case nil:
-		top := v.stack[len(v.stack)-1]
-		v.stack = v.stack[:len(v.stack)-1]
+		top := v.nodes[len(v.nodes)-1]
+		v.nodes = v.nodes[:len(v.nodes)-1]
 		if _, ok := top.(*ast.FuncDecl); !ok {
 			return nil
 		}
+		v.scopes = v.scopes[:len(v.scopes)-1]
 		for name, methods := range v.used {
 			iface := interfaceMatching(methods)
 			if iface == "" {
@@ -117,9 +123,35 @@ func (v *Visitor) Visit(node ast.Node) ast.Visitor {
 		return nil
 	}
 	if node != nil {
-		v.stack = append(v.stack, node)
+		v.nodes = append(v.nodes, node)
 	}
 	return v
+}
+
+func getType(scope *types.Scope, name string) string {
+	if scope == nil {
+		return ""
+	}
+	obj := scope.Lookup(name)
+	if obj == nil {
+		return getType(scope.Parent(), name)
+	}
+	switch x := obj.(type) {
+	case *types.Var:
+		return x.Type().String()
+	default:
+		return ""
+	}
+}
+
+func (v *Visitor) typeStr(e ast.Expr) string {
+	switch x := e.(type) {
+	case *ast.Ident:
+		scope := v.scopes[len(v.scopes)-1]
+		return getType(scope, x.Name)
+	default:
+		return ""
+	}
 }
 
 func (v *Visitor) onCall(c *ast.CallExpr) {
@@ -132,11 +164,20 @@ func (v *Visitor) onCall(c *ast.CallExpr) {
 		return
 	}
 	right := sel.Sel
-	//args := c.Args
 	vname := left.Name
 	fname := right.Name
+	var b bytes.Buffer
+	fmt.Fprintf(&b, "%s(", fname)
+	for i, a := range c.Args {
+		if i > 0 {
+			fmt.Fprintf(&b, ", ")
+		}
+		fmt.Fprintf(&b, v.typeStr(a))
+	}
+	fmt.Fprintf(&b, ")")
+	fulltype := b.String()
 	if _, e := v.used[vname]; !e {
 		v.used[vname] = make(map[string]struct{}, 0)
 	}
-	v.used[vname][fname] = struct{}{}
+	v.used[vname][fulltype] = struct{}{}
 }
