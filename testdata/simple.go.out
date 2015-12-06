@@ -1,0 +1,2 @@
+testdata/simple.go:14: rc can be io.Closer
+testdata/simple.go:24: rc can be io.Closer
