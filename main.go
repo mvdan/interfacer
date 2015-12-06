@@ -120,9 +120,20 @@ type call struct {
 }
 
 var toToken = map[string]token.Token{
-	"int":   token.INT,
-	"int32": token.INT,
-	"int64": token.INT,
+	"byte":    token.INT,
+	"int":     token.INT,
+	"int8":    token.INT,
+	"int16":   token.INT,
+	"int32":   token.INT,
+	"int64":   token.INT,
+	"uint":    token.INT,
+	"uint8":   token.INT,
+	"uint16":  token.INT,
+	"uint32":  token.INT,
+	"uint64":  token.INT,
+	"string":  token.STRING,
+	"float32": token.FLOAT,
+	"float64": token.FLOAT,
 }
 
 func argEqual(t1 types.Type, a2 interface{}) bool {
