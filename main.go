@@ -10,6 +10,7 @@ import (
 	"go/parser"
 	"go/token"
 	"go/types"
+	"io"
 	"log"
 	"os"
 )
@@ -39,8 +40,12 @@ func interfaceMatching(methods map[string]struct{}) string {
 }
 
 func main() {
+	parseFile(os.Stdin, os.Stdout)
+}
+
+func parseFile(r io.Reader, w io.Writer) {
 	fset := token.NewFileSet()
-	f, err := parser.ParseFile(fset, "stdin.go", os.Stdin, 0)
+	f, err := parser.ParseFile(fset, "stdin.go", r, 0)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -52,6 +57,7 @@ func main() {
 	}
 
 	v := &Visitor{
+		w:     w,
 		fset:  fset,
 		scope: pkg.Scope(),
 	}
@@ -59,6 +65,7 @@ func main() {
 }
 
 type Visitor struct {
+	w     io.Writer
 	fset  *token.FileSet
 	scope *types.Scope
 
@@ -101,7 +108,8 @@ func (v *Visitor) Visit(node ast.Node) ast.Visitor {
 				continue
 			}
 			pos := v.fset.Position(top.Pos())
-			fmt.Printf("%s:%d: %s can be %s\n", pos.Filename, pos.Line, name, iface)
+			fmt.Fprintf(v.w, "%s:%d: %s can be %s\n",
+				pos.Filename, pos.Line, name, iface)
 		}
 		v.args = nil
 		v.used = nil
