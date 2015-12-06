@@ -4,23 +4,26 @@ import (
 	"io"
 )
 
-func Foo(c io.Closer) {
+func Empty() {
+}
+
+func Basic(c io.Closer) {
 	c.Close()
 }
 
-func FooArgs(rc io.ReadCloser) {
+func Args(rc io.ReadCloser) {
 	var b []byte
 	rc.Read(b)
 	rc.Close()
 }
 
-func FooArgsMake(rc io.ReadCloser) {
+func ArgsMake(rc io.ReadCloser) {
 	b := make([]byte, 10)
 	rc.Read(b)
 	rc.Close()
 }
 
-func FooArgsLit(rs io.ReadSeeker) {
+func ArgsLit(rs io.ReadSeeker) {
 	b := make([]byte, 10)
 	rs.Read(b)
 	rs.Seek(20, 0)
@@ -28,11 +31,11 @@ func FooArgsLit(rs io.ReadSeeker) {
 
 type st struct{}
 
-func (s *st) Foo(c io.Closer) {
+func (s *st) Basic(c io.Closer) {
 	c.Close()
 }
 
-func (s st) FooArgs(rc io.ReadCloser) {
+func (s st) Args(rc io.ReadCloser) {
 	var b []byte
 	rc.Read(b)
 	rc.Close()
