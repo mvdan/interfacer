@@ -25,3 +25,15 @@ func FooArgsLit(rs io.ReadSeeker) {
 	rs.Read(b)
 	rs.Seek(20, 0)
 }
+
+type st struct{}
+
+func (s *st) Foo(c io.Closer) {
+	c.Close()
+}
+
+func (s st) FooArgs(rc io.ReadCloser) {
+	var b []byte
+	rc.Read(b)
+	rc.Close()
+}
