@@ -31,6 +31,24 @@ var suggested = [...]string{
 	"io.Writer",
 }
 
+func typeList(t *types.Tuple) []interface{} {
+	var l []interface{}
+	for i := 0; i < t.Len(); i++ {
+		v := t.At(i)
+		l = append(l, v.Type())
+	}
+	return l
+}
+
+func typeMap(t *types.Tuple) map[string]types.Type {
+	m := make(map[string]types.Type, t.Len())
+	for i := 0; i < t.Len(); i++ {
+		p := t.At(i)
+		m[p.Name()] = p.Type()
+	}
+	return m
+}
+
 func typesInit() {
 	fset := token.NewFileSet()
 	// Simple program that imports and uses all needed packages
@@ -67,16 +85,12 @@ func typesInit() {
 		iface := named.Underlying().(*types.Interface)
 		parsed[ifname] = make(map[string]method, iface.NumMethods())
 		for i := 0; i < iface.NumMethods(); i++ {
-			m := method{}
 			f := iface.Method(i)
 			fname := f.Name()
 			sign := f.Type().(*types.Signature)
-			params := sign.Params()
-			for i := 0; i < params.Len(); i++ {
-				p := params.At(i)
-				m.args = append(m.args, p.Type())
+			parsed[ifname][fname] = method{
+				args: typeList(sign.Params()),
 			}
-			parsed[ifname][fname] = m
 		}
 	}
 }
@@ -186,13 +200,7 @@ func (v *Visitor) Visit(node ast.Node) ast.Visitor {
 
 		v.scopes = append(v.scopes, f.Scope())
 		sign := f.Type().(*types.Signature)
-		params := sign.Params()
-
-		v.args = make(map[string]types.Type, params.Len())
-		for i := 0; i < params.Len(); i++ {
-			p := params.At(i)
-			v.args[p.Name()] = p.Type()
-		}
+		v.args = typeMap(sign.Params())
 		v.used = make(map[string]map[string]method, 0)
 	case *ast.BlockStmt:
 	case *ast.ExprStmt:
