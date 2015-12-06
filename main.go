@@ -17,6 +17,12 @@ import (
 	"strings"
 )
 
+type method struct {
+	args []interface{}
+}
+
+var parsed map[string]map[string]method
+
 var known = map[string][]string{
 	"io.Closer":      {"Close()"},
 	"io.ReadCloser":  {"Read([]byte)", "Close()"},
@@ -27,15 +33,8 @@ var known = map[string][]string{
 	"io.Writer":      {"Write([]byte)"},
 }
 
-type method struct {
-	args []interface{}
-}
-
-var parsed map[string]map[string]method
-
-var funcRegex = regexp.MustCompile(`^(.*)\((.*)\)`)
-
-func init() {
+func manualInit() {
+	funcRegex := regexp.MustCompile(`^(.*)\((.*)\)`)
 	parsed = make(map[string]map[string]method, len(known))
 	for iface, declStrs := range known {
 		parsed[iface] = make(map[string]method, len(declStrs))
@@ -52,6 +51,44 @@ func init() {
 			parsed[iface][name] = m
 		}
 	}
+}
+
+var suggested = [...]string{
+	"io.Closer",
+	"io.ReadCloser",
+	"io.ReadWriter",
+	"io.Reader",
+	"io.Seeker",
+	"io.WriteCloser",
+	"io.Writer",
+}
+
+func typesInit() {
+	parsed = make(map[string]map[string]method, len(suggested))
+	pkg := types.NewPackage(".", "main")
+	imp := importer.Default()
+	p1, err := imp.Import("io")
+	if err != nil {
+		log.Fatal(err)
+	}
+	pkg.SetImports([]*types.Package{p1})
+	fmt.Println(pkg.Imports())
+	fset := token.NewFileSet()
+	for _, v := range suggested {
+		tv, err := types.Eval(fset, pkg, token.NoPos, v)
+		if err != nil {
+			log.Fatal(err)
+		}
+		fmt.Println(tv)
+	}
+}
+
+func init() {
+	manualInit()
+	// Should be much simpler via go/types, but even if we pass it
+	// the imported "io" package, it still errors:
+	// 	undeclared name: io
+	//typesInit()
 }
 
 var toToken = map[string]token.Token{
