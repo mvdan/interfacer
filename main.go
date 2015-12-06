@@ -16,7 +16,7 @@ import (
 )
 
 type method struct {
-	args []interface{}
+	params []interface{}
 }
 
 var parsed map[string]map[string]method
@@ -105,7 +105,7 @@ func typesInit() {
 			fname := f.Name()
 			sign := f.Type().(*types.Signature)
 			parsed[ifname][fname] = method{
-				args: typeList(sign.Params()),
+				params: typeList(sign.Params()),
 			}
 		}
 	}
@@ -141,7 +141,7 @@ func argEqual(t1 types.Type, a2 interface{}) bool {
 	}
 }
 
-func argsMatch(args1, args2 []interface{}) bool {
+func typesMatch(args1, args2 []interface{}) bool {
 	if len(args1) != len(args2) {
 		return false
 	}
@@ -165,7 +165,7 @@ func interfaceMatching(methods map[string]method) string {
 			if !e {
 				return false
 			}
-			if !argsMatch(d.args, m.args) {
+			if !typesMatch(d.params, m.params) {
 				return false
 			}
 		}
@@ -211,8 +211,8 @@ type Visitor struct {
 
 	nodes []ast.Node
 
-	args map[string]types.Type
-	used map[string]map[string]method
+	params map[string]types.Type
+	used   map[string]map[string]method
 }
 
 func scopeName(e ast.Expr) string {
@@ -257,7 +257,7 @@ func (v *Visitor) Visit(node ast.Node) ast.Visitor {
 		}
 		v.scopes = append(v.scopes, f.Scope())
 		sign := f.Type().(*types.Signature)
-		v.args = typeMap(sign.Params())
+		v.params = typeMap(sign.Params())
 		v.used = make(map[string]map[string]method, 0)
 	case *ast.BlockStmt:
 	case *ast.ExprStmt:
@@ -275,14 +275,14 @@ func (v *Visitor) Visit(node ast.Node) ast.Visitor {
 			if iface == "" {
 				continue
 			}
-			if iface == v.args[name].String() {
+			if iface == v.params[name].String() {
 				continue
 			}
 			pos := v.fset.Position(top.Pos())
 			fmt.Fprintf(v.w, "%s:%d: %s can be %s\n",
 				pos.Filename, pos.Line, name, iface)
 		}
-		v.args = nil
+		v.params = nil
 		v.used = nil
 	default:
 		return nil
@@ -335,7 +335,7 @@ func (v *Visitor) onCall(c *ast.CallExpr) {
 	fname := right.Name
 	m := method{}
 	for _, a := range c.Args {
-		m.args = append(m.args, v.descType(a))
+		m.params = append(m.params, v.descType(a))
 	}
 	if _, e := v.used[vname]; !e {
 		v.used[vname] = make(map[string]method)
