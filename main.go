@@ -188,6 +188,7 @@ func (v *Visitor) Visit(node ast.Node) ast.Visitor {
 		v.used = make(map[string]map[string]call, 0)
 	case *ast.BlockStmt:
 	case *ast.ExprStmt:
+	case *ast.AssignStmt:
 	case *ast.CallExpr:
 		v.onCall(x)
 	case nil:
