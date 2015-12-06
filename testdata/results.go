@@ -22,16 +22,26 @@ func (a argBad) Read(p []byte) (string, error) {
 	return "", nil
 }
 
-func (a argBad) Close() (int, error) {
-	return 0, nil
+func (a argBad) Write(p []byte) error {
+	return nil
+}
+
+func (a argBad) Close() int {
+	return 0
 }
 
 func ResultsMismatchNumber(a argBad) {
-	_, _ = a.Close()
+	var b []byte
+	_ = a.Write(b)
 }
 
 func ResultsMismatchType(a argBad) {
 	b := make([]byte, 10)
 	s, _ := a.Read(b)
 	println(s)
+}
+
+func ResultsMismatchTypes(a argBad, b argBad) {
+	r1, r2 := a.Close(), b.Close()
+	println(r1, r2)
 }
