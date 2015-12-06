@@ -23,15 +23,21 @@ type method struct {
 
 var parsed map[string]map[string]method
 
-var known = map[string][]string{
-	"io.Closer":      {"Close()"},
-	"io.ReadCloser":  {"Read([]byte)", "Close()"},
-	"io.ReadWriter":  {"Read([]byte)", "Write([]byte)"},
-	"io.Reader":      {"Read([]byte)"},
-	"io.Seeker":      {"Seek(int64, int)"},
-	"io.WriteCloser": {"Write([]byte)", "Close()"},
-	"io.Writer":      {"Write([]byte)"},
-}
+var (
+	fClose = "Close()"
+	fRead  = "Read([]byte)"
+	fWrite = "Write([]byte)"
+	fSeek  = "Seek(int64, int)"
+	known  = map[string][]string{
+		"io.Closer":      {fClose},
+		"io.ReadCloser":  {fRead, fClose},
+		"io.ReadWriter":  {fRead, fWrite},
+		"io.Reader":      {fRead},
+		"io.Seeker":      {fSeek},
+		"io.WriteCloser": {fWrite, fClose},
+		"io.Writer":      {fWrite},
+	}
+)
 
 func manualInit() {
 	funcRegex := regexp.MustCompile(`^(.*)\((.*)\)`)
