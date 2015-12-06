@@ -15,11 +15,11 @@ import (
 	"os"
 )
 
-type method struct {
-	params []interface{}
+type funcDecl struct {
+	params []types.Type
 }
 
-var parsed map[string]map[string]method
+var parsed map[string]map[string]funcDecl
 
 var suggested = [...]string{
 	"io.ByteReader",
@@ -44,8 +44,8 @@ var suggested = [...]string{
 	"io.WriterTo",
 }
 
-func typeList(t *types.Tuple) []interface{} {
-	var l []interface{}
+func typeList(t *types.Tuple) []types.Type {
+	var l []types.Type
 	for i := 0; i < t.Len(); i++ {
 		v := t.At(i)
 		l = append(l, v.Type())
@@ -83,7 +83,7 @@ func typesInit() {
 	}
 	pos := pkg.Scope().Lookup("foo").Pos()
 
-	parsed = make(map[string]map[string]method, len(suggested))
+	parsed = make(map[string]map[string]funcDecl, len(suggested))
 	for _, v := range suggested {
 		tv, err := types.Eval(fset, pkg, pos, v)
 		if err != nil {
@@ -99,12 +99,12 @@ func typesInit() {
 		if _, e := parsed[ifname]; e {
 			log.Fatalf("%s is duplicated", ifname)
 		}
-		parsed[ifname] = make(map[string]method, iface.NumMethods())
+		parsed[ifname] = make(map[string]funcDecl, iface.NumMethods())
 		for i := 0; i < iface.NumMethods(); i++ {
 			f := iface.Method(i)
 			fname := f.Name()
 			sign := f.Type().(*types.Signature)
-			parsed[ifname][fname] = method{
+			parsed[ifname][fname] = funcDecl{
 				params: typeList(sign.Params()),
 			}
 		}
@@ -113,6 +113,10 @@ func typesInit() {
 
 func init() {
 	typesInit()
+}
+
+type call struct {
+	params []interface{}
 }
 
 var toToken = map[string]token.Token{
@@ -141,13 +145,12 @@ func argEqual(t1 types.Type, a2 interface{}) bool {
 	}
 }
 
-func typesMatch(args1, args2 []interface{}) bool {
-	if len(args1) != len(args2) {
+func typesMatch(types1 []types.Type, args2 []interface{}) bool {
+	if len(types1) != len(args2) {
 		return false
 	}
-	for i, a1 := range args1 {
+	for i, t1 := range types1 {
 		a2 := args2[i]
-		t1 := a1.(types.Type)
 		if !argEqual(t1, a2) {
 			return false
 		}
@@ -155,17 +158,17 @@ func typesMatch(args1, args2 []interface{}) bool {
 	return true
 }
 
-func interfaceMatching(methods map[string]method) string {
-	matchesIface := func(decls map[string]method) bool {
-		if len(methods) > len(decls) {
+func interfaceMatching(calls map[string]call) string {
+	matchesIface := func(decls map[string]funcDecl) bool {
+		if len(calls) > len(decls) {
 			return false
 		}
 		for n, d := range decls {
-			m, e := methods[n]
+			c, e := calls[n]
 			if !e {
 				return false
 			}
-			if !typesMatch(d.params, m.params) {
+			if !typesMatch(d.params, c.params) {
 				return false
 			}
 		}
@@ -212,7 +215,7 @@ type Visitor struct {
 	nodes []ast.Node
 
 	params map[string]types.Type
-	used   map[string]map[string]method
+	used   map[string]map[string]call
 }
 
 func scopeName(e ast.Expr) string {
@@ -258,7 +261,7 @@ func (v *Visitor) Visit(node ast.Node) ast.Visitor {
 		v.scopes = append(v.scopes, f.Scope())
 		sign := f.Type().(*types.Signature)
 		v.params = typeMap(sign.Params())
-		v.used = make(map[string]map[string]method, 0)
+		v.used = make(map[string]map[string]call, 0)
 	case *ast.BlockStmt:
 	case *ast.ExprStmt:
 	case *ast.CallExpr:
@@ -333,12 +336,12 @@ func (v *Visitor) onCall(c *ast.CallExpr) {
 	right := sel.Sel
 	vname := left.Name
 	fname := right.Name
-	m := method{}
+	m := call{}
 	for _, a := range c.Args {
 		m.params = append(m.params, v.descType(a))
 	}
 	if _, e := v.used[vname]; !e {
-		v.used[vname] = make(map[string]method)
+		v.used[vname] = make(map[string]call)
 	}
 	v.used[vname][fname] = m
 }
