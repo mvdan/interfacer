@@ -29,7 +29,8 @@ func init() {
 }
 
 type call struct {
-	params []interface{}
+	params  []interface{}
+	results []ast.Expr
 }
 
 var toToken = map[string]token.Token{
@@ -69,7 +70,7 @@ func argEqual(t1 types.Type, a2 interface{}) bool {
 	}
 }
 
-func typesMatch(types1 []types.Type, args2 []interface{}) bool {
+func paramsMatch(types1 []types.Type, args2 []interface{}) bool {
 	if len(types1) != len(args2) {
 		return false
 	}
@@ -78,6 +79,16 @@ func typesMatch(types1 []types.Type, args2 []interface{}) bool {
 		if !argEqual(t1, a2) {
 			return false
 		}
+	}
+	return true
+}
+
+func resultsMatch(types1 []types.Type, exps2 []ast.Expr) bool {
+	if len(exps2) == 0 {
+		return true
+	}
+	if len(types1) != len(exps2) {
+		return false
 	}
 	return true
 }
@@ -92,7 +103,10 @@ func interfaceMatching(calls map[string]call) string {
 			if !e {
 				return false
 			}
-			if !typesMatch(d.params, c.params) {
+			if !paramsMatch(d.params, c.params) {
+				return false
+			}
+			if !resultsMatch(d.results, c.results) {
 				return false
 			}
 		}
@@ -174,6 +188,38 @@ func (v *Visitor) getFuncType(fd *ast.FuncDecl) *types.Func {
 	return nil
 }
 
+type assignCall struct{
+	left  []ast.Expr
+	right *ast.CallExpr
+}
+
+func assignCalls(as *ast.AssignStmt) []assignCall {
+	if len(as.Rhs) == 1 {
+		ce, ok := as.Rhs[0].(*ast.CallExpr)
+		if !ok {
+			return nil
+		}
+		return []assignCall{
+			{
+				left:  as.Lhs,
+				right: ce,
+			},
+		}
+	}
+	var calls []assignCall
+	for i, right := range as.Rhs {
+		ce, ok := right.(*ast.CallExpr)
+		if !ok {
+			continue
+		}
+		calls = append(calls, assignCall{
+			left:  []ast.Expr{as.Lhs[i]},
+			right: ce,
+		})
+	}
+	return calls
+}
+
 func (v *Visitor) Visit(node ast.Node) ast.Visitor {
 	switch x := node.(type) {
 	case *ast.File:
@@ -189,8 +235,13 @@ func (v *Visitor) Visit(node ast.Node) ast.Visitor {
 	case *ast.BlockStmt:
 	case *ast.ExprStmt:
 	case *ast.AssignStmt:
+		calls := assignCalls(x)
+		for _, c := range calls {
+			v.onCall(c.left, c.right)
+		}
+		return nil
 	case *ast.CallExpr:
-		v.onCall(x)
+		v.onCall(nil, x)
 	case nil:
 		top := v.nodes[len(v.nodes)-1]
 		v.nodes = v.nodes[:len(v.nodes)-1]
@@ -249,8 +300,8 @@ func (v *Visitor) descType(e ast.Expr) interface{} {
 	}
 }
 
-func (v *Visitor) onCall(c *ast.CallExpr) {
-	sel, ok := c.Fun.(*ast.SelectorExpr)
+func (v *Visitor) onCall(to []ast.Expr, ce *ast.CallExpr) {
+	sel, ok := ce.Fun.(*ast.SelectorExpr)
 	if !ok {
 		return
 	}
@@ -261,12 +312,14 @@ func (v *Visitor) onCall(c *ast.CallExpr) {
 	right := sel.Sel
 	vname := left.Name
 	fname := right.Name
-	m := call{}
-	for _, a := range c.Args {
-		m.params = append(m.params, v.descType(a))
+	c := call{
+		results: to,
+	}
+	for _, a := range ce.Args {
+		c.params = append(c.params, v.descType(a))
 	}
 	if _, e := v.used[vname]; !e {
 		v.used[vname] = make(map[string]call)
 	}
-	v.used[vname][fname] = m
+	v.used[vname][fname] = c
 }

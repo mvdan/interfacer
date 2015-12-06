@@ -12,12 +12,6 @@ import (
 	"log"
 )
 
-type funcDecl struct {
-	params []types.Type
-}
-
-var parsed map[string]map[string]funcDecl
-
 var suggested = [...]string{
 	"io.ByteReader",
 	"io.ByteScanner",
@@ -40,6 +34,13 @@ var suggested = [...]string{
 	"io.WriterAt",
 	"io.WriterTo",
 }
+
+type funcDecl struct {
+	params  []types.Type
+	results []types.Type
+}
+
+var parsed map[string]map[string]funcDecl
 
 func typesInit() {
 	fset := token.NewFileSet()
@@ -84,7 +85,8 @@ func typesInit() {
 			fname := f.Name()
 			sign := f.Type().(*types.Signature)
 			parsed[ifname][fname] = funcDecl{
-				params: typeList(sign.Params()),
+				params:  typeList(sign.Params()),
+				results: typeList(sign.Results()),
 			}
 		}
 	}
