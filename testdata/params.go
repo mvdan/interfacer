@@ -46,3 +46,24 @@ func (s st) ArgsWrong(rc io.ReadCloser) {
 	b := make([]byte, 10)
 	rc.Read(b)
 }
+
+type argBad struct{}
+
+func (a argBad) Read(n int) (int, error) {
+	return 0, nil
+}
+
+type argGood struct{}
+
+func (a argGood) Read(p []byte) (int, error) {
+	return 0, nil
+}
+
+func ArgsMismatch(a argBad) {
+	a.Read(10)
+}
+
+func ArgsMatch(a argGood) {
+	b := make([]byte, 10)
+	a.Read(b)
+}
