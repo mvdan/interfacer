@@ -22,13 +22,26 @@ type method struct {
 var parsed map[string]map[string]method
 
 var suggested = [...]string{
+	"io.ByteReader",
+	"io.ByteScanner",
+	"io.ByteWriter",
 	"io.Closer",
 	"io.ReadCloser",
+	"io.ReadSeeker",
+	"io.ReadWriteCloser",
+	"io.ReadWriteSeeker",
 	"io.ReadWriter",
 	"io.Reader",
+	"io.ReaderAt",
+	"io.ReaderFrom",
+	"io.RuneReader",
+	"io.RuneScanner",
 	"io.Seeker",
 	"io.WriteCloser",
+	"io.WriteSeeker",
 	"io.Writer",
+	"io.WriterAt",
+	"io.WriterTo",
 }
 
 func typeList(t *types.Tuple) []interface{} {
@@ -83,6 +96,9 @@ func typesInit() {
 		named := t.(*types.Named)
 		ifname := named.String()
 		iface := named.Underlying().(*types.Interface)
+		if _, e := parsed[ifname]; e {
+			log.Fatalf("%s is duplicated", ifname)
+		}
 		parsed[ifname] = make(map[string]method, iface.NumMethods())
 		for i := 0; i < iface.NumMethods(); i++ {
 			f := iface.Method(i)
