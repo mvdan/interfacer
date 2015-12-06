@@ -18,6 +18,11 @@ import (
 
 var known = map[string][]string{
 	"io.Closer": {"Close()"},
+	"io.ReadCloser": {"Read([]byte)", "Close()"},
+	"io.ReadWriter": {"Read([]byte)", "Write([]byte)"},
+	"io.Reader": {"Read([]byte)"},
+	"io.WriteCloser": {"Write([]byte)", "Close()"},
+	"io.Writer": {"Write([]byte)"},
 }
 
 func interfaceMatching(methods map[string]struct{}) string {
