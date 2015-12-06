@@ -53,6 +53,10 @@ func (a argBad) Read(n int) (int, error) {
 	return 0, nil
 }
 
+func (a argBad) Close(n int) error {
+	return nil
+}
+
 type argGood struct{}
 
 func (a argGood) Read(p []byte) (int, error) {
@@ -66,4 +70,8 @@ func ArgsMismatch(a argBad) {
 func ArgsMatch(a argGood) {
 	b := make([]byte, 10)
 	a.Read(b)
+}
+
+func ArgsMismatchNum(a argBad) {
+	a.Close(3)
 }
