@@ -4,12 +4,12 @@
 package main
 
 import (
+	"fmt"
 	"go/ast"
 	"go/importer"
 	"go/parser"
 	"go/token"
 	"go/types"
-	"log"
 )
 
 var suggested = [...]string{
@@ -42,7 +42,7 @@ type funcDecl struct {
 
 var parsed map[string]map[string]funcDecl
 
-func typesInit() {
+func typesInit() error {
 	fset := token.NewFileSet()
 	// Simple program that imports and uses all needed packages
 	const typesProgram = `
@@ -53,13 +53,13 @@ func typesInit() {
 	`
 	f, err := parser.ParseFile(fset, "foo.go", typesProgram, 0)
 	if err != nil {
-		log.Fatal(err)
+		return err
 	}
 
 	conf := types.Config{Importer: importer.Default()}
 	pkg, err := conf.Check("", fset, []*ast.File{f}, nil)
 	if err != nil {
-		log.Fatal(err)
+		return err
 	}
 	pos := pkg.Scope().Lookup("foo").Pos()
 
@@ -67,17 +67,17 @@ func typesInit() {
 	for _, v := range suggested {
 		tv, err := types.Eval(fset, pkg, pos, v)
 		if err != nil {
-			log.Fatal(err)
+			return err
 		}
 		t := tv.Type
 		if !types.IsInterface(t) {
-			log.Fatalf("%s is not an interface", v)
+			return fmt.Errorf("%s is not an interface", v)
 		}
 		named := t.(*types.Named)
 		ifname := named.String()
 		iface := named.Underlying().(*types.Interface)
 		if _, e := parsed[ifname]; e {
-			log.Fatalf("%s is duplicated", ifname)
+			return fmt.Errorf("%s is duplicated", ifname)
 		}
 		parsed[ifname] = make(map[string]funcDecl, iface.NumMethods())
 		for i := 0; i < iface.NumMethods(); i++ {
@@ -90,6 +90,7 @@ func typesInit() {
 			}
 		}
 	}
+	return nil
 }
 
 func typeList(t *types.Tuple) []types.Type {

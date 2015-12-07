@@ -25,7 +25,9 @@ func typeMap(t *types.Tuple) map[string]types.Type {
 }
 
 func init() {
-	typesInit()
+	if err := typesInit(); err != nil {
+		log.Fatal(err)
+	}
 }
 
 type call struct {
@@ -207,7 +209,6 @@ func (v *Visitor) recvFuncType(tname, fname string) *types.Func {
 	}
 	return nil
 }
-
 
 func (v *Visitor) funcType(fd *ast.FuncDecl) *types.Func {
 	fname := fd.Name.Name
