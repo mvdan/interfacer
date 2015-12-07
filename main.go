@@ -174,6 +174,10 @@ type Visitor struct {
 	used   map[string]map[string]call
 }
 
+func (v *Visitor) scope() *types.Scope {
+	return v.scopes[len(v.scopes)-1]
+}
+
 func scopeName(e ast.Expr) string {
 	switch x := e.(type) {
 	case *ast.Ident:
@@ -185,25 +189,40 @@ func scopeName(e ast.Expr) string {
 	}
 }
 
-func (v *Visitor) getFuncType(fd *ast.FuncDecl) *types.Func {
-	name := fd.Name.Name
-	scope := v.scopes[len(v.scopes)-1]
+func (v *Visitor) recvFuncType(tname, fname string) *types.Func {
+	_, obj := v.scope().LookupParent(tname, token.NoPos)
+	st, ok := obj.(*types.TypeName)
+	if !ok {
+		return nil
+	}
+	named, ok := st.Type().(*types.Named)
+	if !ok {
+		return nil
+	}
+	for i := 0; i < named.NumMethods(); i++ {
+		f := named.Method(i)
+		if f.Name() == fname {
+			return f
+		}
+	}
+	return nil
+}
+
+
+func (v *Visitor) funcType(fd *ast.FuncDecl) *types.Func {
+	fname := fd.Name.Name
 	if fd.Recv == nil {
-		return scope.Lookup(name).(*types.Func)
+		f, ok := v.scope().Lookup(fname).(*types.Func)
+		if !ok {
+			return nil
+		}
+		return f
 	}
 	if len(fd.Recv.List) > 1 {
 		return nil
 	}
 	tname := scopeName(fd.Recv.List[0].Type)
-	st := scope.Lookup(tname).(*types.TypeName)
-	named := st.Type().(*types.Named)
-	for i := 0; i < named.NumMethods(); i++ {
-		f := named.Method(i)
-		if f.Name() == name {
-			return f
-		}
-	}
-	return nil
+	return v.recvFuncType(tname, fname)
 }
 
 type assignCall struct {
@@ -242,7 +261,7 @@ func (v *Visitor) Visit(node ast.Node) ast.Visitor {
 	switch x := node.(type) {
 	case *ast.File:
 	case *ast.FuncDecl:
-		f := v.getFuncType(x)
+		f := v.funcType(x)
 		if f == nil {
 			return nil
 		}
@@ -290,13 +309,10 @@ func (v *Visitor) Visit(node ast.Node) ast.Visitor {
 	return v
 }
 
-func getType(scope *types.Scope, name string) interface{} {
-	if scope == nil {
-		return nil
-	}
-	obj := scope.Lookup(name)
+func (v *Visitor) getType(name string) interface{} {
+	_, obj := v.scope().LookupParent(name, token.NoPos)
 	if obj == nil {
-		return getType(scope.Parent(), name)
+		return nil
 	}
 	switch x := obj.(type) {
 	case *types.Var:
@@ -309,8 +325,7 @@ func getType(scope *types.Scope, name string) interface{} {
 func (v *Visitor) descType(e ast.Expr) interface{} {
 	switch x := e.(type) {
 	case *ast.Ident:
-		scope := v.scopes[len(v.scopes)-1]
-		return getType(scope, x.Name)
+		return v.getType(x.Name)
 	case *ast.BasicLit:
 		return x.Kind
 	default:
@@ -329,10 +344,22 @@ func (v *Visitor) onCall(results []ast.Expr, ce *ast.CallExpr) {
 	}
 	right := sel.Sel
 	vname := left.Name
+	tname, _ := v.descType(left).(string)
 	fname := right.Name
 	c := call{}
-	for _, r := range results {
-		c.results = append(c.results, v.descType(r))
+	f := v.recvFuncType(tname, fname)
+	if f != nil {
+		sign := f.Type().(*types.Signature)
+		results := sign.Results()
+		for i := 0; i < results.Len(); i++ {
+			v := results.At(i)
+			c.results = append(c.results, v.Type().String())
+		}
+	} else {
+		for _, r := range results {
+			c.results = append(c.results, v.descType(r))
+		}
+
 	}
 	for _, a := range ce.Args {
 		c.params = append(c.params, v.descType(a))

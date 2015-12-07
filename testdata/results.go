@@ -41,7 +41,12 @@ func ResultsMismatchType(a argBad) {
 	println(s)
 }
 
-func ResultsMismatchTypes(a argBad, b argBad) {
+func ResultsMismatchTypes(a, b argBad) {
 	r1, r2 := a.Close(), b.Close()
 	println(r1, r2)
+}
+
+func ResultsMismatchDiscarded(a, b argBad) {
+	a.Close()
+	_ = b.Close()
 }
