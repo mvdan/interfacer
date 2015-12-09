@@ -327,7 +327,11 @@ func (v *Visitor) Visit(node ast.Node) ast.Visitor {
 			if iface == "" {
 				continue
 			}
-			if iface == v.params[name].String() {
+			param, e := v.params[name]
+			if !e {
+				continue
+			}
+			if iface == param.String() {
 				continue
 			}
 			pos := v.fset.Position(top.Pos())
