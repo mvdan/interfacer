@@ -5,6 +5,7 @@ package main
 
 import (
 	"bytes"
+	"go/token"
 	"io/ioutil"
 	"os"
 	"path/filepath"
@@ -28,8 +29,16 @@ func TestAll(t *testing.T) {
 		if err != nil {
 			t.Fatal(err)
 		}
+		p := &goPkg{
+			fset: token.NewFileSet(),
+		}
+		if err := p.parsePath(inPath); err != nil {
+			t.Fatal(err)
+		}
 		var b bytes.Buffer
-		parseFile(inPath, f, &b)
+		if err := p.check(&b); err != nil {
+			t.Fatal(err)
+		}
 		exp := string(expBytes)
 		got := b.String()
 		if exp != got {

@@ -4,6 +4,7 @@
 package main
 
 import (
+	"flag"
 	"fmt"
 	"go/ast"
 	"go/importer"
@@ -141,28 +142,62 @@ func interfaceMatching(calls map[string]call) string {
 }
 
 func main() {
-	parseFile("stdin.go", os.Stdin, os.Stdout)
+	flag.Parse()
+	p := &goPkg{
+		fset: token.NewFileSet(),
+	}
+	for _, fp := range flag.Args() {
+		if err := p.parsePath(fp); err != nil {
+			log.Fatal(err)
+		}
+	}
+	if err := p.check(os.Stdout); err != nil {
+		log.Fatal(err)
+	}
 }
 
-func parseFile(name string, r io.Reader, w io.Writer) {
-	fset := token.NewFileSet()
-	f, err := parser.ParseFile(fset, name, r, 0)
+type goPkg struct {
+	fset  *token.FileSet
+	files []*ast.File
+}
+
+func (p *goPkg) parsePath(fp string) error {
+	f, err := os.Open(fp)
 	if err != nil {
 		log.Fatal(err)
 	}
-
-	conf := types.Config{Importer: importer.Default()}
-	pkg, err := conf.Check("", fset, []*ast.File{f}, nil)
-	if err != nil {
+	defer f.Close()
+	if err := p.parseReader(fp, f); err != nil {
 		log.Fatal(err)
+	}
+	return nil
+}
+
+func (p *goPkg) parseReader(name string, r io.Reader) error {
+	f, err := parser.ParseFile(p.fset, name, r, 0)
+	if err != nil {
+		return err
+	}
+	p.files = append(p.files, f)
+	return nil
+}
+
+func (p *goPkg) check(w io.Writer) error {
+	conf := types.Config{Importer: importer.Default()}
+	pkg, err := conf.Check("", p.fset, p.files, nil)
+	if err != nil {
+		return err
 	}
 
 	v := &Visitor{
 		w:      w,
-		fset:   fset,
+		fset:   p.fset,
 		scopes: []*types.Scope{pkg.Scope()},
 	}
-	ast.Walk(v, f)
+	for _, f := range p.files {
+		ast.Walk(v, f)
+	}
+	return nil
 }
 
 type Visitor struct {
