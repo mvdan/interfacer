@@ -10,11 +10,12 @@ import (
 	"testing"
 )
 
-func doTest(t *testing.T, inPaths []string, outPath string) {
+func doTest(t *testing.T, inPath string) {
 	var b bytes.Buffer
-	if err := checkPaths(inPaths, &b); err != nil {
+	if err := checkPaths([]string{inPath}, &b); err != nil {
 		t.Fatal(err)
 	}
+	outPath := inPath + ".out"
 	expBytes, err := ioutil.ReadFile(outPath)
 	if err != nil {
 		t.Fatal(err)
@@ -28,13 +29,30 @@ func doTest(t *testing.T, inPaths []string, outPath string) {
 }
 
 func TestSingleFile(t *testing.T) {
-	testsGlob := filepath.Join("testdata", "*.go")
-	matches, err := filepath.Glob(testsGlob)
+	inGlob := filepath.Join("testdata", "*.go")
+	matches, err := filepath.Glob(inGlob)
 	if err != nil {
 		t.Fatal(err)
 	}
 	for _, inPath := range matches {
-		outPath := inPath + ".out"
-		doTest(t, []string{inPath}, outPath)
+		doTest(t, inPath)
+	}
+}
+
+func TestMultiPkg(t *testing.T) {
+	dirGlob := filepath.Join("testdata", "*")
+	matches, err := filepath.Glob(dirGlob)
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, inPath := range matches {
+		dir, err := isDir(inPath)
+		if err != nil {
+			t.Fatal(err)
+		}
+		if !dir {
+			continue
+		}
+		doTest(t, inPath)
 	}
 }
