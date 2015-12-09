@@ -171,6 +171,7 @@ func isGoFile(fi os.FileInfo) bool {
 
 type pathWalker struct {
 	paths   []string
+	first   bool
 	recurse bool
 }
 
@@ -178,7 +179,9 @@ func (pw *pathWalker) visit(path string, info os.FileInfo, err error) error {
 	if err != nil {
 		return err
 	}
-	if !pw.recurse && info.IsDir() {
+	if pw.first {
+		pw.first = false
+	} else if !pw.recurse && info.IsDir() {
 		return filepath.SkipDir
 	}
 	if isGoFile(info) {
@@ -188,7 +191,9 @@ func (pw *pathWalker) visit(path string, info os.FileInfo, err error) error {
 }
 
 func getPaths(p string) ([]string, error) {
-	pw := &pathWalker{}
+	pw := &pathWalker{
+		first: true,
+	}
 	if filepath.Base(p) == "..." {
 		return nil, fmt.Errorf("TODO: multi-package support")
 		p = filepath.Dir(p)
