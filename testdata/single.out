@@ -1,0 +1,3 @@
+testdata/single/simple.go:14: rc can be io.Closer
+testdata/single/simple.go:18: s can be io.Closer
+testdata/single/struct.go:17: rc can be io.Closer
