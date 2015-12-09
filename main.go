@@ -190,6 +190,7 @@ func (pw *pathWalker) visit(path string, info os.FileInfo, err error) error {
 func getPaths(p string) ([]string, error) {
 	pw := &pathWalker{}
 	if filepath.Base(p) == "..." {
+		return nil, fmt.Errorf("TODO: multi-package support")
 		p = filepath.Dir(p)
 		pw.recurse = true
 	}
