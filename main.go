@@ -14,6 +14,8 @@ import (
 	"io"
 	"log"
 	"os"
+	"path/filepath"
+	"strings"
 )
 
 func typeMap(t *types.Tuple) map[string]types.Type {
@@ -148,16 +150,74 @@ func main() {
 	}
 }
 
+func isDir(p string) (bool, error) {
+	fi, err := os.Stat(p)
+	if err != nil {
+		return false, err
+	}
+	return fi.Mode().IsDir(), nil
+}
+
+func isGoFile(fi os.FileInfo) bool {
+	name := fi.Name()
+	if fi.IsDir() {
+		return false
+	}
+	if strings.HasPrefix(name, ".") {
+		return false
+	}
+	return strings.HasSuffix(name, ".go")
+}
+
+type pathWalker struct {
+	paths   []string
+	recurse bool
+}
+
+func (pw *pathWalker) visit(path string, info os.FileInfo, err error) error {
+	if err != nil {
+		return err
+	}
+	if !pw.recurse && info.IsDir() {
+		return filepath.SkipDir
+	}
+	if isGoFile(info) {
+		pw.paths = append(pw.paths, path)
+	}
+	return nil
+}
+
+func getPaths(p string) ([]string, error) {
+	dir, err := isDir(p)
+	if err != nil {
+		return nil, err
+	}
+	if !dir {
+		return []string{p}, nil
+	}
+	pw := &pathWalker{}
+	if err := filepath.Walk(p, pw.visit); err != nil {
+		return nil, err
+	}
+	return pw.paths, nil
+}
+
 func checkPaths(paths []string, w io.Writer) error {
-	p := &goPkg{
+	gp := &goPkg{
 		fset: token.NewFileSet(),
 	}
-	for _, fp := range paths {
-		if err := p.parsePath(fp); err != nil {
+	for _, p := range paths {
+		paths, err := getPaths(p)
+		if err != nil {
 			return err
 		}
+		for _, fp := range paths {
+			if err := gp.parsePath(fp); err != nil {
+				return err
+			}
+		}
 	}
-	if err := p.check(w); err != nil {
+	if err := gp.check(w); err != nil {
 		return err
 	}
 	return nil
@@ -168,40 +228,40 @@ type goPkg struct {
 	files []*ast.File
 }
 
-func (p *goPkg) parsePath(fp string) error {
+func (gp *goPkg) parsePath(fp string) error {
 	f, err := os.Open(fp)
 	if err != nil {
 		return err
 	}
 	defer f.Close()
-	if err := p.parseReader(fp, f); err != nil {
+	if err := gp.parseReader(fp, f); err != nil {
 		return err
 	}
 	return nil
 }
 
-func (p *goPkg) parseReader(name string, r io.Reader) error {
-	f, err := parser.ParseFile(p.fset, name, r, 0)
+func (gp *goPkg) parseReader(name string, r io.Reader) error {
+	f, err := parser.ParseFile(gp.fset, name, r, 0)
 	if err != nil {
 		return err
 	}
-	p.files = append(p.files, f)
+	gp.files = append(gp.files, f)
 	return nil
 }
 
-func (p *goPkg) check(w io.Writer) error {
+func (gp *goPkg) check(w io.Writer) error {
 	conf := types.Config{Importer: importer.Default()}
-	pkg, err := conf.Check("", p.fset, p.files, nil)
+	pkg, err := conf.Check("", gp.fset, gp.files, nil)
 	if err != nil {
 		return err
 	}
 
 	v := &Visitor{
 		w:      w,
-		fset:   p.fset,
+		fset:   gp.fset,
 		scopes: []*types.Scope{pkg.Scope()},
 	}
-	for _, f := range p.files {
+	for _, f := range gp.files {
 		ast.Walk(v, f)
 	}
 	return nil
