@@ -143,17 +143,24 @@ func interfaceMatching(calls map[string]call) string {
 
 func main() {
 	flag.Parse()
+	if err := checkPaths(flag.Args(), os.Stdout); err != nil {
+		log.Fatal(err)
+	}
+}
+
+func checkPaths(paths []string, w io.Writer) error {
 	p := &goPkg{
 		fset: token.NewFileSet(),
 	}
-	for _, fp := range flag.Args() {
+	for _, fp := range paths {
 		if err := p.parsePath(fp); err != nil {
-			log.Fatal(err)
+			return err
 		}
 	}
-	if err := p.check(os.Stdout); err != nil {
-		log.Fatal(err)
+	if err := p.check(w); err != nil {
+		return err
 	}
+	return nil
 }
 
 type goPkg struct {
@@ -164,11 +171,11 @@ type goPkg struct {
 func (p *goPkg) parsePath(fp string) error {
 	f, err := os.Open(fp)
 	if err != nil {
-		log.Fatal(err)
+		return err
 	}
 	defer f.Close()
 	if err := p.parseReader(fp, f); err != nil {
-		log.Fatal(err)
+		return err
 	}
 	return nil
 }

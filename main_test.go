@@ -5,23 +5,14 @@ package main
 
 import (
 	"bytes"
-	"go/token"
 	"io/ioutil"
 	"path/filepath"
 	"testing"
 )
 
 func doTest(t *testing.T, inPaths []string, outPath string) {
-	p := &goPkg{
-		fset: token.NewFileSet(),
-	}
-	for _, inPath := range inPaths {
-		if err := p.parsePath(inPath); err != nil {
-			t.Fatal(err)
-		}
-	}
 	var b bytes.Buffer
-	if err := p.check(&b); err != nil {
+	if err := checkPaths(inPaths, &b); err != nil {
 		t.Fatal(err)
 	}
 	expBytes, err := ioutil.ReadFile(outPath)
@@ -36,7 +27,7 @@ func doTest(t *testing.T, inPaths []string, outPath string) {
 	}
 }
 
-func TestSingle(t *testing.T) {
+func TestSingleFile(t *testing.T) {
 	testsGlob := filepath.Join("testdata", "*.go")
 	matches, err := filepath.Glob(testsGlob)
 	if err != nil {
