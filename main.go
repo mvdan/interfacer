@@ -188,14 +188,21 @@ func (pw *pathWalker) visit(path string, info os.FileInfo, err error) error {
 }
 
 func getPaths(p string) ([]string, error) {
+	pw := &pathWalker{}
+	if filepath.Base(p) == "..." {
+		p = filepath.Dir(p)
+		pw.recurse = true
+	}
 	dir, err := isDir(p)
 	if err != nil {
 		return nil, err
 	}
 	if !dir {
+		if pw.recurse {
+			return nil, fmt.Errorf("Cannot recurse into file")
+		}
 		return []string{p}, nil
 	}
-	pw := &pathWalker{}
 	if err := filepath.Walk(p, pw.visit); err != nil {
 		return nil, err
 	}
