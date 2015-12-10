@@ -347,38 +347,6 @@ func (v *Visitor) funcType(fd *ast.FuncDecl) *types.Func {
 	return v.recvFuncType(tname, fname)
 }
 
-type assignCall struct {
-	left  []ast.Expr
-	right *ast.CallExpr
-}
-
-func assignCalls(as *ast.AssignStmt) []assignCall {
-	if len(as.Rhs) == 1 {
-		ce, ok := as.Rhs[0].(*ast.CallExpr)
-		if !ok {
-			return nil
-		}
-		return []assignCall{
-			{
-				left:  as.Lhs,
-				right: ce,
-			},
-		}
-	}
-	var calls []assignCall
-	for i, right := range as.Rhs {
-		ce, ok := right.(*ast.CallExpr)
-		if !ok {
-			continue
-		}
-		calls = append(calls, assignCall{
-			left:  []ast.Expr{as.Lhs[i]},
-			right: ce,
-		})
-	}
-	return calls
-}
-
 func (v *Visitor) Visit(node ast.Node) ast.Visitor {
 	switch x := node.(type) {
 	case *ast.File:
@@ -391,14 +359,8 @@ func (v *Visitor) Visit(node ast.Node) ast.Visitor {
 		sign := f.Type().(*types.Signature)
 		v.params = typeMap(sign.Params())
 		v.used = make(map[string]map[string]call, 0)
-	case *ast.AssignStmt:
-		calls := assignCalls(x)
-		for _, c := range calls {
-			v.onCall(c.left, c.right)
-		}
-		return nil
 	case *ast.CallExpr:
-		v.onCall(nil, x)
+		v.onCall(x)
 	case nil:
 		top := v.nodes[len(v.nodes)-1]
 		v.nodes = v.nodes[:len(v.nodes)-1]
@@ -455,7 +417,7 @@ func (v *Visitor) descType(e ast.Expr) interface{} {
 	}
 }
 
-func (v *Visitor) onCall(results []ast.Expr, ce *ast.CallExpr) {
+func (v *Visitor) onCall(ce *ast.CallExpr) {
 	sel, ok := ce.Fun.(*ast.SelectorExpr)
 	if !ok {
 		return
@@ -477,11 +439,6 @@ func (v *Visitor) onCall(results []ast.Expr, ce *ast.CallExpr) {
 			v := results.At(i)
 			c.results = append(c.results, v.Type().String())
 		}
-	} else {
-		for _, r := range results {
-			c.results = append(c.results, v.descType(r))
-		}
-
 	}
 	for _, a := range ce.Args {
 		c.params = append(c.params, v.descType(a))
