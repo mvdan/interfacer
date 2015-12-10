@@ -404,6 +404,9 @@ func (v *Visitor) descType(e ast.Expr) interface{} {
 }
 
 func (v *Visitor) onCall(ce *ast.CallExpr) {
+	if v.used == nil {
+		return
+	}
 	sel, ok := ce.Fun.(*ast.SelectorExpr)
 	if !ok {
 		return
