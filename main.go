@@ -391,8 +391,6 @@ func (v *Visitor) Visit(node ast.Node) ast.Visitor {
 		sign := f.Type().(*types.Signature)
 		v.params = typeMap(sign.Params())
 		v.used = make(map[string]map[string]call, 0)
-	case *ast.BlockStmt:
-	case *ast.ExprStmt:
 	case *ast.AssignStmt:
 		calls := assignCalls(x)
 		for _, c := range calls {
@@ -426,8 +424,6 @@ func (v *Visitor) Visit(node ast.Node) ast.Visitor {
 		}
 		v.params = nil
 		v.used = nil
-	default:
-		return nil
 	}
 	if node != nil {
 		v.nodes = append(v.nodes, node)
