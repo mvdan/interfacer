@@ -290,6 +290,10 @@ type Visitor struct {
 
 	params map[string]types.Type
 	used   map[string]map[string]call
+
+	// TODO: don't just discard params with untracked usage
+	unknown       map[string]struct{}
+	recordUnknown bool
 }
 
 func (v *Visitor) scope() *types.Scope {
@@ -352,6 +356,10 @@ func typeMap(t *types.Tuple) map[string]types.Type {
 }
 
 func (v *Visitor) Visit(node ast.Node) ast.Visitor {
+	var top ast.Node
+	if len(v.nodes) > 0 {
+		top = v.nodes[len(v.nodes)-1]
+	}
 	switch x := node.(type) {
 	case *ast.File:
 	case *ast.FuncDecl:
@@ -363,19 +371,32 @@ func (v *Visitor) Visit(node ast.Node) ast.Visitor {
 		sign := f.Type().(*types.Signature)
 		v.params = typeMap(sign.Params())
 		v.used = make(map[string]map[string]call, 0)
+		v.unknown = make(map[string]struct{})
 	case *ast.CallExpr:
-		v.onCall(x)
+		if wasParamCall := v.onCall(x); wasParamCall {
+			return nil
+		}
+	case *ast.BlockStmt:
+		v.recordUnknown = true
+	case *ast.Ident:
+		if !v.recordUnknown {
+			break
+		}
+		if _, e := v.params[x.Name]; e {
+			v.unknown[x.Name] = struct{}{}
+		}
 	case nil:
-		top := v.nodes[len(v.nodes)-1]
 		v.nodes = v.nodes[:len(v.nodes)-1]
 		fd, ok := top.(*ast.FuncDecl)
 		if !ok {
 			return nil
 		}
 		v.scopes = v.scopes[:len(v.scopes)-1]
-		v.onFuncEnded(fd)
+		v.funcEnded(fd)
 		v.params = nil
 		v.used = nil
+		v.unknown = nil
+		v.recordUnknown = false
 	}
 	if node != nil {
 		v.nodes = append(v.nodes, node)
@@ -407,20 +428,23 @@ func (v *Visitor) descType(e ast.Expr) interface{} {
 	}
 }
 
-func (v *Visitor) onCall(ce *ast.CallExpr) {
+func (v *Visitor) onCall(ce *ast.CallExpr) bool {
 	if v.used == nil {
-		return
+		return false
 	}
 	sel, ok := ce.Fun.(*ast.SelectorExpr)
 	if !ok {
-		return
+		return false
 	}
 	left, ok := sel.X.(*ast.Ident)
 	if !ok {
-		return
+		return false
 	}
 	right := sel.Sel
 	vname := left.Name
+	if _, e := v.params[vname]; !e {
+		return false
+	}
 	tname, _ := v.descType(left).(string)
 	fname := right.Name
 	c := call{}
@@ -440,10 +464,14 @@ func (v *Visitor) onCall(ce *ast.CallExpr) {
 		v.used[vname] = make(map[string]call)
 	}
 	v.used[vname][fname] = c
+	return true
 }
 
-func (v *Visitor) onFuncEnded(fd *ast.FuncDecl) {
+func (v *Visitor) funcEnded(fd *ast.FuncDecl) {
 	for name, methods := range v.used {
+		if _, e := v.unknown[name]; e {
+			continue
+		}
 		iface := interfaceMatching(methods)
 		if iface == "" {
 			continue
