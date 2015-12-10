@@ -6,6 +6,7 @@ package main
 import (
 	"bytes"
 	"io/ioutil"
+	"os"
 	"path/filepath"
 	"testing"
 )
@@ -28,7 +29,7 @@ func doTest(t *testing.T, inPath string) {
 	}
 }
 
-func TestSingleFile(t *testing.T) {
+func TestFile(t *testing.T) {
 	inGlob := filepath.Join("testdata", "*.go")
 	matches, err := filepath.Glob(inGlob)
 	if err != nil {
@@ -39,7 +40,15 @@ func TestSingleFile(t *testing.T) {
 	}
 }
 
-func TestMultiPkg(t *testing.T) {
+func isDir(p string) (bool, error) {
+	fi, err := os.Stat(p)
+	if err != nil {
+		return false, err
+	}
+	return fi.Mode().IsDir(), nil
+}
+
+func TestDir(t *testing.T) {
 	dirGlob := filepath.Join("testdata", "*")
 	matches, err := filepath.Glob(dirGlob)
 	if err != nil {

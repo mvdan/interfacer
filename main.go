@@ -145,19 +145,8 @@ func interfaceMatching(calls map[string]call) string {
 	return ""
 }
 
-func isDir(p string) (bool, error) {
-	fi, err := os.Stat(p)
-	if err != nil {
-		return false, err
-	}
-	return fi.Mode().IsDir(), nil
-}
-
-func isGoFile(fi os.FileInfo) bool {
-	name := fi.Name()
-	if fi.IsDir() {
-		return false
-	}
+func isGoFile(info os.FileInfo) bool {
+	name := info.Name()
 	if strings.HasPrefix(name, ".") {
 		return false
 	}
@@ -170,65 +159,88 @@ func isGoFile(fi os.FileInfo) bool {
 	return true
 }
 
-type pathWalker struct {
-	paths   []string
-	first   bool
-	recurse bool
+func getPaths(p string) ([]string, []string, error) {
+	f, err := os.Open(p)
+	if err != nil {
+		return nil, nil, err
+	}
+	defer f.Close()
+	info, err := f.Stat()
+	if err != nil {
+		return nil, nil, err
+	}
+	if !info.Mode().IsDir() {
+		return []string{p}, nil, nil
+	}
+	names, err := f.Readdirnames(-1)
+	if err != nil {
+		return nil, nil, err
+	}
+	var gofiles, dirs []string
+	for _, n := range names {
+		fp := filepath.Join(p, n)
+		info, err := os.Stat(fp)
+		if err != nil {
+			return nil, nil, err
+		}
+		if info.IsDir() {
+			dirs = append(dirs, fp)
+		} else if isGoFile(info) {
+			gofiles = append(gofiles, fp)
+		}
+	}
+	return gofiles, dirs, err
 }
 
-func (pw *pathWalker) visit(path string, info os.FileInfo, err error) error {
+func getPkgPaths(p string) ([][]string, error) {
+	recursive := filepath.Base(p) == "..."
+	if recursive {
+		p = filepath.Dir(p)
+	}
+	gofiles, dirs, err := getPaths(p)
 	if err != nil {
-		return err
+		return nil, err
 	}
-	if pw.first {
-		pw.first = false
-	} else if !pw.recurse && info.IsDir() {
-		return filepath.SkipDir
+	if !recursive {
+		dirs = nil
 	}
-	if isGoFile(info) {
-		pw.paths = append(pw.paths, path)
+	pkgPaths := [][]string{gofiles}
+	dirQueue := dirs
+	for len(dirQueue) > 0 {
+		d := dirQueue[0]
+		dirQueue = dirQueue[1:]
+		gofiles, dirs, err := getPaths(d)
+		if err != nil {
+			return nil, err
+		}
+		pkgPaths = append(pkgPaths, gofiles)
+		dirQueue = append(dirQueue, dirs...)
+	}
+	return pkgPaths, nil
+}
+
+func checkPaths(paths []string, w io.Writer) error {
+	for _, p := range paths {
+		pkgPaths, err := getPkgPaths(p)
+		if err != nil {
+			return err
+		}
+		for _, gofiles := range pkgPaths {
+			if err := checkPkg(gofiles, w); err != nil {
+				return err
+			}
+		}
 	}
 	return nil
 }
 
-func getPaths(p string) ([]string, error) {
-	pw := &pathWalker{
-		first: true,
-	}
-	if filepath.Base(p) == "..." {
-		return nil, fmt.Errorf("TODO: multi-package support")
-		p = filepath.Dir(p)
-		pw.recurse = true
-	}
-	dir, err := isDir(p)
-	if err != nil {
-		return nil, err
-	}
-	if !dir {
-		if pw.recurse {
-			return nil, fmt.Errorf("Cannot recurse into file")
-		}
-		return []string{p}, nil
-	}
-	if err := filepath.Walk(p, pw.visit); err != nil {
-		return nil, err
-	}
-	return pw.paths, nil
-}
-
-func checkPaths(paths []string, w io.Writer) error {
+func checkPkg(gofiles []string, w io.Writer) error {
 	gp := &goPkg{
 		fset: token.NewFileSet(),
 	}
-	for _, p := range paths {
-		paths, err := getPaths(p)
-		if err != nil {
+	for _, fp := range gofiles {
+		if err := gp.parsePath(fp); err != nil {
 			return err
-		}
-		for _, fp := range paths {
-			if err := gp.parsePath(fp); err != nil {
-				return err
-			}
 		}
 	}
 	if err := gp.check(w); err != nil {
