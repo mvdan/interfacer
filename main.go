@@ -207,6 +207,7 @@ func getPkgs(p string) ([]*build.Package, []string, error) {
 }
 
 func checkPaths(paths []string, w io.Writer) error {
+	conf := &types.Config{Importer: importer.Default()}
 	for _, p := range paths {
 		pkgs, basedirs, err := getPkgs(p)
 		if err != nil {
@@ -214,7 +215,7 @@ func checkPaths(paths []string, w io.Writer) error {
 		}
 		for i, pkg := range pkgs {
 			basedir := basedirs[i]
-			if err := checkPkg(pkg, basedir, w); err != nil {
+			if err := checkPkg(conf, pkg, basedir, w); err != nil {
 				return err
 			}
 		}
@@ -222,7 +223,7 @@ func checkPaths(paths []string, w io.Writer) error {
 	return nil
 }
 
-func checkPkg(pkg *build.Package, basedir string, w io.Writer) error {
+func checkPkg(conf *types.Config, pkg *build.Package, basedir string, w io.Writer) error {
 	if *verbose {
 		fmt.Fprintln(w, basedir)
 	}
@@ -235,7 +236,7 @@ func checkPkg(pkg *build.Package, basedir string, w io.Writer) error {
 			return err
 		}
 	}
-	if err := gp.check(w); err != nil {
+	if err := gp.check(conf, w); err != nil {
 		return err
 	}
 	return nil
@@ -267,8 +268,7 @@ func (gp *goPkg) parseReader(name string, r io.Reader) error {
 	return nil
 }
 
-func (gp *goPkg) check(w io.Writer) error {
-	conf := types.Config{Importer: importer.Default()}
+func (gp *goPkg) check(conf *types.Config, w io.Writer) error {
 	pkg, err := conf.Check("", gp.fset, gp.files, nil)
 	if err != nil {
 		return err
