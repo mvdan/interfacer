@@ -12,6 +12,24 @@ import (
 	"testing"
 )
 
+func want(t *testing.T, p string) (string, bool) {
+	outBytes, err := ioutil.ReadFile(p + ".out")
+	if err == nil {
+		return string(outBytes), false
+	}
+	if !os.IsNotExist(err) {
+		t.Fatal(err)
+	}
+	errBytes, err := ioutil.ReadFile(p + ".err")
+	if err == nil {
+		return string(errBytes), true
+	}
+	if !os.IsNotExist(err) {
+		t.Fatal(err)
+	}
+	return "", false
+}
+
 func doTest(t *testing.T, p string) {
 	if strings.HasSuffix(p, ".out") {
 		return
@@ -21,19 +39,29 @@ func doTest(t *testing.T, p string) {
 		inPath += "/..."
 	}
 	var b bytes.Buffer
-	if err := checkPaths([]string{inPath}, &b); err != nil {
-		t.Fatal(err)
+	err := checkPaths([]string{inPath}, &b)
+	exp, wantErr := want(t, p)
+	if wantErr {
+		if err == nil {
+			t.Fatalf("Wanted error in %s, but none found.", p)
+		}
+		got := err.Error()
+		if got[len(got)-1] != '\n' {
+			got += "\n"
+		}
+		if exp != got {
+			t.Fatalf("Error mismatch in %s:\nExpected:\n%sGot:\n%s",
+				p, exp, got)
+		}
+		return
 	}
-	outPath := p + ".out"
-	expBytes, err := ioutil.ReadFile(outPath)
 	if err != nil {
-		t.Fatal(err)
+		t.Fatalf("Did not want error in %s:\n%v", p, err)
 	}
-	exp := string(expBytes)
 	got := b.String()
 	if exp != got {
-		t.Fatalf("Mismatch in %s.\nExpected:\n%sGot:\n%s",
-			outPath, exp, got)
+		t.Fatalf("Output mismatch in %s:\nExpected:\n%sGot:\n%s",
+			p, exp, got)
 	}
 }
 
