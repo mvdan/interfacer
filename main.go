@@ -166,7 +166,13 @@ func isGoFile(fi os.FileInfo) bool {
 	if strings.HasPrefix(name, ".") {
 		return false
 	}
-	return strings.HasSuffix(name, ".go")
+	if !strings.HasSuffix(name, ".go") {
+		return false
+	}
+	if strings.HasSuffix(name, "_test.go") {
+		return false
+	}
+	return true
 }
 
 type pathWalker struct {
