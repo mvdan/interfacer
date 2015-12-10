@@ -364,26 +364,12 @@ func (v *Visitor) Visit(node ast.Node) ast.Visitor {
 	case nil:
 		top := v.nodes[len(v.nodes)-1]
 		v.nodes = v.nodes[:len(v.nodes)-1]
-		if _, ok := top.(*ast.FuncDecl); !ok {
+		fd, ok := top.(*ast.FuncDecl)
+		if !ok {
 			return nil
 		}
 		v.scopes = v.scopes[:len(v.scopes)-1]
-		for name, methods := range v.used {
-			iface := interfaceMatching(methods)
-			if iface == "" {
-				continue
-			}
-			param, e := v.params[name]
-			if !e {
-				continue
-			}
-			if iface == param.String() {
-				continue
-			}
-			pos := v.fset.Position(top.Pos())
-			fmt.Fprintf(v.w, "%s:%d: %s can be %s\n",
-				pos.Filename, pos.Line, name, iface)
-		}
+		v.onFuncEnded(fd)
 		v.params = nil
 		v.used = nil
 	}
@@ -447,4 +433,23 @@ func (v *Visitor) onCall(ce *ast.CallExpr) {
 		v.used[vname] = make(map[string]call)
 	}
 	v.used[vname][fname] = c
+}
+
+func (v *Visitor) onFuncEnded(fd *ast.FuncDecl) {
+	for name, methods := range v.used {
+		iface := interfaceMatching(methods)
+		if iface == "" {
+			continue
+		}
+		param, e := v.params[name]
+		if !e {
+			continue
+		}
+		if iface == param.String() {
+			continue
+		}
+		pos := v.fset.Position(fd.Pos())
+		fmt.Fprintf(v.w, "%s:%d: %s can be %s\n",
+			pos.Filename, pos.Line, name, iface)
+	}
 }
