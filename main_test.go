@@ -6,17 +6,24 @@ package main
 import (
 	"bytes"
 	"io/ioutil"
-	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 )
 
-func doTest(t *testing.T, inPath string) {
+func doTest(t *testing.T, p string) {
+	if strings.HasSuffix(p, ".out") {
+		return
+	}
+	inPath := p
+	if !strings.HasSuffix(p, ".go") {
+		inPath += "/..."
+	}
 	var b bytes.Buffer
 	if err := checkPaths([]string{inPath}, &b); err != nil {
 		t.Fatal(err)
 	}
-	outPath := inPath + ".out"
+	outPath := p + ".out"
 	expBytes, err := ioutil.ReadFile(outPath)
 	if err != nil {
 		t.Fatal(err)
@@ -29,39 +36,13 @@ func doTest(t *testing.T, inPath string) {
 	}
 }
 
-func TestFile(t *testing.T) {
-	inGlob := filepath.Join("testdata", "*.go")
+func TestAll(t *testing.T) {
+	inGlob := filepath.Join("testdata", "*")
 	matches, err := filepath.Glob(inGlob)
 	if err != nil {
 		t.Fatal(err)
 	}
-	for _, inPath := range matches {
-		doTest(t, inPath)
-	}
-}
-
-func isDir(p string) (bool, error) {
-	fi, err := os.Stat(p)
-	if err != nil {
-		return false, err
-	}
-	return fi.Mode().IsDir(), nil
-}
-
-func TestDir(t *testing.T) {
-	dirGlob := filepath.Join("testdata", "*")
-	matches, err := filepath.Glob(dirGlob)
-	if err != nil {
-		t.Fatal(err)
-	}
-	for _, inPath := range matches {
-		dir, err := isDir(inPath)
-		if err != nil {
-			t.Fatal(err)
-		}
-		if !dir {
-			continue
-		}
-		doTest(t, inPath)
+	for _, p := range matches {
+		doTest(t, p)
 	}
 }
