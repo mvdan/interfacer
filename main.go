@@ -12,7 +12,6 @@ import (
 	"go/token"
 	"go/types"
 	"io"
-	"log"
 	"os"
 	"path/filepath"
 	"strings"
@@ -20,15 +19,20 @@ import (
 
 func init() {
 	if err := typesInit(); err != nil {
-		log.Fatal(err)
+		errExit(err)
 	}
 }
 
 func main() {
 	flag.Parse()
 	if err := checkPaths(flag.Args(), os.Stdout); err != nil {
-		log.Fatal(err)
+		errExit(err)
 	}
+}
+
+func errExit(err error) {
+	fmt.Fprintf(os.Stderr, "%v\n", err)
+	os.Exit(1)
 }
 
 type call struct {
