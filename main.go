@@ -18,17 +18,15 @@ import (
 	"strings"
 )
 
-func typeMap(t *types.Tuple) map[string]types.Type {
-	m := make(map[string]types.Type, t.Len())
-	for i := 0; i < t.Len(); i++ {
-		p := t.At(i)
-		m[p.Name()] = p.Type()
-	}
-	return m
-}
-
 func init() {
 	if err := typesInit(); err != nil {
+		log.Fatal(err)
+	}
+}
+
+func main() {
+	flag.Parse()
+	if err := checkPaths(flag.Args(), os.Stdout); err != nil {
 		log.Fatal(err)
 	}
 }
@@ -141,13 +139,6 @@ func interfaceMatching(calls map[string]call) string {
 		}
 	}
 	return ""
-}
-
-func main() {
-	flag.Parse()
-	if err := checkPaths(flag.Args(), os.Stdout); err != nil {
-		log.Fatal(err)
-	}
 }
 
 func isDir(p string) (bool, error) {
@@ -345,6 +336,15 @@ func (v *Visitor) funcType(fd *ast.FuncDecl) *types.Func {
 	}
 	tname := scopeName(fd.Recv.List[0].Type)
 	return v.recvFuncType(tname, fname)
+}
+
+func typeMap(t *types.Tuple) map[string]types.Type {
+	m := make(map[string]types.Type, t.Len())
+	for i := 0; i < t.Len(); i++ {
+		p := t.At(i)
+		m[p.Name()] = p.Type()
+	}
+	return m
 }
 
 func (v *Visitor) Visit(node ast.Node) ast.Visitor {
