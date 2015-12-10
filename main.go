@@ -15,6 +15,7 @@ import (
 	"io"
 	"os"
 	"path/filepath"
+	"strings"
 )
 
 func init() {
@@ -178,7 +179,10 @@ func getPaths(p string) ([]string, []string, error) {
 			return nil, nil, err
 		}
 		if !match {
-			println(n)
+			continue
+		}
+		// TODO: Fix package foo vs foo_test breakage
+		if strings.HasSuffix(n, "_test.go") {
 			continue
 		}
 		gofiles = append(gofiles, fp)
