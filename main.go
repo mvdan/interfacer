@@ -17,6 +17,10 @@ import (
 	"path/filepath"
 )
 
+var (
+	verbose = flag.Bool("v", false, "print the names of packages as they are checked")
+)
+
 func init() {
 	if err := typesInit(); err != nil {
 		errExit(err)
@@ -219,6 +223,9 @@ func checkPaths(paths []string, w io.Writer) error {
 }
 
 func checkPkg(pkg *build.Package, basedir string, w io.Writer) error {
+	if *verbose {
+		fmt.Fprintln(w, basedir)
+	}
 	gp := &goPkg{
 		fset: token.NewFileSet(),
 	}
