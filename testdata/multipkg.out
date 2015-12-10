@@ -1,2 +1,2 @@
-testdata/multipkg/simple.go:7: rc can be io.Closer
-testdata/multipkg/pkg2/simple.go:7: rc can be io.Closer
+multipkg/simple.go:7: rc can be io.Closer
+multipkg/pkg2/simple.go:7: rc can be io.Closer

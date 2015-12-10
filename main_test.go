@@ -6,6 +6,7 @@ package main
 import (
 	"bytes"
 	"io/ioutil"
+	"os"
 	"path/filepath"
 	"strings"
 	"testing"
@@ -37,12 +38,17 @@ func doTest(t *testing.T, p string) {
 }
 
 func TestAll(t *testing.T) {
-	inGlob := filepath.Join("testdata", "*")
-	matches, err := filepath.Glob(inGlob)
+	if err := os.Chdir("testdata"); err != nil {
+		t.Fatal(err)
+	}
+	matches, err := filepath.Glob("*")
 	if err != nil {
 		t.Fatal(err)
 	}
 	for _, p := range matches {
 		doTest(t, p)
+	}
+	if err := os.Chdir(".."); err != nil {
+		t.Fatal(err)
 	}
 }

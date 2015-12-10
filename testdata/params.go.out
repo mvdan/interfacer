@@ -1,6 +1,6 @@
-testdata/params.go:13: rc can be io.Reader
-testdata/params.go:24: rs can be io.Seeker
-testdata/params.go:33: rs can be io.Reader
-testdata/params.go:42: rs can be io.Reader
-testdata/params.go:54: rc can be io.Reader
-testdata/params.go:79: a can be io.Reader
+params.go:13: rc can be io.Reader
+params.go:24: rs can be io.Seeker
+params.go:33: rs can be io.Reader
+params.go:42: rs can be io.Reader
+params.go:54: rc can be io.Reader
+params.go:79: a can be io.Reader
