@@ -7,6 +7,7 @@ import (
 	"flag"
 	"fmt"
 	"go/ast"
+	"go/build"
 	"go/importer"
 	"go/parser"
 	"go/token"
@@ -14,7 +15,6 @@ import (
 	"io"
 	"os"
 	"path/filepath"
-	"strings"
 )
 
 func init() {
@@ -145,20 +145,6 @@ func interfaceMatching(calls map[string]call) string {
 	return ""
 }
 
-func isGoFile(info os.FileInfo) bool {
-	name := info.Name()
-	if strings.HasPrefix(name, ".") {
-		return false
-	}
-	if !strings.HasSuffix(name, ".go") {
-		return false
-	}
-	if strings.HasSuffix(name, "_test.go") {
-		return false
-	}
-	return true
-}
-
 func getPaths(p string) ([]string, []string, error) {
 	f, err := os.Open(p)
 	if err != nil {
@@ -185,9 +171,17 @@ func getPaths(p string) ([]string, []string, error) {
 		}
 		if info.IsDir() {
 			dirs = append(dirs, fp)
-		} else if isGoFile(info) {
-			gofiles = append(gofiles, fp)
+			continue
 		}
+		match, err := build.Default.MatchFile(p, n)
+		if err != nil {
+			return nil, nil, err
+		}
+		if !match {
+			println(n)
+			continue
+		}
+		gofiles = append(gofiles, fp)
 	}
 	return gofiles, dirs, err
 }
