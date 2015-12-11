@@ -95,19 +95,6 @@ func paramsMatch(types1 []types.Type, args2 []interface{}) bool {
 	return true
 }
 
-func resultEqual(t1 types.Type, e2 interface{}) bool {
-	switch x := e2.(type) {
-	case types.Type:
-		return types.ConvertibleTo(x, t1)
-	case nil:
-		// assigning to _
-		return true
-	default:
-		panic("Unexpected result type")
-		return false
-	}
-}
-
 func resultsMatch(wanted, got []types.Type) bool {
 	if len(got) == 0 {
 		return true
@@ -117,7 +104,7 @@ func resultsMatch(wanted, got []types.Type) bool {
 	}
 	for i, t1 := range wanted {
 		t2 := got[i]
-		if !resultEqual(t1, t2) {
+		if !types.ConvertibleTo(t2, t1) {
 			return false
 		}
 	}
