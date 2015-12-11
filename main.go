@@ -60,8 +60,17 @@ func resultsMatch(wanted, got []types.Type) bool {
 	return typesMatch(wanted, got)
 }
 
-func interfaceMatching(calls map[string]funcSign) string {
-	matchesIface := func(decls map[string]funcSign) bool {
+func usedMatch(t types.Type, usedAs []types.Type) bool {
+	for _, u := range usedAs {
+		if !types.ConvertibleTo(u, t) {
+			return false
+		}
+	}
+	return true
+}
+
+func interfaceMatching(calls map[string]funcSign, usedAs []types.Type) string {
+	matchesIface := func(decls map[string]funcType) bool {
 		if len(calls) > len(decls) {
 			return false
 		}
@@ -74,6 +83,9 @@ func interfaceMatching(calls map[string]funcSign) string {
 				return false
 			}
 			if !resultsMatch(d.results, c.results) {
+				return false
+			}
+			if !usedMatch(d.t, usedAs) {
 				return false
 			}
 		}
@@ -224,6 +236,7 @@ func (gp *goPkg) check(conf *types.Config, w io.Writer) error {
 	info := &types.Info{
 		Types: make(map[ast.Expr]types.TypeAndValue),
 		Defs:  make(map[*ast.Ident]types.Object),
+		Uses:  make(map[*ast.Ident]types.Object),
 	}
 	_, err := conf.Check(gp.Name, gp.fset, gp.files, info)
 	if err != nil {
@@ -249,11 +262,10 @@ type Visitor struct {
 	nodes []ast.Node
 
 	params map[string]types.Type
-	used   map[string]map[string]funcSign
+	called map[string]map[string]funcSign
 
-	// TODO: don't just discard params with untracked usage
-	unknown       map[string]struct{}
-	recordUnknown bool
+	recUsed bool
+	usedAs  map[string][]types.Type
 }
 
 func typeMap(t *types.Tuple) map[string]types.Type {
@@ -276,29 +288,35 @@ func (v *Visitor) Visit(node ast.Node) ast.Visitor {
 		f := v.Defs[x.Name].(*types.Func)
 		sign := f.Type().(*types.Signature)
 		v.params = typeMap(sign.Params())
-		v.used = make(map[string]map[string]funcSign)
-		v.unknown = make(map[string]struct{})
+		v.called = make(map[string]map[string]funcSign)
+		v.usedAs = make(map[string][]types.Type)
+	case *ast.BlockStmt:
+		v.recUsed = true
+	case *ast.Ident:
+		if !v.recUsed {
+			break
+		}
+		if v.usedAs == nil {
+			break
+		}
+		name := x.Name
+		u := v.Uses[x]
+		if u == nil {
+			break
+		}
+		v.usedAs[name] = append(v.usedAs[name], u.Type())
 	case *ast.CallExpr:
 		if wasParamCall := v.onCall(x); wasParamCall {
 			return nil
-		}
-	case *ast.BlockStmt:
-		v.recordUnknown = true
-	case *ast.Ident:
-		if !v.recordUnknown {
-			break
-		}
-		if _, e := v.params[x.Name]; e {
-			v.unknown[x.Name] = struct{}{}
 		}
 	case nil:
 		v.nodes = v.nodes[:len(v.nodes)-1]
 		if _, ok := top.(*ast.FuncDecl); ok {
 			v.funcEnded(top.Pos())
 			v.params = nil
-			v.used = nil
-			v.unknown = nil
-			v.recordUnknown = false
+			v.called = nil
+			v.usedAs = nil
+			v.recUsed = false
 		}
 	}
 	if node != nil {
@@ -317,7 +335,7 @@ func funcSignature(t types.Type) *types.Signature {
 }
 
 func (v *Visitor) onCall(ce *ast.CallExpr) bool {
-	if v.used == nil {
+	if v.called == nil {
 		return false
 	}
 	sel, ok := ce.Fun.(*ast.SelectorExpr)
@@ -342,20 +360,18 @@ func (v *Visitor) onCall(ce *ast.CallExpr) bool {
 	for _, a := range ce.Args {
 		c.params = append(c.params, v.Types[a].Type)
 	}
-	if _, e := v.used[vname]; !e {
-		v.used[vname] = make(map[string]funcSign)
+	if _, e := v.called[vname]; !e {
+		v.called[vname] = make(map[string]funcSign)
 	}
 	fname := sel.Sel.Name
-	v.used[vname][fname] = c
+	v.called[vname][fname] = c
 	return true
 }
 
 func (v *Visitor) funcEnded(pos token.Pos) {
-	for name, methods := range v.used {
-		if _, e := v.unknown[name]; e {
-			continue
-		}
-		iface := interfaceMatching(methods)
+	for name, methods := range v.called {
+		usedAs := v.usedAs[name]
+		iface := interfaceMatching(methods, usedAs)
 		if iface == "" {
 			continue
 		}
