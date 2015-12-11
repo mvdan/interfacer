@@ -284,6 +284,10 @@ func paramType(sign *types.Signature, i int) types.Type {
 	params := sign.Params()
 	extra := sign.Variadic() && i >= params.Len()-1
 	if !extra {
+		if i >= params.Len() {
+			// builtins with multiple signatures
+			return nil
+		}
 		return params.At(i).Type()
 	}
 	stype := params.At(params.Len() - 1).Type().(*types.Slice)

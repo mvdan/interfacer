@@ -89,3 +89,9 @@ func ArgsMismatchNum(a argBad) {
 func ArgsExtra() {
 	fmt.Printf("%d %v\n", 12, nil)
 }
+
+func BuiltinExtra() {
+	i := 2
+	b := make([]byte, i)
+	println(b)
+}
