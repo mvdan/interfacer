@@ -61,8 +61,11 @@ func resultsMatch(wanted, got []types.Type) bool {
 }
 
 func usedMatch(t types.Type, usedAs []types.Type) bool {
+	if len(usedAs) < 1 {
+		return true
+	}
 	for _, u := range usedAs {
-		if !types.ConvertibleTo(u, t) {
+		if !types.ConvertibleTo(t, u) {
 			return false
 		}
 	}
@@ -70,29 +73,29 @@ func usedMatch(t types.Type, usedAs []types.Type) bool {
 }
 
 func interfaceMatching(calls map[string]funcSign, usedAs []types.Type) string {
-	matchesIface := func(decls map[string]funcType) bool {
-		if len(calls) > len(decls) {
+	matchesIface := func(iface ifaceSign) bool {
+		if len(calls) > len(iface.funcs) {
 			return false
 		}
-		for n, d := range decls {
-			c, e := calls[n]
+		if !usedMatch(iface.t, usedAs) {
+			return false
+		}
+		for name, f := range iface.funcs {
+			c, e := calls[name]
 			if !e {
 				return false
 			}
-			if !typesMatch(d.params, c.params) {
+			if !typesMatch(f.params, c.params) {
 				return false
 			}
-			if !resultsMatch(d.results, c.results) {
-				return false
-			}
-			if !usedMatch(d.t, usedAs) {
+			if !resultsMatch(f.results, c.results) {
 				return false
 			}
 		}
 		return true
 	}
-	for name, decls := range parsed {
-		if matchesIface(decls) {
+	for name, iface := range parsed {
+		if matchesIface(iface) {
 			return name
 		}
 	}
@@ -300,6 +303,9 @@ func (v *Visitor) Visit(node ast.Node) ast.Visitor {
 			break
 		}
 		name := x.Name
+		// TODO: this is the type of what we give, not what it
+		// ends up being. e.g. the call argument, not the func
+		// param.
 		u := v.Uses[x]
 		if u == nil {
 			break

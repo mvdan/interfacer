@@ -40,13 +40,13 @@ type funcSign struct {
 	results []types.Type
 }
 
-type funcType struct {
-	funcSign
-
+type ifaceSign struct {
 	t types.Type
+
+	funcs map[string]funcSign
 }
 
-var parsed map[string]map[string]funcType
+var parsed map[string]ifaceSign
 
 func typesInit() error {
 	fset := token.NewFileSet()
@@ -69,7 +69,7 @@ func typesInit() error {
 	}
 	pos := pkg.Scope().Lookup("foo").Pos()
 
-	parsed = make(map[string]map[string]funcType, len(suggested))
+	parsed = make(map[string]ifaceSign, len(suggested))
 	for _, v := range suggested {
 		tv, err := types.Eval(fset, pkg, pos, v)
 		if err != nil {
@@ -85,17 +85,17 @@ func typesInit() error {
 		if _, e := parsed[ifname]; e {
 			return fmt.Errorf("%s is duplicated", ifname)
 		}
-		parsed[ifname] = make(map[string]funcType, iface.NumMethods())
+		parsed[ifname] = ifaceSign{
+			t: iface,
+			funcs: make(map[string]funcSign, iface.NumMethods()),
+		}
 		for i := 0; i < iface.NumMethods(); i++ {
 			f := iface.Method(i)
 			fname := f.Name()
 			sign := f.Type().(*types.Signature)
-			parsed[ifname][fname] = funcType{
-				t: sign,
-				funcSign: funcSign{
-					params:  typeList(sign.Params()),
-					results: typeList(sign.Results()),
-				},
+			parsed[ifname].funcs[fname] = funcSign{
+				params:  typeList(sign.Params()),
+				results: typeList(sign.Results()),
 			}
 		}
 	}
