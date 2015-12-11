@@ -15,7 +15,6 @@ import (
 	"io"
 	"os"
 	"path/filepath"
-	"strings"
 )
 
 var (
@@ -322,46 +321,13 @@ func scopeName(e ast.Expr) string {
 	}
 }
 
-func (v *Visitor) recvFuncType(tname, fname string) *types.Func {
-	parts := strings.Split(tname, ".")
-	var obj types.Object
-	if len(parts) == 2 && parts[0] == v.pkg.Name {
-		parts = parts[1:]
-	}
-	if len(parts) == 1 {
-		_, obj = v.scope().LookupParent(parts[0], token.NoPos)
-	}
-	st, ok := obj.(*types.TypeName)
-	if !ok {
-		return nil
-	}
-	named, ok := st.Type().(*types.Named)
-	if !ok {
-		return nil
-	}
-	for i := 0; i < named.NumMethods(); i++ {
-		f := named.Method(i)
-		if f.Name() == fname {
-			return f
-		}
-	}
-	return nil
-}
-
 func (v *Visitor) funcType(fd *ast.FuncDecl) *types.Func {
 	fname := fd.Name.Name
-	if fd.Recv == nil {
-		f, ok := v.scope().Lookup(fname).(*types.Func)
-		if !ok {
-			return nil
-		}
-		return f
-	}
-	if len(fd.Recv.List) > 1 {
+	f, ok := v.scope().Lookup(fname).(*types.Func)
+	if !ok {
 		return nil
 	}
-	tname := scopeName(fd.Recv.List[0].Type)
-	return v.recvFuncType(tname, fname)
+	return f
 }
 
 func typeMap(t *types.Tuple) map[string]types.Type {
@@ -435,6 +401,45 @@ func (v *Visitor) getType(name string) interface{} {
 	}
 }
 
+type methoder interface {
+	NumMethods() int
+	Method(i int) *types.Func
+}
+
+func extNamed(t types.Type) *types.Named {
+	switch x := t.(type) {
+	case *types.Named:
+		return x
+	case *types.Pointer:
+		return extNamed(x.Elem())
+	default:
+		panic("Unexpected type")
+	}
+}
+
+func methods(t types.Type) methoder {
+	named := extNamed(t)
+	if iface, ok := named.Underlying().(*types.Interface); ok {
+		return iface
+	}
+	return named
+}
+
+func (v *Visitor) dType(t, f *ast.Ident) *types.Func {
+	obj := v.scope().Lookup(t.Name)
+	if obj == nil {
+		return nil
+	}
+	found := methods(obj.Type())
+	for i := 0; i < found.NumMethods(); i++ {
+		m := found.Method(i)
+		if m.Name() == f.Name {
+			return m
+		}
+	}
+	return nil
+}
+
 func (v *Visitor) descType(e ast.Expr) interface{} {
 	switch x := e.(type) {
 	case *ast.Ident:
@@ -463,17 +468,16 @@ func (v *Visitor) onCall(ce *ast.CallExpr) bool {
 	if _, e := v.params[vname]; !e {
 		return false
 	}
-	tname, _ := v.descType(left).(string)
-	fname := right.Name
 	c := call{}
-	f := v.recvFuncType(tname, fname)
-	if f != nil {
-		sign := f.Type().(*types.Signature)
-		results := sign.Results()
-		for i := 0; i < results.Len(); i++ {
-			v := results.At(i)
-			c.results = append(c.results, v.Type().String())
-		}
+	f := v.dType(left, right)
+	if f == nil {
+		return false
+	}
+	sign := f.Type().(*types.Signature)
+	results := sign.Results()
+	for i := 0; i < results.Len(); i++ {
+		v := results.At(i)
+		c.results = append(c.results, v.Type().String())
 	}
 	for _, a := range ce.Args {
 		c.params = append(c.params, v.descType(a))
@@ -481,6 +485,7 @@ func (v *Visitor) onCall(ce *ast.CallExpr) bool {
 	if _, e := v.used[vname]; !e {
 		v.used[vname] = make(map[string]call)
 	}
+	fname := right.Name
 	v.used[vname][fname] = c
 	return true
 }
