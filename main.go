@@ -270,9 +270,9 @@ type Visitor struct {
 
 	params map[string]types.Type
 	called map[string]map[string]funcSign
+	usedAs map[string][]types.Type
 
 	inBlock bool
-	usedAs  map[string][]types.Type
 }
 
 func typeMap(t *types.Tuple) map[string]types.Type {
@@ -296,6 +296,13 @@ func paramType(sign *types.Signature, i int) types.Type {
 	}
 	stype := params.At(params.Len() - 1).Type().(*types.Slice)
 	return stype.Elem()
+}
+
+func (v *Visitor) addUsed(name string, as types.Type) {
+	if as == nil {
+		return
+	}
+	v.usedAs[name] = append(v.usedAs[name], as)
 }
 
 func (v *Visitor) Visit(node ast.Node) ast.Visitor {
@@ -330,11 +337,7 @@ func (v *Visitor) Visit(node ast.Node) ast.Visitor {
 			if _, e := v.params[name]; !e {
 				continue
 			}
-			vtype := v.Types[lid].Type
-			if vtype == nil {
-				continue
-			}
-			v.usedAs[name] = append(v.usedAs[name], vtype)
+			v.addUsed(name, v.Types[lid].Type)
 		}
 	case *ast.CallExpr:
 		if !v.inBlock {
@@ -356,11 +359,7 @@ func (v *Visitor) Visit(node ast.Node) ast.Visitor {
 			if _, e := v.params[name]; !e {
 				continue
 			}
-			ptype := paramType(sign, i)
-			if ptype == nil {
-				continue
-			}
-			v.usedAs[name] = append(v.usedAs[name], ptype)
+			v.addUsed(name, paramType(sign, i))
 		}
 		v.onCall(x)
 	case nil:
