@@ -13,6 +13,9 @@ import (
 )
 
 var suggested = [...]string{
+	"error",
+	"fmt.GoStringer",
+	"fmt.Stringer",
 	"io.ByteReader",
 	"io.ByteScanner",
 	"io.ByteWriter",
@@ -33,6 +36,7 @@ var suggested = [...]string{
 	"io.Writer",
 	"io.WriterAt",
 	"io.WriterTo",
+	"sort.Interface",
 }
 
 type funcSign struct {
@@ -53,8 +57,15 @@ func typesInit() error {
 	// Simple program that imports and uses all needed packages
 	const typesProgram = `
 	package types
-	import "io"
-	func foo(r io.Reader) {
+	import (
+		"fmt"
+		"io"
+		"sort"
+	)
+	func foo() {
+		var _ fmt.Stringer
+		var _ io.Reader
+		var _ sort.Interface
 	}
 	`
 	f, err := parser.ParseFile(fset, "foo.go", typesProgram, 0)
