@@ -92,6 +92,9 @@ func getDirs(d string, recursive bool) ([]string, error) {
 		if err != nil {
 			return err
 		}
+		if info.Name() == "testdata" {
+			return filepath.SkipDir
+		}
 		if info.IsDir() {
 			dirs = append(dirs, path)
 			if !recursive {
