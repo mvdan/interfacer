@@ -78,7 +78,6 @@ func paramEqual(t1 types.Type, a2 interface{}) bool {
 		}
 	default:
 		panic("Unexpected param type")
-		return false
 	}
 }
 
@@ -425,15 +424,7 @@ func (v *Visitor) getType(id *ast.Ident) types.Type {
 	if obj == nil {
 		panic("Could not find ident type")
 	}
-	switch x := obj.(type) {
-	case *types.Var:
-		return x.Type()
-	case *types.Const:
-		return x.Type()
-	default:
-		fmt.Printf("%T\n", x)
-		panic("Unexpected object type")
-	}
+	return obj.Type()
 }
 
 func (v *Visitor) descType(e ast.Expr) interface{} {
