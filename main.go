@@ -15,6 +15,7 @@ import (
 	"io"
 	"os"
 	"path/filepath"
+	"strings"
 )
 
 var (
@@ -172,7 +173,7 @@ func getPkgs(p string) ([]*build.Package, []string, error) {
 		}
 		if !info.IsDir() {
 			pkg := &build.Package{
-				Name:    ".",
+				Name:    "stdin",
 				GoFiles: []string{p},
 			}
 			return []*build.Package{pkg}, []string{"."}, nil
@@ -228,7 +229,8 @@ func checkPkg(conf *types.Config, pkg *build.Package, basedir string, w io.Write
 		fmt.Fprintln(w, basedir)
 	}
 	gp := &goPkg{
-		fset: token.NewFileSet(),
+		Package: pkg,
+		fset:    token.NewFileSet(),
 	}
 	for _, p := range pkg.GoFiles {
 		fp := filepath.Join(basedir, p)
@@ -243,6 +245,8 @@ func checkPkg(conf *types.Config, pkg *build.Package, basedir string, w io.Write
 }
 
 type goPkg struct {
+	*build.Package
+
 	fset  *token.FileSet
 	files []*ast.File
 }
@@ -269,12 +273,13 @@ func (gp *goPkg) parseReader(name string, r io.Reader) error {
 }
 
 func (gp *goPkg) check(conf *types.Config, w io.Writer) error {
-	pkg, err := conf.Check("", gp.fset, gp.files, nil)
+	pkg, err := conf.Check(gp.Name, gp.fset, gp.files, nil)
 	if err != nil {
 		return err
 	}
 
 	v := &Visitor{
+		pkg:    gp.Package,
 		w:      w,
 		fset:   gp.fset,
 		scopes: []*types.Scope{pkg.Scope()},
@@ -286,6 +291,8 @@ func (gp *goPkg) check(conf *types.Config, w io.Writer) error {
 }
 
 type Visitor struct {
+	pkg *build.Package
+
 	w      io.Writer
 	fset   *token.FileSet
 	scopes []*types.Scope
@@ -316,7 +323,14 @@ func scopeName(e ast.Expr) string {
 }
 
 func (v *Visitor) recvFuncType(tname, fname string) *types.Func {
-	_, obj := v.scope().LookupParent(tname, token.NoPos)
+	parts := strings.Split(tname, ".")
+	var obj types.Object
+	if len(parts) == 2 && parts[0] == v.pkg.Name {
+		parts = parts[1:]
+	}
+	if len(parts) == 1 {
+		_, obj = v.scope().LookupParent(parts[0], token.NoPos)
+	}
 	st, ok := obj.(*types.TypeName)
 	if !ok {
 		return nil
