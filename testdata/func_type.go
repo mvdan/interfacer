@@ -2,7 +2,7 @@ package foo
 
 type fooFunc func() error
 
-type st struct{
+type st struct {
 	foo fooFunc
 }
 
