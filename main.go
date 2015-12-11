@@ -325,9 +325,7 @@ func (v *Visitor) Visit(node ast.Node) ast.Visitor {
 			ptype := paramType(sign, i)
 			v.usedAs[name] = append(v.usedAs[name], ptype)
 		}
-		if wasParamCall := v.onCall(x); wasParamCall {
-			return nil
-		}
+		v.onCall(x)
 	case nil:
 		v.nodes = v.nodes[:len(v.nodes)-1]
 		if _, ok := top.(*ast.FuncDecl); ok {
@@ -356,25 +354,25 @@ func funcSignature(t types.Type) *types.Signature {
 	}
 }
 
-func (v *Visitor) onCall(ce *ast.CallExpr) bool {
+func (v *Visitor) onCall(ce *ast.CallExpr) {
 	if v.called == nil {
-		return false
+		return
 	}
 	sel, ok := ce.Fun.(*ast.SelectorExpr)
 	if !ok {
-		return false
+		return
 	}
 	left, ok := sel.X.(*ast.Ident)
 	if !ok {
-		return false
+		return
 	}
 	vname := left.Name
 	if _, e := v.params[vname]; !e {
-		return false
+		return
 	}
 	sign := funcSignature(v.Types[ce.Fun].Type)
 	if sign == nil {
-		return false
+		return
 	}
 	c := funcSign{}
 	results := sign.Results()
@@ -390,7 +388,7 @@ func (v *Visitor) onCall(ce *ast.CallExpr) bool {
 	}
 	fname := sel.Sel.Name
 	v.called[vname][fname] = c
-	return true
+	return
 }
 
 func (v *Visitor) funcEnded(pos token.Pos) {
