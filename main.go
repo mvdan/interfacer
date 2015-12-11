@@ -315,7 +315,7 @@ func (v *Visitor) Visit(node ast.Node) ast.Visitor {
 		v.inBlock = true
 	case *ast.AssignStmt:
 		if !v.inBlock {
-			break
+			return nil
 		}
 		for i, e := range x.Rhs {
 			id, ok := e.(*ast.Ident)
@@ -338,7 +338,7 @@ func (v *Visitor) Visit(node ast.Node) ast.Visitor {
 		}
 	case *ast.CallExpr:
 		if !v.inBlock {
-			break
+			return nil
 		}
 		if v.usedAs == nil {
 			break
@@ -391,9 +391,6 @@ func funcSignature(t types.Type) *types.Signature {
 }
 
 func (v *Visitor) onCall(ce *ast.CallExpr) {
-	if v.called == nil {
-		return
-	}
 	sel, ok := ce.Fun.(*ast.SelectorExpr)
 	if !ok {
 		return
