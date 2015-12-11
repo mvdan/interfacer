@@ -1,0 +1,2 @@
+const.go:14: rs can be io.Seeker
+const.go:25: rs can be io.Seeker

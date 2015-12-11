@@ -41,7 +41,7 @@ func errExit(err error) {
 
 type call struct {
 	params  []interface{}
-	results []interface{}
+	results []types.Type
 }
 
 var toToken = map[string]token.Token{
@@ -63,8 +63,8 @@ var toToken = map[string]token.Token{
 
 func paramEqual(t1 types.Type, a2 interface{}) bool {
 	switch x := a2.(type) {
-	case string:
-		return t1.String() == x
+	case types.Type:
+		return types.ConvertibleTo(x, t1)
 	case token.Token:
 		return toToken[t1.String()] == x
 	case nil:
@@ -77,6 +77,7 @@ func paramEqual(t1 types.Type, a2 interface{}) bool {
 			return false
 		}
 	default:
+		panic("Unexpected param type")
 		return false
 	}
 }
@@ -96,26 +97,27 @@ func paramsMatch(types1 []types.Type, args2 []interface{}) bool {
 
 func resultEqual(t1 types.Type, e2 interface{}) bool {
 	switch x := e2.(type) {
-	case string:
-		return t1.String() == x
+	case types.Type:
+		return types.ConvertibleTo(x, t1)
 	case nil:
 		// assigning to _
 		return true
 	default:
+		panic("Unexpected result type")
 		return false
 	}
 }
 
-func resultsMatch(types1 []types.Type, exps2 []interface{}) bool {
-	if len(exps2) == 0 {
+func resultsMatch(wanted, got []types.Type) bool {
+	if len(got) == 0 {
 		return true
 	}
-	if len(types1) != len(exps2) {
+	if len(wanted) != len(got) {
 		return false
 	}
-	for i, t1 := range types1 {
-		e2 := exps2[i]
-		if !resultEqual(t1, e2) {
+	for i, t1 := range wanted {
+		t2 := got[i]
+		if !resultEqual(t1, t2) {
 			return false
 		}
 	}
@@ -427,18 +429,22 @@ func (v *Visitor) dType(t, f *ast.Ident) *types.Func {
 	return nil
 }
 
-func (v *Visitor) getType(name string) interface{} {
+func (v *Visitor) getType(id *ast.Ident) types.Type {
+	name := id.Name
 	if name == "_" || name == "nil" {
 		return nil
 	}
-	obj := v.scope().Lookup(name)
+	_, obj := v.scope().LookupParent(name, id.Pos())
 	if obj == nil {
 		panic("Could not find ident type")
 	}
 	switch x := obj.(type) {
 	case *types.Var:
-		return x.Type().String()
+		return x.Type()
+	case *types.Const:
+		return x.Type()
 	default:
+		fmt.Printf("%T\n", x)
 		panic("Unexpected object type")
 	}
 }
@@ -446,7 +452,7 @@ func (v *Visitor) getType(name string) interface{} {
 func (v *Visitor) descType(e ast.Expr) interface{} {
 	switch x := e.(type) {
 	case *ast.Ident:
-		return v.getType(x.Name)
+		return v.getType(x)
 	case *ast.BasicLit:
 		return x.Kind
 	default:
@@ -480,7 +486,7 @@ func (v *Visitor) onCall(ce *ast.CallExpr) bool {
 	results := sign.Results()
 	for i := 0; i < results.Len(); i++ {
 		v := results.At(i)
-		c.results = append(c.results, v.Type().String())
+		c.results = append(c.results, v.Type())
 	}
 	for _, a := range ce.Args {
 		c.params = append(c.params, v.descType(a))
