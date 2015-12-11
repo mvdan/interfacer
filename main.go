@@ -266,7 +266,6 @@ func (gp *goPkg) check(conf *types.Config, w io.Writer) error {
 	}
 
 	v := &Visitor{
-		pkg:    gp.Package,
 		w:      w,
 		fset:   gp.fset,
 		scopes: []*types.Scope{pkg.Scope()},
@@ -278,8 +277,6 @@ func (gp *goPkg) check(conf *types.Config, w io.Writer) error {
 }
 
 type Visitor struct {
-	pkg *build.Package
-
 	w      io.Writer
 	fset   *token.FileSet
 	scopes []*types.Scope
@@ -296,17 +293,6 @@ type Visitor struct {
 
 func (v *Visitor) scope() *types.Scope {
 	return v.scopes[len(v.scopes)-1]
-}
-
-func scopeName(e ast.Expr) string {
-	switch x := e.(type) {
-	case *ast.Ident:
-		return x.Name
-	case *ast.StarExpr:
-		return scopeName(x.X)
-	default:
-		return ""
-	}
 }
 
 func (v *Visitor) funcType(fd *ast.FuncDecl) *types.Func {
