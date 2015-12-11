@@ -327,7 +327,13 @@ func (v *Visitor) Visit(node ast.Node) ast.Visitor {
 				continue
 			}
 			name := id.Name
+			if _, e := v.params[name]; !e {
+				continue
+			}
 			vtype := v.Types[lid].Type
+			if vtype == nil {
+				continue
+			}
 			v.usedAs[name] = append(v.usedAs[name], vtype)
 		}
 	case *ast.CallExpr:
@@ -347,7 +353,13 @@ func (v *Visitor) Visit(node ast.Node) ast.Visitor {
 				continue
 			}
 			name := id.Name
+			if _, e := v.params[name]; !e {
+				continue
+			}
 			ptype := paramType(sign, i)
+			if ptype == nil {
+				continue
+			}
 			v.usedAs[name] = append(v.usedAs[name], ptype)
 		}
 		v.onCall(x)
