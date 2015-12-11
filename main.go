@@ -229,13 +229,11 @@ func (gp *goPkg) check(conf *types.Config, w io.Writer) error {
 	info := &types.Info{
 		Types: make(map[ast.Expr]types.TypeAndValue),
 		Defs:  make(map[*ast.Ident]types.Object),
-		Uses:  make(map[*ast.Ident]types.Object),
 	}
 	_, err := conf.Check(gp.Name, gp.fset, gp.files, info)
 	if err != nil {
 		return err
 	}
-
 	v := &Visitor{
 		Info: info,
 		w:    w,
