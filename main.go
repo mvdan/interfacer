@@ -15,6 +15,7 @@ import (
 	"io"
 	"os"
 	"path/filepath"
+	"regexp"
 )
 
 var (
@@ -86,13 +87,15 @@ func interfaceMatching(calls map[string]funcSign) string {
 	return ""
 }
 
+var skipDir = regexp.MustCompile(`^(testdata|vendor|_.*)$`)
+
 func getDirs(d string, recursive bool) ([]string, error) {
 	var dirs []string
 	walkFn := func(path string, info os.FileInfo, err error) error {
 		if err != nil {
 			return err
 		}
-		if info.Name() == "testdata" {
+		if skipDir.MatchString(info.Name()) {
 			return filepath.SkipDir
 		}
 		if info.IsDir() {
