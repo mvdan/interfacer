@@ -5,11 +5,16 @@ package main
 
 import (
 	"bytes"
+	"flag"
 	"io/ioutil"
 	"os"
 	"path/filepath"
 	"strings"
 	"testing"
+)
+
+var (
+	name = flag.String("name", "", "name of the test to run")
 )
 
 func want(t *testing.T, p string) (string, bool) {
@@ -69,11 +74,16 @@ func TestAll(t *testing.T) {
 	if err := os.Chdir("testdata"); err != nil {
 		t.Fatal(err)
 	}
-	matches, err := filepath.Glob("*")
-	if err != nil {
-		t.Fatal(err)
+	var tests []string
+	if *name != "" {
+		tests = []string{*name}
+	} else {
+		var err error
+		if tests, err = filepath.Glob("*"); err != nil {
+			t.Fatal(err)
+		}
 	}
-	for _, p := range matches {
+	for _, p := range tests {
 		doTest(t, p)
 	}
 	if err := os.Chdir(".."); err != nil {
