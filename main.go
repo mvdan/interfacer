@@ -72,16 +72,16 @@ func usedMatch(t types.Type, usedAs []types.Type) bool {
 	return true
 }
 
-func interfaceMatching(calls map[string]funcSign, usedAs []types.Type) string {
+func interfaceMatching(p *param) string {
 	matchesIface := func(iface ifaceSign) bool {
-		if len(calls) > len(iface.funcs) {
+		if len(p.calls) > len(iface.funcs) {
 			return false
 		}
-		if !usedMatch(iface.t, usedAs) {
+		if !usedMatch(iface.t, p.usedAs) {
 			return false
 		}
 		for name, f := range iface.funcs {
-			c, e := calls[name]
+			c, e := p.calls[name]
 			if !e {
 				return false
 			}
@@ -260,26 +260,32 @@ func (gp *goPkg) check(conf *types.Config, w io.Writer) error {
 	return nil
 }
 
+type param struct {
+	t types.Type
+
+	calls  map[string]funcSign
+	usedAs []types.Type
+}
+
 type Visitor struct {
 	*types.Info
 
-	w    io.Writer
-	fset *token.FileSet
-
+	w     io.Writer
+	fset  *token.FileSet
 	nodes []ast.Node
 
-	params map[string]types.Type
-	called map[string]map[string]funcSign
-	usedAs map[string][]types.Type
-
+	params  map[string]*param
 	inBlock bool
 }
 
-func typeMap(t *types.Tuple) map[string]types.Type {
-	m := make(map[string]types.Type, t.Len())
+func paramsMap(t *types.Tuple) map[string]*param {
+	m := make(map[string]*param, t.Len())
 	for i := 0; i < t.Len(); i++ {
 		p := t.At(i)
-		m[p.Name()] = p.Type()
+		m[p.Name()] = &param{
+			t:     p.Type(),
+			calls: make(map[string]funcSign),
+		}
 	}
 	return m
 }
@@ -302,7 +308,8 @@ func (v *Visitor) addUsed(name string, as types.Type) {
 	if as == nil {
 		return
 	}
-	v.usedAs[name] = append(v.usedAs[name], as)
+	p := v.params[name]
+	p.usedAs = append(p.usedAs, as)
 }
 
 func (v *Visitor) Visit(node ast.Node) ast.Visitor {
@@ -315,9 +322,7 @@ func (v *Visitor) Visit(node ast.Node) ast.Visitor {
 	case *ast.FuncDecl:
 		f := v.Defs[x.Name].(*types.Func)
 		sign := f.Type().(*types.Signature)
-		v.params = typeMap(sign.Params())
-		v.called = make(map[string]map[string]funcSign)
-		v.usedAs = make(map[string][]types.Type)
+		v.params = paramsMap(sign.Params())
 	case *ast.BlockStmt:
 		v.inBlock = true
 	case *ast.AssignStmt:
@@ -333,18 +338,14 @@ func (v *Visitor) Visit(node ast.Node) ast.Visitor {
 			if !ok {
 				continue
 			}
-			name := id.Name
-			if _, e := v.params[name]; !e {
+			if _, e := v.params[id.Name]; !e {
 				continue
 			}
-			v.addUsed(name, v.Types[lid].Type)
+			v.addUsed(id.Name, v.Types[lid].Type)
 		}
 	case *ast.CallExpr:
 		if !v.inBlock {
 			return nil
-		}
-		if v.usedAs == nil {
-			break
 		}
 		sign := funcSignature(v.Types[x.Fun].Type)
 		if sign == nil {
@@ -355,11 +356,10 @@ func (v *Visitor) Visit(node ast.Node) ast.Visitor {
 			if !ok {
 				continue
 			}
-			name := id.Name
-			if _, e := v.params[name]; !e {
+			if _, e := v.params[id.Name]; !e {
 				continue
 			}
-			v.addUsed(name, paramType(sign, i))
+			v.addUsed(id.Name, paramType(sign, i))
 		}
 		v.onCall(x)
 	case nil:
@@ -367,8 +367,6 @@ func (v *Visitor) Visit(node ast.Node) ast.Visitor {
 		if _, ok := top.(*ast.FuncDecl); ok {
 			v.funcEnded(top.Pos())
 			v.params = nil
-			v.called = nil
-			v.usedAs = nil
 			v.inBlock = false
 		}
 	}
@@ -399,7 +397,8 @@ func (v *Visitor) onCall(ce *ast.CallExpr) {
 		return
 	}
 	vname := left.Name
-	if _, e := v.params[vname]; !e {
+	p, e := v.params[vname]
+	if !e {
 		return
 	}
 	sign := funcSignature(v.Types[ce.Fun].Type)
@@ -409,32 +408,22 @@ func (v *Visitor) onCall(ce *ast.CallExpr) {
 	c := funcSign{}
 	results := sign.Results()
 	for i := 0; i < results.Len(); i++ {
-		v := results.At(i)
-		c.results = append(c.results, v.Type())
+		c.results = append(c.results, results.At(i).Type())
 	}
 	for _, a := range ce.Args {
 		c.params = append(c.params, v.Types[a].Type)
 	}
-	if _, e := v.called[vname]; !e {
-		v.called[vname] = make(map[string]funcSign)
-	}
-	fname := sel.Sel.Name
-	v.called[vname][fname] = c
+	p.calls[sel.Sel.Name] = c
 	return
 }
 
 func (v *Visitor) funcEnded(pos token.Pos) {
-	for name, methods := range v.called {
-		usedAs := v.usedAs[name]
-		iface := interfaceMatching(methods, usedAs)
+	for name, p := range v.params {
+		iface := interfaceMatching(p)
 		if iface == "" {
 			continue
 		}
-		param, e := v.params[name]
-		if !e {
-			continue
-		}
-		if iface == param.String() {
+		if iface == p.t.String() {
 			continue
 		}
 		pos := v.fset.Position(pos)
