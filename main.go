@@ -248,16 +248,15 @@ func (gp *goPkg) check(conf *types.Config, w io.Writer) error {
 		Defs:  make(map[*ast.Ident]types.Object),
 		Uses:  make(map[*ast.Ident]types.Object),
 	}
-	pkg, err := conf.Check(gp.Name, gp.fset, gp.files, info)
+	_, err := conf.Check(gp.Name, gp.fset, gp.files, info)
 	if err != nil {
 		return err
 	}
 
 	v := &Visitor{
-		info:   info,
-		w:      w,
-		fset:   gp.fset,
-		scopes: []*types.Scope{pkg.Scope()},
+		Info: info,
+		w:    w,
+		fset: gp.fset,
 	}
 	for _, f := range gp.files {
 		ast.Walk(v, f)
@@ -266,11 +265,10 @@ func (gp *goPkg) check(conf *types.Config, w io.Writer) error {
 }
 
 type Visitor struct {
-	info *types.Info
+	*types.Info
 
-	w      io.Writer
-	fset   *token.FileSet
-	scopes []*types.Scope
+	w    io.Writer
+	fset *token.FileSet
 
 	nodes []ast.Node
 
@@ -280,10 +278,6 @@ type Visitor struct {
 	// TODO: don't just discard params with untracked usage
 	unknown       map[string]struct{}
 	recordUnknown bool
-}
-
-func (v *Visitor) scope() *types.Scope {
-	return v.scopes[len(v.scopes)-1]
 }
 
 func typeMap(t *types.Tuple) map[string]types.Type {
@@ -303,8 +297,7 @@ func (v *Visitor) Visit(node ast.Node) ast.Visitor {
 	switch x := node.(type) {
 	case *ast.File:
 	case *ast.FuncDecl:
-		f := v.info.Defs[x.Name].(*types.Func)
-		v.scopes = append(v.scopes, f.Scope())
+		f := v.Defs[x.Name].(*types.Func)
 		sign := f.Type().(*types.Signature)
 		v.params = typeMap(sign.Params())
 		v.used = make(map[string]map[string]call, 0)
@@ -324,16 +317,13 @@ func (v *Visitor) Visit(node ast.Node) ast.Visitor {
 		}
 	case nil:
 		v.nodes = v.nodes[:len(v.nodes)-1]
-		fd, ok := top.(*ast.FuncDecl)
-		if !ok {
-			return nil
+		if _, ok := top.(*ast.FuncDecl); ok {
+			v.funcEnded(top.Pos())
+			v.params = nil
+			v.used = nil
+			v.unknown = nil
+			v.recordUnknown = false
 		}
-		v.scopes = v.scopes[:len(v.scopes)-1]
-		v.funcEnded(fd)
-		v.params = nil
-		v.used = nil
-		v.unknown = nil
-		v.recordUnknown = false
 	}
 	if node != nil {
 		v.nodes = append(v.nodes, node)
@@ -357,7 +347,7 @@ func (v *Visitor) onCall(ce *ast.CallExpr) bool {
 	if _, e := v.params[vname]; !e {
 		return false
 	}
-	sign := v.info.Types[ce.Fun].Type.(*types.Signature)
+	sign := v.Types[ce.Fun].Type.(*types.Signature)
 	c := call{}
 	results := sign.Results()
 	for i := 0; i < results.Len(); i++ {
@@ -365,7 +355,7 @@ func (v *Visitor) onCall(ce *ast.CallExpr) bool {
 		c.results = append(c.results, v.Type())
 	}
 	for _, a := range ce.Args {
-		c.params = append(c.params, v.info.Types[a].Type)
+		c.params = append(c.params, v.Types[a].Type)
 	}
 	if _, e := v.used[vname]; !e {
 		v.used[vname] = make(map[string]call)
@@ -375,7 +365,7 @@ func (v *Visitor) onCall(ce *ast.CallExpr) bool {
 	return true
 }
 
-func (v *Visitor) funcEnded(fd *ast.FuncDecl) {
+func (v *Visitor) funcEnded(pos token.Pos) {
 	for name, methods := range v.used {
 		if _, e := v.unknown[name]; e {
 			continue
@@ -391,7 +381,7 @@ func (v *Visitor) funcEnded(fd *ast.FuncDecl) {
 		if iface == param.String() {
 			continue
 		}
-		pos := v.fset.Position(fd.Pos())
+		pos := v.fset.Position(pos)
 		fmt.Fprintf(v.w, "%s:%d: %s can be %s\n",
 			pos.Filename, pos.Line, name, iface)
 	}
