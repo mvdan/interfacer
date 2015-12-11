@@ -280,6 +280,16 @@ func typeMap(t *types.Tuple) map[string]types.Type {
 	return m
 }
 
+func paramType(sign *types.Signature, i int) types.Type {
+	params := sign.Params()
+	extra := sign.Variadic() && i >= params.Len()-1
+	if !extra {
+		return params.At(i).Type()
+	}
+	stype := params.At(params.Len() - 1).Type().(*types.Slice)
+	return stype.Elem()
+}
+
 func (v *Visitor) Visit(node ast.Node) ast.Visitor {
 	var top ast.Node
 	if len(v.nodes) > 0 {
@@ -312,7 +322,7 @@ func (v *Visitor) Visit(node ast.Node) ast.Visitor {
 				continue
 			}
 			name := id.Name
-			ptype := sign.Params().At(i).Type()
+			ptype := paramType(sign, i)
 			v.usedAs[name] = append(v.usedAs[name], ptype)
 		}
 		if wasParamCall := v.onCall(x); wasParamCall {

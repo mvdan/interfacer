@@ -1,6 +1,7 @@
 package foo
 
 import (
+	"fmt"
 	"io"
 )
 
@@ -83,4 +84,8 @@ func ArgsMatch(a argGood) {
 
 func ArgsMismatchNum(a argBad) {
 	a.Close(3)
+}
+
+func ArgsExtra() {
+	fmt.Printf("%d %v\n", 12, nil)
 }
