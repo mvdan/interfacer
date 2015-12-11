@@ -295,23 +295,26 @@ func (v *Visitor) Visit(node ast.Node) ast.Visitor {
 		v.usedAs = make(map[string][]types.Type)
 	case *ast.BlockStmt:
 		v.recUsed = true
-	case *ast.Ident:
+	case *ast.CallExpr:
 		if !v.recUsed {
 			break
 		}
 		if v.usedAs == nil {
 			break
 		}
-		name := x.Name
-		// TODO: this is the type of what we give, not what it
-		// ends up being. e.g. the call argument, not the func
-		// param.
-		u := v.Uses[x]
-		if u == nil {
+		sign := funcSignature(v.Types[x.Fun].Type)
+		if sign == nil {
 			break
 		}
-		v.usedAs[name] = append(v.usedAs[name], u.Type())
-	case *ast.CallExpr:
+		for i, e := range x.Args {
+			id, ok := e.(*ast.Ident)
+			if !ok {
+				continue
+			}
+			name := id.Name
+			ptype := sign.Params().At(i).Type()
+			v.usedAs[name] = append(v.usedAs[name], ptype)
+		}
 		if wasParamCall := v.onCall(x); wasParamCall {
 			return nil
 		}
@@ -335,6 +338,9 @@ func funcSignature(t types.Type) *types.Signature {
 	switch x := t.(type) {
 	case *types.Signature:
 		return x
+	case *types.Basic:
+		// maybe we want to do something with these?
+		return nil
 	default:
 		return funcSignature(t.Underlying())
 	}
@@ -357,6 +363,9 @@ func (v *Visitor) onCall(ce *ast.CallExpr) bool {
 		return false
 	}
 	sign := funcSignature(v.Types[ce.Fun].Type)
+	if sign == nil {
+		return false
+	}
 	c := funcSign{}
 	results := sign.Results()
 	for i := 0; i < results.Len(); i++ {

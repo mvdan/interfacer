@@ -86,7 +86,7 @@ func typesInit() error {
 			return fmt.Errorf("%s is duplicated", ifname)
 		}
 		parsed[ifname] = ifaceSign{
-			t: iface,
+			t:     iface,
 			funcs: make(map[string]funcSign, iface.NumMethods()),
 		}
 		for i := 0; i < iface.NumMethods(); i++ {
