@@ -331,6 +331,15 @@ func (v *Visitor) Visit(node ast.Node) ast.Visitor {
 	return v
 }
 
+func funcSignature(t types.Type) *types.Signature {
+	switch x := t.(type) {
+	case *types.Signature:
+		return x
+	default:
+		return funcSignature(t.Underlying())
+	}
+}
+
 func (v *Visitor) onCall(ce *ast.CallExpr) bool {
 	if v.used == nil {
 		return false
@@ -347,7 +356,7 @@ func (v *Visitor) onCall(ce *ast.CallExpr) bool {
 	if _, e := v.params[vname]; !e {
 		return false
 	}
-	sign := v.Types[ce.Fun].Type.(*types.Signature)
+	sign := funcSignature(v.Types[ce.Fun].Type)
 	c := call{}
 	results := sign.Results()
 	for i := 0; i < results.Len(); i++ {
