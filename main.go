@@ -346,11 +346,10 @@ func funcSignature(t types.Type) *types.Signature {
 	switch x := t.(type) {
 	case *types.Signature:
 		return x
-	case *types.Basic:
-		// maybe we want to do something with these?
-		return nil
+	case *types.Named:
+		return funcSignature(x.Underlying())
 	default:
-		return funcSignature(t.Underlying())
+		return nil
 	}
 }
 
