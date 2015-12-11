@@ -140,6 +140,9 @@ func interfaceMatching(calls map[string]call) string {
 func getDirs(d string) ([]string, error) {
 	var dirs []string
 	walkFn := func(path string, info os.FileInfo, err error) error {
+		if err != nil {
+			return err
+		}
 		if info.IsDir() {
 			dirs = append(dirs, path)
 		}
