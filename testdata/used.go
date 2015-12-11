@@ -31,3 +31,17 @@ func ArgExtraWrong(f1 *os.File) {
 	f2.Close()
 	Extra(3, f1, f2)
 }
+
+func Assigned(f *os.File) {
+	f.Close()
+	var f2 *os.File
+	f2 = f
+	println(f2)
+}
+
+func AssignedWrong(f *os.File) {
+	f.Close()
+	var c io.Closer
+	c = f
+	println(c)
+}

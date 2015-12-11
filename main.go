@@ -309,6 +309,20 @@ func (v *Visitor) Visit(node ast.Node) ast.Visitor {
 		v.usedAs = make(map[string][]types.Type)
 	case *ast.BlockStmt:
 		v.recUsed = true
+	case *ast.AssignStmt:
+		for i, e := range x.Rhs {
+			id, ok := e.(*ast.Ident)
+			if !ok {
+				continue
+			}
+			lid, ok := x.Lhs[i].(*ast.Ident)
+			if !ok {
+				continue
+			}
+			name := id.Name
+			vtype := v.Types[lid].Type
+			v.usedAs[name] = append(v.usedAs[name], vtype)
+		}
 	case *ast.CallExpr:
 		if !v.recUsed {
 			break
