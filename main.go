@@ -86,7 +86,7 @@ func interfaceMatching(calls map[string]funcSign) string {
 	return ""
 }
 
-func getDirs(d string) ([]string, error) {
+func getDirs(d string, recursive bool) ([]string, error) {
 	var dirs []string
 	walkFn := func(path string, info os.FileInfo, err error) error {
 		if err != nil {
@@ -94,6 +94,9 @@ func getDirs(d string) ([]string, error) {
 		}
 		if info.IsDir() {
 			dirs = append(dirs, path)
+			if !recursive {
+				return filepath.SkipDir
+			}
 		}
 		return nil
 	}
@@ -122,7 +125,7 @@ func getPkgs(p string) ([]*build.Package, []string, error) {
 	if recursive {
 		d = p[:len(p)-4]
 	}
-	dirs, err := getDirs(d)
+	dirs, err := getDirs(d, recursive)
 	if err != nil {
 		return nil, nil, err
 	}
