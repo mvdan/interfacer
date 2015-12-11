@@ -35,12 +35,12 @@ var suggested = [...]string{
 	"io.WriterTo",
 }
 
-type funcDecl struct {
+type funcSign struct {
 	params  []types.Type
 	results []types.Type
 }
 
-var parsed map[string]map[string]funcDecl
+var parsed map[string]map[string]funcSign
 
 func typesInit() error {
 	fset := token.NewFileSet()
@@ -63,7 +63,7 @@ func typesInit() error {
 	}
 	pos := pkg.Scope().Lookup("foo").Pos()
 
-	parsed = make(map[string]map[string]funcDecl, len(suggested))
+	parsed = make(map[string]map[string]funcSign, len(suggested))
 	for _, v := range suggested {
 		tv, err := types.Eval(fset, pkg, pos, v)
 		if err != nil {
@@ -79,12 +79,12 @@ func typesInit() error {
 		if _, e := parsed[ifname]; e {
 			return fmt.Errorf("%s is duplicated", ifname)
 		}
-		parsed[ifname] = make(map[string]funcDecl, iface.NumMethods())
+		parsed[ifname] = make(map[string]funcSign, iface.NumMethods())
 		for i := 0; i < iface.NumMethods(); i++ {
 			f := iface.Method(i)
 			fname := f.Name()
 			sign := f.Type().(*types.Signature)
-			parsed[ifname][fname] = funcDecl{
+			parsed[ifname][fname] = funcSign{
 				params:  typeList(sign.Params()),
 				results: typeList(sign.Results()),
 			}

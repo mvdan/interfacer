@@ -39,18 +39,13 @@ func errExit(err error) {
 	os.Exit(1)
 }
 
-type call struct {
-	params  []types.Type
-	results []types.Type
-}
-
-func paramsMatch(wanted, got []types.Type) bool {
+func typesMatch(wanted, got []types.Type) bool {
 	if len(wanted) != len(got) {
 		return false
 	}
-	for i, t1 := range wanted {
-		t2 := got[i]
-		if !types.ConvertibleTo(t2, t1) {
+	for i, w := range wanted {
+		g := got[i]
+		if !types.ConvertibleTo(g, w) {
 			return false
 		}
 	}
@@ -61,20 +56,11 @@ func resultsMatch(wanted, got []types.Type) bool {
 	if len(got) == 0 {
 		return true
 	}
-	if len(wanted) != len(got) {
-		return false
-	}
-	for i, t1 := range wanted {
-		t2 := got[i]
-		if !types.ConvertibleTo(t2, t1) {
-			return false
-		}
-	}
-	return true
+	return typesMatch(wanted, got)
 }
 
-func interfaceMatching(calls map[string]call) string {
-	matchesIface := func(decls map[string]funcDecl) bool {
+func interfaceMatching(calls map[string]funcSign) string {
+	matchesIface := func(decls map[string]funcSign) bool {
 		if len(calls) > len(decls) {
 			return false
 		}
@@ -83,7 +69,7 @@ func interfaceMatching(calls map[string]call) string {
 			if !e {
 				return false
 			}
-			if !paramsMatch(d.params, c.params) {
+			if !typesMatch(d.params, c.params) {
 				return false
 			}
 			if !resultsMatch(d.results, c.results) {
@@ -254,7 +240,7 @@ type Visitor struct {
 	nodes []ast.Node
 
 	params map[string]types.Type
-	used   map[string]map[string]call
+	used   map[string]map[string]funcSign
 
 	// TODO: don't just discard params with untracked usage
 	unknown       map[string]struct{}
@@ -281,7 +267,7 @@ func (v *Visitor) Visit(node ast.Node) ast.Visitor {
 		f := v.Defs[x.Name].(*types.Func)
 		sign := f.Type().(*types.Signature)
 		v.params = typeMap(sign.Params())
-		v.used = make(map[string]map[string]call, 0)
+		v.used = make(map[string]map[string]funcSign)
 		v.unknown = make(map[string]struct{})
 	case *ast.CallExpr:
 		if wasParamCall := v.onCall(x); wasParamCall {
@@ -338,7 +324,7 @@ func (v *Visitor) onCall(ce *ast.CallExpr) bool {
 		return false
 	}
 	sign := funcSignature(v.Types[ce.Fun].Type)
-	c := call{}
+	c := funcSign{}
 	results := sign.Results()
 	for i := 0; i < results.Len(); i++ {
 		v := results.At(i)
@@ -348,7 +334,7 @@ func (v *Visitor) onCall(ce *ast.CallExpr) bool {
 		c.params = append(c.params, v.Types[a].Type)
 	}
 	if _, e := v.used[vname]; !e {
-		v.used[vname] = make(map[string]call)
+		v.used[vname] = make(map[string]funcSign)
 	}
 	fname := sel.Sel.Name
 	v.used[vname][fname] = c
