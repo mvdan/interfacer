@@ -271,7 +271,7 @@ type Visitor struct {
 	params map[string]types.Type
 	called map[string]map[string]funcSign
 
-	recUsed bool
+	inBlock bool
 	usedAs  map[string][]types.Type
 }
 
@@ -312,8 +312,11 @@ func (v *Visitor) Visit(node ast.Node) ast.Visitor {
 		v.called = make(map[string]map[string]funcSign)
 		v.usedAs = make(map[string][]types.Type)
 	case *ast.BlockStmt:
-		v.recUsed = true
+		v.inBlock = true
 	case *ast.AssignStmt:
+		if !v.inBlock {
+			break
+		}
 		for i, e := range x.Rhs {
 			id, ok := e.(*ast.Ident)
 			if !ok {
@@ -328,7 +331,7 @@ func (v *Visitor) Visit(node ast.Node) ast.Visitor {
 			v.usedAs[name] = append(v.usedAs[name], vtype)
 		}
 	case *ast.CallExpr:
-		if !v.recUsed {
+		if !v.inBlock {
 			break
 		}
 		if v.usedAs == nil {
@@ -355,7 +358,7 @@ func (v *Visitor) Visit(node ast.Node) ast.Visitor {
 			v.params = nil
 			v.called = nil
 			v.usedAs = nil
-			v.recUsed = false
+			v.inBlock = false
 		}
 	}
 	if node != nil {
