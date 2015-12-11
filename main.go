@@ -189,7 +189,11 @@ func checkPaths(paths []string, w io.Writer) error {
 
 func checkPkg(conf *types.Config, pkg *build.Package, basedir string, w io.Writer) error {
 	if *verbose {
-		fmt.Fprintln(w, basedir)
+		importPath := pkg.ImportPath
+		if importPath == "" {
+			importPath = "command-line-arguments"
+		}
+		fmt.Fprintln(w, importPath)
 	}
 	gp := &goPkg{
 		Package: pkg,
