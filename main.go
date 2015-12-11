@@ -388,19 +388,6 @@ func (v *Visitor) Visit(node ast.Node) ast.Visitor {
 	return v
 }
 
-func (v *Visitor) getType(name string) interface{} {
-	_, obj := v.scope().LookupParent(name, token.NoPos)
-	if obj == nil {
-		return nil
-	}
-	switch x := obj.(type) {
-	case *types.Var:
-		return x.Type().String()
-	default:
-		return nil
-	}
-}
-
 type methoder interface {
 	NumMethods() int
 	Method(i int) *types.Func
@@ -438,6 +425,22 @@ func (v *Visitor) dType(t, f *ast.Ident) *types.Func {
 		}
 	}
 	return nil
+}
+
+func (v *Visitor) getType(name string) interface{} {
+	if name == "_" || name == "nil" {
+		return nil
+	}
+	obj := v.scope().Lookup(name)
+	if obj == nil {
+		panic("Could not find ident type")
+	}
+	switch x := obj.(type) {
+	case *types.Var:
+		return x.Type().String()
+	default:
+		panic("Unexpected object type")
+	}
 }
 
 func (v *Visitor) descType(e ast.Expr) interface{} {
