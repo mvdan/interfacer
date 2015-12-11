@@ -40,7 +40,7 @@ func errExit(err error) {
 }
 
 type call struct {
-	params  []interface{}
+	params  []types.Type
 	results []types.Type
 }
 
@@ -61,33 +61,13 @@ var toToken = map[string]token.Token{
 	"float64": token.FLOAT,
 }
 
-func paramEqual(t1 types.Type, a2 interface{}) bool {
-	switch x := a2.(type) {
-	case types.Type:
-		return types.ConvertibleTo(x, t1)
-	case token.Token:
-		return toToken[t1.String()] == x
-	case nil:
-		switch t1.(type) {
-		case *types.Slice:
-			return true
-		case *types.Map:
-			return true
-		default:
-			return false
-		}
-	default:
-		panic("Unexpected param type")
-	}
-}
-
-func paramsMatch(types1 []types.Type, args2 []interface{}) bool {
-	if len(types1) != len(args2) {
+func paramsMatch(wanted, got []types.Type) bool {
+	if len(wanted) != len(got) {
 		return false
 	}
-	for i, t1 := range types1 {
-		a2 := args2[i]
-		if !paramEqual(t1, a2) {
+	for i, t1 := range wanted {
+		t2 := got[i]
+		if !types.ConvertibleTo(t2, t1) {
 			return false
 		}
 	}
@@ -263,12 +243,18 @@ func (gp *goPkg) parseReader(name string, r io.Reader) error {
 }
 
 func (gp *goPkg) check(conf *types.Config, w io.Writer) error {
-	pkg, err := conf.Check(gp.Name, gp.fset, gp.files, nil)
+	info := &types.Info{
+		Types: make(map[ast.Expr]types.TypeAndValue),
+		Defs:  make(map[*ast.Ident]types.Object),
+		Uses:  make(map[*ast.Ident]types.Object),
+	}
+	pkg, err := conf.Check(gp.Name, gp.fset, gp.files, info)
 	if err != nil {
 		return err
 	}
 
 	v := &Visitor{
+		info:   info,
 		w:      w,
 		fset:   gp.fset,
 		scopes: []*types.Scope{pkg.Scope()},
@@ -280,6 +266,8 @@ func (gp *goPkg) check(conf *types.Config, w io.Writer) error {
 }
 
 type Visitor struct {
+	info *types.Info
+
 	w      io.Writer
 	fset   *token.FileSet
 	scopes []*types.Scope
@@ -296,15 +284,6 @@ type Visitor struct {
 
 func (v *Visitor) scope() *types.Scope {
 	return v.scopes[len(v.scopes)-1]
-}
-
-func (v *Visitor) funcType(fd *ast.FuncDecl) *types.Func {
-	fname := fd.Name.Name
-	f, ok := v.scope().Lookup(fname).(*types.Func)
-	if !ok {
-		return nil
-	}
-	return f
 }
 
 func typeMap(t *types.Tuple) map[string]types.Type {
@@ -324,10 +303,7 @@ func (v *Visitor) Visit(node ast.Node) ast.Visitor {
 	switch x := node.(type) {
 	case *ast.File:
 	case *ast.FuncDecl:
-		f := v.funcType(x)
-		if f == nil {
-			return nil
-		}
+		f := v.info.Defs[x.Name].(*types.Func)
 		v.scopes = append(v.scopes, f.Scope())
 		sign := f.Type().(*types.Signature)
 		v.params = typeMap(sign.Params())
@@ -365,68 +341,6 @@ func (v *Visitor) Visit(node ast.Node) ast.Visitor {
 	return v
 }
 
-type methoder interface {
-	NumMethods() int
-	Method(i int) *types.Func
-}
-
-func extNamed(t types.Type) *types.Named {
-	switch x := t.(type) {
-	case *types.Named:
-		return x
-	case *types.Pointer:
-		return extNamed(x.Elem())
-	default:
-		panic("Unexpected type")
-	}
-}
-
-func methods(t types.Type) methoder {
-	named := extNamed(t)
-	if iface, ok := named.Underlying().(*types.Interface); ok {
-		return iface
-	}
-	return named
-}
-
-func (v *Visitor) dType(t, f *ast.Ident) *types.Func {
-	obj := v.scope().Lookup(t.Name)
-	if obj == nil {
-		return nil
-	}
-	found := methods(obj.Type())
-	for i := 0; i < found.NumMethods(); i++ {
-		m := found.Method(i)
-		if m.Name() == f.Name {
-			return m
-		}
-	}
-	return nil
-}
-
-func (v *Visitor) getType(id *ast.Ident) types.Type {
-	name := id.Name
-	if name == "_" || name == "nil" {
-		return nil
-	}
-	_, obj := v.scope().LookupParent(name, id.Pos())
-	if obj == nil {
-		panic("Could not find ident type")
-	}
-	return obj.Type()
-}
-
-func (v *Visitor) descType(e ast.Expr) interface{} {
-	switch x := e.(type) {
-	case *ast.Ident:
-		return v.getType(x)
-	case *ast.BasicLit:
-		return x.Kind
-	default:
-		return nil
-	}
-}
-
 func (v *Visitor) onCall(ce *ast.CallExpr) bool {
 	if v.used == nil {
 		return false
@@ -439,29 +353,24 @@ func (v *Visitor) onCall(ce *ast.CallExpr) bool {
 	if !ok {
 		return false
 	}
-	right := sel.Sel
 	vname := left.Name
 	if _, e := v.params[vname]; !e {
 		return false
 	}
+	sign := v.info.Types[ce.Fun].Type.(*types.Signature)
 	c := call{}
-	f := v.dType(left, right)
-	if f == nil {
-		return false
-	}
-	sign := f.Type().(*types.Signature)
 	results := sign.Results()
 	for i := 0; i < results.Len(); i++ {
 		v := results.At(i)
 		c.results = append(c.results, v.Type())
 	}
 	for _, a := range ce.Args {
-		c.params = append(c.params, v.descType(a))
+		c.params = append(c.params, v.info.Types[a].Type)
 	}
 	if _, e := v.used[vname]; !e {
 		v.used[vname] = make(map[string]call)
 	}
-	fname := right.Name
+	fname := sel.Sel.Name
 	v.used[vname][fname] = c
 	return true
 }
