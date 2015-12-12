@@ -105,13 +105,13 @@ func implementsIface(sign *types.Signature) bool {
 	return false
 }
 
-func interfaceMatching(p *param) string {
+func interfaceMatching(p *param) (string, *types.Interface) {
 	for name, iface := range ifaces {
 		if matchesIface(p, iface, false) {
-			return name
+			return name, iface.t
 		}
 	}
-	return ""
+	return "", nil
 }
 
 var skipDir = regexp.MustCompile(`^(testdata|vendor|_.*|\.\+)$`)
@@ -330,7 +330,7 @@ func paramsMap(t *types.Tuple) map[string]*param {
 	for i := 0; i < t.Len(); i++ {
 		p := t.At(i)
 		m[p.Name()] = &param{
-			t:     p.Type(),
+			t:     p.Type().Underlying(),
 			calls: make(map[string]funcSign),
 		}
 	}
@@ -511,15 +511,15 @@ func (v *Visitor) funcEnded(pos token.Pos) {
 		if p.discard {
 			continue
 		}
-		iface := interfaceMatching(p)
-		if iface == "" {
+		ifname, iface := interfaceMatching(p)
+		if iface == nil {
 			continue
 		}
-		if iface == p.t.String() {
+		if types.ConvertibleTo(iface, p.t) {
 			continue
 		}
 		pos := v.fset.Position(pos)
 		fmt.Fprintf(v.w, "%s:%d: %s can be %s\n",
-			pos.Filename, pos.Line, name, iface)
+			pos.Filename, pos.Line, name, ifname)
 	}
 }

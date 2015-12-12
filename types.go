@@ -28,7 +28,7 @@ type funcSign struct {
 }
 
 type ifaceSign struct {
-	t types.Type
+	t *types.Interface
 
 	funcs map[string]funcSign
 }
