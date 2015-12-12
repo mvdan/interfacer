@@ -278,9 +278,14 @@ func (gp *goPkg) check(conf *types.Config, w io.Writer) error {
 		Defs:  make(map[*ast.Ident]types.Object),
 		Uses:  make(map[*ast.Ident]types.Object),
 	}
-	_, err := conf.Check(gp.Name, gp.fset, gp.files, info)
+	pkg, err := conf.Check(gp.Name, gp.fset, gp.files, info)
 	if err != nil {
 		return err
+	}
+	// TODO: types can appear repeated again
+	grabFromScope(pkg.Scope(), false)
+	for _, ipkg := range pkg.Imports() {
+		grabFromScope(ipkg.Scope(), false)
 	}
 	v := &Visitor{
 		Info: info,
