@@ -30,13 +30,6 @@ func typesMatch(wanted, got []types.Type) bool {
 	return true
 }
 
-func resultsMatch(wanted, got []types.Type) bool {
-	if len(got) == 0 {
-		return true
-	}
-	return typesMatch(wanted, got)
-}
-
 func usedMatch(t types.Type, usedAs []types.Type) bool {
 	if len(usedAs) < 1 {
 		return true
@@ -64,7 +57,7 @@ func matchesIface(p *param, iface ifaceSign, canEmpty bool) bool {
 		if !typesMatch(f.params, c.params) {
 			return false
 		}
-		if !resultsMatch(f.results, c.results) {
+		if !typesMatch(f.results, c.results) {
 			return false
 		}
 	}
