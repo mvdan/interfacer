@@ -121,7 +121,7 @@ var skipDir = regexp.MustCompile(`^(testdata|vendor|_.*|\.\+)$`)
 
 func getDirs(d string) ([]string, error) {
 	var dirs []string
-	if !strings.HasPrefix(d, "./") {
+	if d != "." && !strings.HasPrefix(d, "./") {
 		return nil, fmt.Errorf("TODO: recursing into non-local import paths")
 	}
 	walkFn := func(path string, info os.FileInfo, err error) error {
