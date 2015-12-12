@@ -72,30 +72,36 @@ func usedMatch(t types.Type, usedAs []types.Type) bool {
 	return true
 }
 
-func interfaceMatching(p *param) string {
-	matchesIface := func(iface ifaceSign) bool {
-		if len(p.calls) > len(iface.funcs) {
-			return false
-		}
-		if !usedMatch(iface.t, p.usedAs) {
-			return false
-		}
-		for name, f := range iface.funcs {
-			c, e := p.calls[name]
-			if !e {
-				return false
-			}
-			if !typesMatch(f.params, c.params) {
-				return false
-			}
-			if !resultsMatch(f.results, c.results) {
-				return false
-			}
-		}
-		return true
+func matchesIface(p *param, iface ifaceSign) bool {
+	if len(p.calls) > len(iface.funcs) {
+		return false
 	}
+	if !usedMatch(iface.t, p.usedAs) {
+		return false
+	}
+	for name, f := range iface.funcs {
+		c, e := p.calls[name]
+		if !e {
+			return false
+		}
+		if !typesMatch(f.params, c.params) {
+			return false
+		}
+		if !resultsMatch(f.results, c.results) {
+			return false
+		}
+	}
+	for _, to := range p.assigned {
+		if !matchesIface(to, iface) {
+			return false
+		}
+	}
+	return true
+}
+
+func interfaceMatching(p *param) string {
 	for name, iface := range parsed {
-		if matchesIface(iface) {
+		if matchesIface(p, iface) {
 			return name
 		}
 	}
@@ -266,6 +272,8 @@ type param struct {
 	calls   map[string]funcSign
 	usedAs  []types.Type
 	discard bool
+
+	assigned []*param
 }
 
 type Visitor struct {
@@ -276,6 +284,7 @@ type Visitor struct {
 	nodes []ast.Node
 
 	params  map[string]*param
+	extras  map[string]*param
 	inBlock bool
 }
 
@@ -305,22 +314,36 @@ func paramType(sign *types.Signature, i int) types.Type {
 	return stype.Elem()
 }
 
+func (v *Visitor) param(name string) *param {
+	if p, e := v.params[name]; e {
+		return p
+	}
+	if p, e := v.extras[name]; e {
+		return p
+	}
+	p := &param{
+		calls: make(map[string]funcSign),
+	}
+	v.extras[name] = p
+	return p
+}
+
 func (v *Visitor) addUsed(name string, as types.Type) {
 	if as == nil {
 		return
 	}
-	p, e := v.params[name]
-	if !e {
-		return
-	}
+	p := v.param(name)
 	p.usedAs = append(p.usedAs, as)
 }
 
+func (v *Visitor) addAssign(to, from string) {
+	pto := v.param(to)
+	pfrom := v.param(from)
+	pfrom.assigned = append(pfrom.assigned, pto)
+}
+
 func (v *Visitor) discard(name string) {
-	p, e := v.params[name]
-	if !e {
-		return
-	}
+	p := v.param(name)
 	p.discard = true
 }
 
@@ -333,6 +356,7 @@ func (v *Visitor) Visit(node ast.Node) ast.Visitor {
 	case *ast.FuncDecl:
 		sign := v.Defs[x.Name].Type().(*types.Signature)
 		v.params = paramsMap(sign.Params())
+		v.extras = make(map[string]*param)
 	case *ast.BlockStmt:
 		v.inBlock = true
 	case *ast.SelectorExpr:
@@ -358,6 +382,9 @@ func (v *Visitor) Visit(node ast.Node) ast.Visitor {
 			}
 			left := x.Lhs[i]
 			v.addUsed(id.Name, v.Types[left].Type)
+			if lid, ok := left.(*ast.Ident); ok {
+				v.addAssign(lid.Name, id.Name)
+			}
 		}
 	case *ast.CallExpr:
 		if !v.inBlock {
@@ -380,6 +407,7 @@ func (v *Visitor) Visit(node ast.Node) ast.Visitor {
 		if _, ok := top.(*ast.FuncDecl); ok {
 			v.funcEnded(top.Pos())
 			v.params = nil
+			v.extras = nil
 			v.inBlock = false
 		}
 	}
@@ -409,11 +437,7 @@ func (v *Visitor) onCall(ce *ast.CallExpr) {
 	if !ok {
 		return
 	}
-	vname := left.Name
-	p, e := v.params[vname]
-	if !e {
-		return
-	}
+	p := v.param(left.Name)
 	sign := funcSignature(v.Types[ce.Fun].Type)
 	if sign == nil {
 		return

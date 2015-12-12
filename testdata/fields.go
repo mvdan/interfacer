@@ -33,3 +33,15 @@ func Foo2(s *st2) {
 func Foo2Wrong(s *st2) {
 	s.Close()
 }
+
+func FooPassed(s *st) {
+	s.Close()
+	s2 := s
+	s2.field = 2
+}
+
+func FooPassedWrong(s *st) {
+	s.Close()
+	s2 := s
+	s2.Close()
+}
