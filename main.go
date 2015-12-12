@@ -308,7 +308,10 @@ func (v *Visitor) addUsed(name string, as types.Type) {
 	if as == nil {
 		return
 	}
-	p := v.params[name]
+	p, e := v.params[name]
+	if !e {
+		return
+	}
 	p.usedAs = append(p.usedAs, as)
 }
 
@@ -318,10 +321,8 @@ func (v *Visitor) Visit(node ast.Node) ast.Visitor {
 		top = v.nodes[len(v.nodes)-1]
 	}
 	switch x := node.(type) {
-	case *ast.File:
 	case *ast.FuncDecl:
-		f := v.Defs[x.Name].(*types.Func)
-		sign := f.Type().(*types.Signature)
+		sign := v.Defs[x.Name].Type().(*types.Signature)
 		v.params = paramsMap(sign.Params())
 	case *ast.BlockStmt:
 		v.inBlock = true
@@ -334,14 +335,8 @@ func (v *Visitor) Visit(node ast.Node) ast.Visitor {
 			if !ok {
 				continue
 			}
-			lid, ok := x.Lhs[i].(*ast.Ident)
-			if !ok {
-				continue
-			}
-			if _, e := v.params[id.Name]; !e {
-				continue
-			}
-			v.addUsed(id.Name, v.Types[lid].Type)
+			left := x.Lhs[i]
+			v.addUsed(id.Name, v.Types[left].Type)
 		}
 	case *ast.CallExpr:
 		if !v.inBlock {
@@ -354,9 +349,6 @@ func (v *Visitor) Visit(node ast.Node) ast.Visitor {
 		for i, e := range x.Args {
 			id, ok := e.(*ast.Ident)
 			if !ok {
-				continue
-			}
-			if _, e := v.params[id.Name]; !e {
 				continue
 			}
 			v.addUsed(id.Name, paramType(sign, i))
