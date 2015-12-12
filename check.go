@@ -15,6 +15,7 @@ import (
 	"os"
 	"path/filepath"
 	"regexp"
+	"strings"
 )
 
 func typesMatch(wanted, got []types.Type) bool {
@@ -83,8 +84,11 @@ func interfaceMatching(p *param) string {
 
 var skipDir = regexp.MustCompile(`^(testdata|vendor|_.*|\.\+)$`)
 
-func getDirs(d string, recursive bool) ([]string, error) {
+func getDirs(d string) ([]string, error) {
 	var dirs []string
+	if !strings.HasPrefix(d, "./") {
+		return nil, fmt.Errorf("TODO: recursing into non-local import paths")
+	}
 	walkFn := func(path string, info os.FileInfo, err error) error {
 		if err != nil {
 			return err
@@ -93,10 +97,10 @@ func getDirs(d string, recursive bool) ([]string, error) {
 			return filepath.SkipDir
 		}
 		if info.IsDir() {
-			dirs = append(dirs, path)
-			if !recursive {
-				return filepath.SkipDir
+			if !strings.HasPrefix(path, "./") {
+				path = "./" + path
 			}
+			dirs = append(dirs, path)
 		}
 		return nil
 	}
@@ -106,61 +110,76 @@ func getDirs(d string, recursive bool) ([]string, error) {
 	return dirs, nil
 }
 
-func getPkgs(p string) ([]*build.Package, []string, error) {
-	recursive := filepath.Base(p) == "..."
-	if !recursive {
-		info, err := os.Stat(p)
-		if err != nil {
-			return nil, nil, err
-		}
-		if !info.IsDir() {
-			pkg := &build.Package{
-				Name:    "stdin",
-				GoFiles: []string{p},
-			}
-			return []*build.Package{pkg}, []string{"."}, nil
-		}
+func fileExists(path string) (bool, error) {
+	info, err := os.Stat(path)
+	if os.IsNotExist(err) {
+		return false, nil
 	}
-	d := p
-	if recursive {
-		d = p[:len(p)-4]
+	if err != nil {
+		return false, err
 	}
-	dirs, err := getDirs(d, recursive)
+	return !info.IsDir(), nil
+}
+
+func getPkgs(paths []string) ([]*build.Package, []string, error) {
+	ex, err := fileExists(paths[0])
 	if err != nil {
 		return nil, nil, err
 	}
+	if ex {
+		pkg := &build.Package{
+			Name:    ".",
+			GoFiles: paths,
+		}
+		return []*build.Package{pkg}, []string{"."}, nil
+	}
+	var pkgs []*build.Package
+	var basedirs []string
 	wd, err := os.Getwd()
 	if err != nil {
 		return nil, nil, err
 	}
-	var pkgs []*build.Package
-	var basedirs []string
-	for _, d := range dirs {
-		pkg, err := build.Import("./"+d, wd, 0)
-		if _, ok := err.(*build.NoGoError); ok {
-			continue
+	for _, p := range paths {
+		var dirs []string
+		recursive := filepath.Base(p) == "..."
+		if !recursive {
+			dirs = []string{p}
+		} else {
+			d := p[:len(p)-4]
+			var err error
+			dirs, err = getDirs(d)
+			if err != nil {
+				return nil, nil, err
+			}
 		}
-		if err != nil {
-			return nil, nil, err
+		for _, d := range dirs {
+			pkg, err := build.Import(d, wd, 0)
+			if _, ok := err.(*build.NoGoError); ok {
+				continue
+			}
+			if err != nil {
+				return nil, nil, err
+			}
+			pkgs = append(pkgs, pkg)
+			basedirs = append(basedirs, d)
 		}
-		pkgs = append(pkgs, pkg)
-		basedirs = append(basedirs, d)
 	}
 	return pkgs, basedirs, nil
 }
 
 func checkPaths(paths []string, w io.Writer) error {
+	if paths == nil {
+		return fmt.Errorf("No paths given")
+	}
 	conf := &types.Config{Importer: importer.Default()}
-	for _, p := range paths {
-		pkgs, basedirs, err := getPkgs(p)
-		if err != nil {
+	pkgs, basedirs, err := getPkgs(paths)
+	if err != nil {
+		return err
+	}
+	for i, pkg := range pkgs {
+		basedir := basedirs[i]
+		if err := checkPkg(conf, pkg, basedir, w); err != nil {
 			return err
-		}
-		for i, pkg := range pkgs {
-			basedir := basedirs[i]
-			if err := checkPkg(conf, pkg, basedir, w); err != nil {
-				return err
-			}
 		}
 	}
 	return nil

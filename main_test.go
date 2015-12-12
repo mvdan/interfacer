@@ -41,7 +41,7 @@ func doTest(t *testing.T, p string) {
 	}
 	inPath := p
 	if !strings.HasSuffix(p, ".go") {
-		inPath += "/..."
+		inPath = "./" + inPath + "/..."
 	}
 	var b bytes.Buffer
 	err := checkPaths([]string{inPath}, &b)
