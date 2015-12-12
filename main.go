@@ -291,6 +291,13 @@ type Visitor struct {
 	inBlock bool
 }
 
+func (v *Visitor) top() ast.Node {
+	if len(v.nodes) == 0 {
+		return nil
+	}
+	return v.nodes[len(v.nodes)-1]
+}
+
 func paramsMap(t *types.Tuple) map[string]*param {
 	m := make(map[string]*param, t.Len())
 	for i := 0; i < t.Len(); i++ {
@@ -351,10 +358,6 @@ func (v *Visitor) discard(name string) {
 }
 
 func (v *Visitor) Visit(node ast.Node) ast.Visitor {
-	var top ast.Node
-	if len(v.nodes) > 0 {
-		top = v.nodes[len(v.nodes)-1]
-	}
 	switch x := node.(type) {
 	case *ast.FuncDecl:
 		sign := v.Defs[x.Name].Type().(*types.Signature)
@@ -368,14 +371,7 @@ func (v *Visitor) Visit(node ast.Node) ast.Visitor {
 		if !v.inBlock {
 			return nil
 		}
-		if _, ok := top.(*ast.CallExpr); ok {
-			break
-		}
-		id, ok := x.X.(*ast.Ident)
-		if !ok {
-			break
-		}
-		v.discard(id.Name)
+		v.onSelector(x)
 	case *ast.AssignStmt:
 		if !v.inBlock {
 			return nil
@@ -395,26 +391,15 @@ func (v *Visitor) Visit(node ast.Node) ast.Visitor {
 		if !v.inBlock {
 			return nil
 		}
-		sign := funcSignature(v.Types[x.Fun].Type)
-		if sign == nil {
-			break
-		}
-		for i, e := range x.Args {
-			id, ok := e.(*ast.Ident)
-			if !ok {
-				continue
-			}
-			v.addUsed(id.Name, paramType(sign, i))
-		}
 		v.onCall(x)
 	case nil:
-		v.nodes = v.nodes[:len(v.nodes)-1]
-		if _, ok := top.(*ast.FuncDecl); ok {
-			v.funcEnded(top.Pos())
+		if fd, ok := v.top().(*ast.FuncDecl); ok {
+			v.funcEnded(fd.Pos())
 			v.params = nil
 			v.extras = nil
 			v.inBlock = false
 		}
+		v.nodes = v.nodes[:len(v.nodes)-1]
 	}
 	if node != nil {
 		v.nodes = append(v.nodes, node)
@@ -434,6 +419,17 @@ func funcSignature(t types.Type) *types.Signature {
 }
 
 func (v *Visitor) onCall(ce *ast.CallExpr) {
+	sign := funcSignature(v.Types[ce.Fun].Type)
+	if sign == nil {
+		return
+	}
+	for i, e := range ce.Args {
+		id, ok := e.(*ast.Ident)
+		if !ok {
+			continue
+		}
+		v.addUsed(id.Name, paramType(sign, i))
+	}
 	sel, ok := ce.Fun.(*ast.SelectorExpr)
 	if !ok {
 		return
@@ -443,10 +439,6 @@ func (v *Visitor) onCall(ce *ast.CallExpr) {
 		return
 	}
 	p := v.param(left.Name)
-	sign := funcSignature(v.Types[ce.Fun].Type)
-	if sign == nil {
-		return
-	}
 	c := funcSign{}
 	results := sign.Results()
 	for i := 0; i < results.Len(); i++ {
@@ -457,6 +449,17 @@ func (v *Visitor) onCall(ce *ast.CallExpr) {
 	}
 	p.calls[sel.Sel.Name] = c
 	return
+}
+
+func (v *Visitor) onSelector(sel *ast.SelectorExpr) {
+	if _, ok := v.top().(*ast.CallExpr); ok {
+		return
+	}
+	id, ok := sel.X.(*ast.Ident)
+	if !ok {
+		return
+	}
+	v.discard(id.Name)
 }
 
 func (v *Visitor) funcEnded(pos token.Pos) {
