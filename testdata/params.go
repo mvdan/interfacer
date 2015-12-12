@@ -90,9 +90,8 @@ func ArgsExtra() {
 	fmt.Printf("%d %v\n", 12, nil)
 }
 
-func BuiltinExtra() {
+func BuiltinExtra(s string) {
 	i := 2
 	b := make([]byte, i)
-	s := "foo"
-	b = append(b, s...)
+	_ = append(b, s...)
 }
