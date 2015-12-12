@@ -43,15 +43,15 @@ func typesInit() error {
 		if err != nil {
 			return err
 		}
-		grabFromScope(pkg.Scope(), true)
+		grabFromScope(pkg.Scope(), true, path)
 	}
-	grabFromScope(types.Universe, true)
+	grabFromScope(types.Universe, true, "")
 	return nil
 }
 
 var exported = regexp.MustCompile(`^[A-Z]`)
 
-func grabFromScope(scope *types.Scope, unexported bool) {
+func grabFromScope(scope *types.Scope, unexported bool, impPath string) {
 	for _, name := range scope.Names() {
 		tn, ok := scope.Lookup(name).(*types.TypeName)
 		if !ok {
@@ -61,7 +61,9 @@ func grabFromScope(scope *types.Scope, unexported bool) {
 			continue
 		}
 		t := tn.Type()
-		name := t.String()
+		if impPath != "" {
+			name = impPath + "." + name
+		}
 		if _, e := ifaces[name]; e {
 			continue
 		}

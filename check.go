@@ -279,9 +279,9 @@ func (gp *goPkg) check(conf *types.Config, w io.Writer) error {
 	if err != nil {
 		return err
 	}
-	grabFromScope(pkg.Scope(), false)
+	grabFromScope(pkg.Scope(), false, gp.ImportPath)
 	for _, ipkg := range pkg.Imports() {
-		grabFromScope(ipkg.Scope(), false)
+		grabFromScope(ipkg.Scope(), false, ipkg.Path())
 	}
 	v := &Visitor{
 		Info: info,
