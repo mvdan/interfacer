@@ -331,9 +331,6 @@ type Visitor struct {
 }
 
 func (v *Visitor) top() ast.Node {
-	if len(v.nodes) == 0 {
-		return nil
-	}
 	return v.nodes[len(v.nodes)-1]
 }
 
@@ -424,9 +421,6 @@ func (v *Visitor) Visit(node ast.Node) ast.Visitor {
 		}
 		v.onSelector(x)
 	case *ast.AssignStmt:
-		if !v.inBlock {
-			return nil
-		}
 		for i, e := range x.Rhs {
 			id, ok := e.(*ast.Ident)
 			if !ok {
