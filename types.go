@@ -16,6 +16,7 @@ var pkgs = [...]string{
 	"hash",
 	"io",
 	"net",
+	"net/http",
 	"sort",
 	"sync",
 }

@@ -1,0 +1,2 @@
+command-line-arguments
+implement.go:11: w can be io.Writer

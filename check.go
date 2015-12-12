@@ -73,6 +73,41 @@ func matchesIface(p *param, iface ifaceSign, canEmpty bool) bool {
 	return true
 }
 
+func isFunc(sign *types.Signature, fsign funcSign) bool {
+	params := sign.Params()
+	if params.Len() != len(fsign.params) {
+		return false
+	}
+	results := sign.Results()
+	if results.Len() != len(fsign.results) {
+		return false
+	}
+	for i, p := range fsign.params {
+		ip := params.At(i).Type()
+		if p.String() != ip.String() {
+			return false
+		}
+	}
+	for i, r := range fsign.results {
+		ir := results.At(i).Type()
+		if r.String() != ir.String() {
+			return false
+		}
+	}
+	return true
+}
+
+func implementsIface(sign *types.Signature) bool {
+	for _, iface := range ifaces {
+		for _, f := range iface.funcs {
+			if isFunc(sign, f) {
+				return true
+			}
+		}
+	}
+	return false
+}
+
 func interfaceMatching(p *param) string {
 	for _, iface := range ifaces {
 		if matchesIface(p, iface, false) {
@@ -361,6 +396,9 @@ func (v *Visitor) Visit(node ast.Node) ast.Visitor {
 	switch x := node.(type) {
 	case *ast.FuncDecl:
 		sign := v.Defs[x.Name].Type().(*types.Signature)
+		if implementsIface(sign) {
+			return nil
+		}
 		v.params = paramsMap(sign.Params())
 		v.extras = make(map[string]*param)
 	case *ast.BlockStmt:
