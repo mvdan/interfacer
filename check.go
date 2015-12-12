@@ -527,7 +527,10 @@ func (v *Visitor) funcEnded(pos token.Pos) {
 		if iface == nil {
 			continue
 		}
-		if types.ConvertibleTo(iface, p.t) {
+		// TODO: re-enable without reactivating false positive
+		// in alias.go
+		// if types.ConvertibleTo(iface, p.t) {
+		if iface.String() == p.t.String() {
 			continue
 		}
 		pos := v.fset.Position(pos)
