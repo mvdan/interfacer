@@ -72,7 +72,7 @@ func usedMatch(t types.Type, usedAs []types.Type) bool {
 	return true
 }
 
-func matchesIface(p *param, iface ifaceSign) bool {
+func matchesIface(p *param, iface ifaceSign, canEmpty bool) bool {
 	if len(p.calls) > len(iface.funcs) {
 		return false
 	}
@@ -82,7 +82,7 @@ func matchesIface(p *param, iface ifaceSign) bool {
 	for name, f := range iface.funcs {
 		c, e := p.calls[name]
 		if !e {
-			return false
+			return canEmpty
 		}
 		if !typesMatch(f.params, c.params) {
 			return false
@@ -92,7 +92,10 @@ func matchesIface(p *param, iface ifaceSign) bool {
 		}
 	}
 	for _, to := range p.assigned {
-		if !matchesIface(to, iface) {
+		if to.discard {
+			return false
+		}
+		if !matchesIface(to, iface, true) {
 			return false
 		}
 	}
@@ -101,7 +104,7 @@ func matchesIface(p *param, iface ifaceSign) bool {
 
 func interfaceMatching(p *param) string {
 	for name, iface := range parsed {
-		if matchesIface(p, iface) {
+		if matchesIface(p, iface, false) {
 			return name
 		}
 	}
@@ -360,7 +363,7 @@ func (v *Visitor) Visit(node ast.Node) ast.Visitor {
 	case *ast.BlockStmt:
 		v.inBlock = true
 	case *ast.SelectorExpr:
-		if !v.inBlock{
+		if !v.inBlock {
 			return nil
 		}
 		if _, ok := top.(*ast.CallExpr); ok {
