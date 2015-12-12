@@ -292,8 +292,13 @@ func paramType(sign *types.Signature, i int) types.Type {
 		}
 		return params.At(i).Type()
 	}
-	stype := params.At(params.Len() - 1).Type().(*types.Slice)
-	return stype.Elem()
+	last := params.At(params.Len() - 1)
+	switch x := last.Type().(type) {
+	case *types.Slice:
+		return x.Elem()
+	default:
+		return x
+	}
 }
 
 func (v *Visitor) param(name string) *param {

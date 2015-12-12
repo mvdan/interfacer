@@ -93,5 +93,6 @@ func ArgsExtra() {
 func BuiltinExtra() {
 	i := 2
 	b := make([]byte, i)
-	println(b)
+	s := "foo"
+	b = append(b, s...)
 }
