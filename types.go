@@ -12,6 +12,9 @@ import (
 var pkgs = [...]string{
 	"encoding",
 	"encoding/binary",
+	"encoding/gob",
+	"encoding/json",
+	"encoding/xml",
 	"flag",
 	"fmt",
 	"hash",
