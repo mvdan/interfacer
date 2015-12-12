@@ -6,6 +6,7 @@ package main
 import (
 	"go/importer"
 	"go/types"
+	"regexp"
 )
 
 var pkgs = [...]string{
@@ -42,16 +43,21 @@ func typesInit() error {
 		if err != nil {
 			return err
 		}
-		grabFromScope(pkg.Scope())
+		grabFromScope(pkg.Scope(), true)
 	}
-	grabFromScope(types.Universe)
+	grabFromScope(types.Universe, true)
 	return nil
 }
 
-func grabFromScope(scope *types.Scope) {
+var exported = regexp.MustCompile(`^[A-Z]`)
+
+func grabFromScope(scope *types.Scope, unexported bool) {
 	for _, name := range scope.Names() {
 		tn, ok := scope.Lookup(name).(*types.TypeName)
 		if !ok {
+			continue
+		}
+		if !unexported && !exported.MatchString(tn.Name()) {
 			continue
 		}
 		t := tn.Type()
