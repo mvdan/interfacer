@@ -32,11 +32,11 @@ func want(t *testing.T, p string) (string, bool) {
 	if !os.IsNotExist(err) {
 		t.Fatal(err)
 	}
-	return "", false
+	return "command-line-arguments\n", false
 }
 
 func doTest(t *testing.T, p string) {
-	if strings.HasSuffix(p, ".out") {
+	if strings.HasSuffix(p, ".out") || strings.HasSuffix(p, ".err") {
 		return
 	}
 	inPath := p
@@ -71,6 +71,7 @@ func doTest(t *testing.T, p string) {
 }
 
 func TestAll(t *testing.T) {
+	*verbose = true
 	if err := os.Chdir("testdata"); err != nil {
 		t.Fatal(err)
 	}

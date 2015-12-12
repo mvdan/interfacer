@@ -1,1 +1,2 @@
+command-line-arguments
 results.go:14: rc can be io.Closer
