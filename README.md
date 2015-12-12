@@ -2,17 +2,17 @@
 
 A code checker that suggests interface types.
 
-If a function takes a parameter of type `*os.File` but all it does is
-`Read` from it, this program will suggest that you use `io.Reader`
-instead.
+	go get github.com/mvdan/interfacer
 
-## TODOs
-
-* Ignore functions that implement common interfaces or func types 
+### Usage
 
 ```go
-// do not suggest io.Writer
-func httpHandler(w http.ResponseWriter, r *http.Request) {
-	w.Write([]byte{})
-})
+func DoClose(f *os.File) {
+	f.Close()
+}
+```
+
+```sh
+$ interfacer ./...
+foo.go:10: f can be io.Closer
 ```
