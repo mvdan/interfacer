@@ -18,13 +18,3 @@ func httpHandler(w http.ResponseWriter, r *http.Request) {
 	w.Write([]byte{})
 })
 ```
-
-* Field usage - cannot be interface type
-
-```go
-// do not suggest io.Closer
-func foo(a someType) {
-	a.Close()
-	a.field = nil
-}
-```

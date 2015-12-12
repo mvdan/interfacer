@@ -263,8 +263,9 @@ func (gp *goPkg) check(conf *types.Config, w io.Writer) error {
 type param struct {
 	t types.Type
 
-	calls  map[string]funcSign
-	usedAs []types.Type
+	calls   map[string]funcSign
+	usedAs  []types.Type
+	discard bool
 }
 
 type Visitor struct {
@@ -315,6 +316,14 @@ func (v *Visitor) addUsed(name string, as types.Type) {
 	p.usedAs = append(p.usedAs, as)
 }
 
+func (v *Visitor) discard(name string) {
+	p, e := v.params[name]
+	if !e {
+		return
+	}
+	p.discard = true
+}
+
 func (v *Visitor) Visit(node ast.Node) ast.Visitor {
 	var top ast.Node
 	if len(v.nodes) > 0 {
@@ -326,6 +335,18 @@ func (v *Visitor) Visit(node ast.Node) ast.Visitor {
 		v.params = paramsMap(sign.Params())
 	case *ast.BlockStmt:
 		v.inBlock = true
+	case *ast.SelectorExpr:
+		if !v.inBlock{
+			return nil
+		}
+		if _, ok := top.(*ast.CallExpr); ok {
+			break
+		}
+		id, ok := x.X.(*ast.Ident)
+		if !ok {
+			break
+		}
+		v.discard(id.Name)
 	case *ast.AssignStmt:
 		if !v.inBlock {
 			return nil
@@ -411,6 +432,9 @@ func (v *Visitor) onCall(ce *ast.CallExpr) {
 
 func (v *Visitor) funcEnded(pos token.Pos) {
 	for name, p := range v.params {
+		if p.discard {
+			continue
+		}
 		iface := interfaceMatching(p)
 		if iface == "" {
 			continue
