@@ -8,8 +8,6 @@ instead.
 
 ## TODOs
 
-* Suggest all interface types in the Go packages
-
 * Ignore functions that implement common interfaces or func types 
 
 ```go
