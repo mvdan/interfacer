@@ -28,15 +28,15 @@ type funcSign struct {
 }
 
 type ifaceSign struct {
-	name string
-	t    types.Type
+	t types.Type
 
 	funcs map[string]funcSign
 }
 
-var ifaces []ifaceSign
+var ifaces map[string]ifaceSign
 
 func typesInit() error {
+	ifaces = make(map[string]ifaceSign)
 	imp := importer.Default()
 	for _, path := range pkgs {
 		pkg, err := imp.Import(path)
@@ -61,6 +61,10 @@ func grabFromScope(scope *types.Scope, unexported bool) {
 			continue
 		}
 		t := tn.Type()
+		name := t.String()
+		if _, e := ifaces[name]; e {
+			continue
+		}
 		iface, ok := t.Underlying().(*types.Interface)
 		if !ok {
 			continue
@@ -70,7 +74,6 @@ func grabFromScope(scope *types.Scope, unexported bool) {
 		}
 		ifsign := ifaceSign{
 			t:     iface,
-			name:  t.String(),
 			funcs: make(map[string]funcSign, iface.NumMethods()),
 		}
 		for i := 0; i < iface.NumMethods(); i++ {
@@ -82,7 +85,7 @@ func grabFromScope(scope *types.Scope, unexported bool) {
 				results: typeList(sign.Results()),
 			}
 		}
-		ifaces = append(ifaces, ifsign)
+		ifaces[name] = ifsign
 	}
 }
 

@@ -109,9 +109,9 @@ func implementsIface(sign *types.Signature) bool {
 }
 
 func interfaceMatching(p *param) string {
-	for _, iface := range ifaces {
+	for name, iface := range ifaces {
 		if matchesIface(p, iface, false) {
-			return iface.name
+			return name
 		}
 	}
 	return ""
@@ -282,7 +282,6 @@ func (gp *goPkg) check(conf *types.Config, w io.Writer) error {
 	if err != nil {
 		return err
 	}
-	// TODO: types can appear repeated again
 	grabFromScope(pkg.Scope(), false)
 	for _, ipkg := range pkg.Imports() {
 		grabFromScope(ipkg.Scope(), false)
