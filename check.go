@@ -81,7 +81,7 @@ func interfaceMatching(p *param) string {
 	return ""
 }
 
-var skipDir = regexp.MustCompile(`^(testdata|vendor|_.*)$`)
+var skipDir = regexp.MustCompile(`^(testdata|vendor|_.*|\.\+)$`)
 
 func getDirs(d string, recursive bool) ([]string, error) {
 	var dirs []string
