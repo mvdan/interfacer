@@ -259,6 +259,8 @@ type Visitor struct {
 	params  map[string]*param
 	extras  map[string]*param
 	inBlock bool
+
+	skipNext bool
 }
 
 func (v *Visitor) top() ast.Node {
@@ -328,6 +330,10 @@ func (v *Visitor) discard(name string) {
 }
 
 func (v *Visitor) Visit(node ast.Node) ast.Visitor {
+	if v.skipNext {
+		v.skipNext = false
+		return nil
+	}
 	switch x := node.(type) {
 	case *ast.FuncDecl:
 		sign := v.Defs[x.Name].Type().(*types.Signature)
@@ -362,6 +368,14 @@ func (v *Visitor) Visit(node ast.Node) ast.Visitor {
 			return nil
 		}
 		v.onCall(x)
+		switch y := x.Fun.(type) {
+		case *ast.Ident:
+			v.skipNext = true
+		case *ast.SelectorExpr:
+			if _, ok := y.X.(*ast.Ident); ok {
+				v.skipNext = true
+			}
+		}
 	case nil:
 		if fd, ok := v.top().(*ast.FuncDecl); ok {
 			v.funcEnded(fd.Pos())
@@ -422,9 +436,6 @@ func (v *Visitor) onCall(ce *ast.CallExpr) {
 }
 
 func (v *Visitor) onSelector(sel *ast.SelectorExpr) {
-	if _, ok := v.top().(*ast.CallExpr); ok {
-		return
-	}
 	id, ok := sel.X.(*ast.Ident)
 	if !ok {
 		return

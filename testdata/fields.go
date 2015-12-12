@@ -2,11 +2,16 @@ package foo
 
 type st struct {
 	field int
+	m     map[int]int
 }
 
 func (s *st) Close() error {
 	return nil
 }
+
+func (s *st) Lock() {}
+
+func (s *st) Unlock() {}
 
 func Foo(s *st) {
 	s.Close()
@@ -44,4 +49,11 @@ func FooPassedWrong(s *st) {
 	s.Close()
 	s2 := s
 	s2.Close()
+}
+
+func FooBuiltinArg(s *st) func(int) {
+	s.Lock()
+	s.Unlock()
+	delete(s.m, 3)
+	return nil
 }
