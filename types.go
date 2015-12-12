@@ -59,6 +59,9 @@ func grabFromScope(scope *types.Scope) {
 		if !ok {
 			continue
 		}
+		if iface.NumMethods() == 0 {
+			continue
+		}
 		ifsign := ifaceSign{
 			t:     iface,
 			name:  t.String(),
