@@ -19,14 +19,6 @@ func httpHandler(w http.ResponseWriter, r *http.Request) {
 })
 ```
 
-* Nested funcs - currently break the func iteration logic
-
-```go
-func foo() {
-	f := func() {}
-}
-```
-
 * Field usage - cannot be interface type
 
 ```go
