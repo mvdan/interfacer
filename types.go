@@ -33,25 +33,29 @@ type ifaceSign struct {
 	funcs map[string]funcSign
 }
 
-var ifaces map[string]ifaceSign
+var (
+	stdIfaces map[string]ifaceSign
+	ownIfaces map[string]ifaceSign
+)
 
 func typesInit() error {
-	ifaces = make(map[string]ifaceSign)
+	stdIfaces = make(map[string]ifaceSign)
+	ownIfaces = make(map[string]ifaceSign)
 	imp := importer.Default()
 	for _, path := range pkgs {
 		pkg, err := imp.Import(path)
 		if err != nil {
 			return err
 		}
-		grabFromScope(pkg.Scope(), true, path)
+		grabFromScope(stdIfaces, pkg.Scope(), true, path)
 	}
-	grabFromScope(types.Universe, true, "")
+	grabFromScope(stdIfaces, types.Universe, true, "")
 	return nil
 }
 
 var exported = regexp.MustCompile(`^[A-Z]`)
 
-func grabFromScope(scope *types.Scope, unexported bool, impPath string) {
+func grabFromScope(ifaces map[string]ifaceSign, scope *types.Scope, unexported bool, impPath string) {
 	for _, name := range scope.Names() {
 		tn, ok := scope.Lookup(name).(*types.TypeName)
 		if !ok {

@@ -95,7 +95,14 @@ func isFunc(sign *types.Signature, fsign funcSign) bool {
 }
 
 func implementsIface(sign *types.Signature) bool {
-	for _, iface := range ifaces {
+	for _, iface := range stdIfaces {
+		for _, f := range iface.funcs {
+			if isFunc(sign, f) {
+				return true
+			}
+		}
+	}
+	for _, iface := range ownIfaces {
 		for _, f := range iface.funcs {
 			if isFunc(sign, f) {
 				return true
@@ -106,7 +113,12 @@ func implementsIface(sign *types.Signature) bool {
 }
 
 func interfaceMatching(p *param) (string, *types.Interface) {
-	for name, iface := range ifaces {
+	for name, iface := range stdIfaces {
+		if matchesIface(p, iface, false) {
+			return name, iface.t
+		}
+	}
+	for name, iface := range ownIfaces {
 		if matchesIface(p, iface, false) {
 			return name, iface.t
 		}
@@ -279,9 +291,9 @@ func (gp *goPkg) check(conf *types.Config, w io.Writer) error {
 	if err != nil {
 		return err
 	}
-	grabFromScope(pkg.Scope(), false, gp.ImportPath)
+	grabFromScope(ownIfaces, pkg.Scope(), false, gp.ImportPath)
 	for _, ipkg := range pkg.Imports() {
-		grabFromScope(ipkg.Scope(), false, ipkg.Path())
+		grabFromScope(ownIfaces, ipkg.Scope(), false, ipkg.Path())
 	}
 	v := &Visitor{
 		Info: info,
