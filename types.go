@@ -41,34 +41,38 @@ func typesInit() error {
 		if err != nil {
 			return err
 		}
-		scope := pkg.Scope()
-		for _, name := range scope.Names() {
-			tn, ok := scope.Lookup(name).(*types.TypeName)
-			if !ok {
-				continue
-			}
-			t := tn.Type()
-			iface, ok := t.Underlying().(*types.Interface)
-			if !ok {
-				continue
-			}
-			ifname := t.String()
-			parsed[ifname] = ifaceSign{
-				t:     iface,
-				funcs: make(map[string]funcSign, iface.NumMethods()),
-			}
-			for i := 0; i < iface.NumMethods(); i++ {
-				f := iface.Method(i)
-				fname := f.Name()
-				sign := f.Type().(*types.Signature)
-				parsed[ifname].funcs[fname] = funcSign{
-					params:  typeList(sign.Params()),
-					results: typeList(sign.Results()),
-				}
+		grabFromScope(pkg.Scope())
+	}
+	grabFromScope(types.Universe)
+	return nil
+}
+
+func grabFromScope(scope *types.Scope) {
+	for _, name := range scope.Names() {
+		tn, ok := scope.Lookup(name).(*types.TypeName)
+		if !ok {
+			continue
+		}
+		t := tn.Type()
+		iface, ok := t.Underlying().(*types.Interface)
+		if !ok {
+			continue
+		}
+		ifname := t.String()
+		parsed[ifname] = ifaceSign{
+			t:     iface,
+			funcs: make(map[string]funcSign, iface.NumMethods()),
+		}
+		for i := 0; i < iface.NumMethods(); i++ {
+			f := iface.Method(i)
+			fname := f.Name()
+			sign := f.Type().(*types.Signature)
+			parsed[ifname].funcs[fname] = funcSign{
+				params:  typeList(sign.Params()),
+				results: typeList(sign.Results()),
 			}
 		}
 	}
-	return nil
 }
 
 func typeList(t *types.Tuple) []types.Type {
