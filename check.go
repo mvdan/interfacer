@@ -73,9 +73,9 @@ func matchesIface(p *param, iface ifaceSign, canEmpty bool) bool {
 }
 
 func interfaceMatching(p *param) string {
-	for name, iface := range parsed {
+	for _, iface := range ifaces {
 		if matchesIface(p, iface, false) {
-			return name
+			return iface.name
 		}
 	}
 	return ""
