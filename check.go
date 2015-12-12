@@ -32,9 +32,6 @@ func typesMatch(wanted, got []types.Type) bool {
 }
 
 func usedMatch(t types.Type, usedAs []types.Type) bool {
-	if len(usedAs) < 1 {
-		return true
-	}
 	for _, u := range usedAs {
 		if !types.ConvertibleTo(t, u) {
 			return false
