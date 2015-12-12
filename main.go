@@ -361,7 +361,9 @@ func (v *Visitor) Visit(node ast.Node) ast.Visitor {
 		v.params = paramsMap(sign.Params())
 		v.extras = make(map[string]*param)
 	case *ast.BlockStmt:
-		v.inBlock = true
+		if v.params != nil {
+			v.inBlock = true
+		}
 	case *ast.SelectorExpr:
 		if !v.inBlock {
 			return nil
