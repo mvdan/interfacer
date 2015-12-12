@@ -4,7 +4,6 @@
 package main
 
 import (
-	"fmt"
 	"go/importer"
 	"go/types"
 )
@@ -43,22 +42,17 @@ func typesInit() error {
 			return err
 		}
 		scope := pkg.Scope()
-		names := scope.Names()
-		for _, name := range names {
-			obj := scope.Lookup(name)
-			tn, ok := obj.(*types.TypeName)
+		for _, name := range scope.Names() {
+			tn, ok := scope.Lookup(name).(*types.TypeName)
 			if !ok {
 				continue
 			}
-			named := tn.Type().(*types.Named)
-			iface, ok := named.Underlying().(*types.Interface)
+			t := tn.Type()
+			iface, ok := t.Underlying().(*types.Interface)
 			if !ok {
 				continue
 			}
-			ifname := named.String()
-			if _, e := parsed[ifname]; e {
-				return fmt.Errorf("%s is duplicated", ifname)
-			}
+			ifname := t.String()
 			parsed[ifname] = ifaceSign{
 				t:     iface,
 				funcs: make(map[string]funcSign, iface.NumMethods()),
