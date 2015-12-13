@@ -78,6 +78,11 @@ func TestAll(t *testing.T) {
 	if err := os.Chdir("testdata"); err != nil {
 		t.Fatal(err)
 	}
+	defer func() {
+		if err := os.Chdir(".."); err != nil {
+			t.Fatal(err)
+		}
+	}()
 	var tests []string
 	if *name != "" {
 		tests = []string{*name}
@@ -89,8 +94,5 @@ func TestAll(t *testing.T) {
 	}
 	for _, p := range tests {
 		doTest(t, p)
-	}
-	if err := os.Chdir(".."); err != nil {
-		t.Fatal(err)
 	}
 }
