@@ -13,7 +13,7 @@ func Foo(c MyCloser) {
 }
 
 func WeirdFalsePositive(w http.ResponseWriter) {
-        w.Header().Set("a", "b")
-        w.WriteHeader(3)
-        w.Write([]byte{})
+	w.Header().Set("a", "b")
+	w.WriteHeader(3)
+	w.Write([]byte{})
 }

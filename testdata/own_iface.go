@@ -8,7 +8,7 @@ type Barer interface {
 	Bar(f *os.File) int
 }
 
-type st struct {}
+type st struct{}
 
 func (s *st) Bar(f *os.File) int {
 	_ = f.Fd()
