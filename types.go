@@ -9,26 +9,7 @@ import (
 	"regexp"
 )
 
-var pkgs = [...]string{
-	"crypto",
-	"encoding",
-	"encoding/binary",
-	"encoding/gob",
-	"encoding/json",
-	"encoding/xml",
-	"flag",
-	"fmt",
-	"hash",
-	"image",
-	"io",
-	"net",
-	"net/http",
-	"os",
-	"reflect",
-	"runtime",
-	"sort",
-	"sync",
-}
+//go:generate go run generate/std/main.go generate/std/pkgs.go
 
 type funcSign struct {
 	params  []types.Type
