@@ -42,11 +42,14 @@ type ifaceSign struct {
 }
 
 var (
+	done map[string]struct{}
+
 	stdIfaces map[string]ifaceSign
 	ownIfaces map[string]ifaceSign
 )
 
 func typesInit() error {
+	done = make(map[string]struct{})
 	stdIfaces = make(map[string]ifaceSign)
 	ownIfaces = make(map[string]ifaceSign)
 	imp := importer.Default()
@@ -64,6 +67,10 @@ func typesInit() error {
 var exported = regexp.MustCompile(`^[A-Z]`)
 
 func grabFromScope(ifaces map[string]ifaceSign, scope *types.Scope, unexported bool, impPath string) {
+	if _, e := done[impPath]; e {
+		return
+	}
+	done[impPath] = struct{}{}
 	for _, name := range scope.Names() {
 		tn, ok := scope.Lookup(name).(*types.TypeName)
 		if !ok {
