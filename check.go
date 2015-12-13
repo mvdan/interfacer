@@ -103,7 +103,7 @@ func implementsIface(sign *types.Signature) bool {
 }
 
 func fullPath(path, name string) string {
-	if path == "" {
+	if path == "" || strings.HasPrefix(path, "_unknown-") {
 		return name
 	}
 	return path + "." + name
@@ -213,9 +213,6 @@ func getPkgs(paths []string) ([]*build.Package, []string, error) {
 }
 
 func checkPaths(paths []string, w io.Writer) error {
-	if err := typesInit(); err != nil {
-		return err
-	}
 	pkgs, basedirs, err := getPkgs(paths)
 	if err != nil {
 		return err
@@ -320,8 +317,13 @@ func (gp *goPkg) check(conf *types.Config, w io.Writer) error {
 	if err != nil {
 		return err
 	}
-	c.curPaths = flattenImports(pkg, gp.ImportPath)
-	grabRecurse(pkg, gp.ImportPath)
+	path := gp.ImportPath
+	if path == "" {
+		c.nextUnknown++
+		path = fmt.Sprintf("_unknown-%d", c.nextUnknown)
+	}
+	c.curPaths = flattenImports(pkg, path)
+	grabRecurse(pkg, path)
 	v := &Visitor{
 		Info: info,
 		w:    w,

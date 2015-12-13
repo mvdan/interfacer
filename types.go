@@ -56,6 +56,10 @@ type cache struct {
 	// DFS.
 	pkgIfaces map[string][]ifaceSign
 
+	// Useful to separate unknown packages from packages with proper
+	// import paths
+	nextUnknown int
+
 	curPaths []string
 
 	funcs map[string]funcSign
