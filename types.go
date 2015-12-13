@@ -10,6 +10,7 @@ import (
 )
 
 var pkgs = [...]string{
+	"crypto",
 	"encoding",
 	"encoding/binary",
 	"encoding/gob",
@@ -18,9 +19,13 @@ var pkgs = [...]string{
 	"flag",
 	"fmt",
 	"hash",
+	"image",
 	"io",
 	"net",
 	"net/http",
+	"os",
+	"reflect",
+	"runtime",
 	"sort",
 	"sync",
 }
