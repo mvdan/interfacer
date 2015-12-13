@@ -42,6 +42,8 @@ type ifaceSign struct {
 }
 
 type cache struct {
+	imp types.Importer
+
 	done map[string]struct{}
 
 	// key is importPath.typeName
@@ -66,12 +68,12 @@ type cache struct {
 
 func typesInit() error {
 	c = &cache{
+		imp:       importer.Default(),
 		done:      make(map[string]struct{}),
 		stdIfaces: make(map[string][]ifaceSign),
 		pkgIfaces: make(map[string][]ifaceSign),
 		funcs:     make(map[string]funcSign),
 	}
-	imp := importer.Default()
 	for _, p := range pkgs {
 		c.done[p.path] = struct{}{}
 		if len(p.names) == 0 {
@@ -79,7 +81,7 @@ func typesInit() error {
 		}
 		scope := types.Universe
 		if p.path != "" {
-			pkg, err := imp.Import(p.path)
+			pkg, err := c.imp.Import(p.path)
 			if err != nil {
 				return err
 			}

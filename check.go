@@ -7,7 +7,6 @@ import (
 	"fmt"
 	"go/ast"
 	"go/build"
-	"go/importer"
 	"go/parser"
 	"go/token"
 	"go/types"
@@ -217,7 +216,7 @@ func checkPaths(paths []string, w io.Writer) error {
 	if err != nil {
 		return err
 	}
-	conf := &types.Config{Importer: importer.Default()}
+	conf := &types.Config{Importer: c.imp}
 	for i, pkg := range pkgs {
 		basedir := basedirs[i]
 		if err := checkPkg(conf, pkg, basedir, w); err != nil {
