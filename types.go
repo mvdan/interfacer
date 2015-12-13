@@ -47,6 +47,7 @@ func typesInit() error {
 	}
 	imp := importer.Default()
 	for path, names := range pkgs {
+		c.done[path] = struct{}{}
 		pkg, err := imp.Import(path)
 		if err != nil {
 			return err
@@ -54,12 +55,10 @@ func typesInit() error {
 		c.grabNames(pkg.Scope(), path, names)
 	}
 	c.grabNames(types.Universe, "", []string{"error"})
-	delete(c.done, "")
 	return nil
 }
 
 func (c *cache) grabNames(scope *types.Scope, path string, names []string) {
-	c.done[path] = struct{}{}
 	for _, name := range names {
 		tn := scope.Lookup(name).(*types.TypeName)
 		switch x := tn.Type().Underlying().(type) {

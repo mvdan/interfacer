@@ -282,7 +282,7 @@ func (gp *goPkg) parseReader(name string, r io.Reader) error {
 	return nil
 }
 
-func flattenImports(pkg *types.Package, impPath string) []string {
+func flattenImports(pkg *types.Package, path string) []string {
 	seen := make(map[string]struct{})
 	var paths []string
 	var addPkg func(*types.Package, string)
@@ -296,15 +296,15 @@ func flattenImports(pkg *types.Package, impPath string) []string {
 			addPkg(ipkg, ipkg.Path())
 		}
 	}
-	addPkg(pkg, impPath)
+	addPkg(pkg, path)
 	return paths
 }
 
-func grabRecurse(pkg *types.Package, impPath string) {
-	if _, e := c.done[impPath]; e {
+func grabRecurse(pkg *types.Package, path string) {
+	if _, e := c.done[path]; e {
 		return
 	}
-	c.grabExported(pkg.Scope(), impPath)
+	c.grabExported(pkg.Scope(), path)
 	for _, ipkg := range pkg.Imports() {
 		grabRecurse(ipkg, ipkg.Path())
 	}
@@ -320,9 +320,8 @@ func (gp *goPkg) check(conf *types.Config, w io.Writer) error {
 	if err != nil {
 		return err
 	}
-	ownPath := gp.ImportPath
-	c.curPaths = flattenImports(pkg, ownPath)
-	grabRecurse(pkg, ownPath)
+	c.curPaths = flattenImports(pkg, gp.ImportPath)
+	grabRecurse(pkg, gp.ImportPath)
 	v := &Visitor{
 		Info: info,
 		w:    w,
