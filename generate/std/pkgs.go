@@ -6,9 +6,10 @@ package main
 // Gotten from golang/go HEAD 85dd62d5dd5 via:
 // go list ./src/... | sed 's@.*/src/@@' | \
 //     grep -v -E '\<(vendor|internal|builtin|unsafe|cmd)\>'
+// The empty string at the beginning represents builtin.
 // TODO: see if this list can be obtained at runtime
-// TODO: uncomment expvar - expvar.Var clashes with fmt.Stringer
-var pkgs = [...]string{
+var pkgs = []string{
+	"",
 	"archive/tar",
 	"archive/zip",
 	"bufio",
@@ -61,7 +62,7 @@ var pkgs = [...]string{
 	"encoding/pem",
 	"encoding/xml",
 	"errors",
-	//"expvar",
+	"expvar",
 	"flag",
 	"fmt",
 	"go/ast",

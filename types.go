@@ -46,9 +46,14 @@ type cache struct {
 	done map[string]struct{}
 
 	// key is importPath.typeName
+	stdIfaces map[string][]ifaceSign
+
 	// TODO: do something about duplicates, especially to behave
 	// deterministically if two keys map to equal ifaceSigns.
-	stdIfaces map[string][]ifaceSign
+	// This is solved in stdIfaces by sorting standard libary
+	// packages by length and alphabetically. We should sort the
+	// flattened list of imports by depth (BFS). Right now it's a
+	// DFS.
 	pkgIfaces map[string][]ifaceSign
 
 	curPaths []string
@@ -64,18 +69,22 @@ func typesInit() error {
 		funcs:     make(map[string]funcSign),
 	}
 	imp := importer.Default()
-	for path, names := range pkgs {
-		c.done[path] = struct{}{}
-		if len(names) == 0 {
+	for _, p := range pkgs {
+		c.done[p.path] = struct{}{}
+		if len(p.names) == 0 {
 			continue
 		}
-		pkg, err := imp.Import(path)
-		if err != nil {
-			return err
+		scope := types.Universe
+		if p.path != "" {
+			pkg, err := imp.Import(p.path)
+			if err != nil {
+				return err
+			}
+			scope = pkg.Scope()
 		}
-		c.grabNames(pkg.Scope(), path, names)
+		c.grabNames(scope, p.path, p.names)
 	}
-	c.grabNames(types.Universe, "", []string{"error"})
+	delete(c.done, "")
 	return nil
 }
 

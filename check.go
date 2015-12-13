@@ -110,10 +110,10 @@ func fullPath(path, name string) string {
 }
 
 func interfaceMatching(p *param) (string, *types.Interface) {
-	for path, ifaces := range c.stdIfaces {
-		for _, iface := range ifaces {
+	for _, pkg := range pkgs {
+		for _, iface := range c.stdIfaces[pkg.path] {
 			if matchesIface(p, iface, false) {
-				return fullPath(path, iface.name), iface.t
+				return fullPath(pkg.path, iface.name), iface.t
 			}
 		}
 	}

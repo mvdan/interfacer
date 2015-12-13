@@ -2,346 +2,775 @@
 
 package main
 
-var pkgs = map[string][]string{
-	"archive/tar": {
-		"numBytesReader",
+type pkgNames struct {
+	path  string
+	names []string
+}
+
+var pkgs = [...]pkgNames{
+	{
+		path: "",
+		names: []string{
+			"error",
+		},
 	},
-	"archive/zip": {
-		"Compressor",
-		"Decompressor",
+	{
+		path: "io",
+		names: []string{
+			"ByteReader",
+			"ByteScanner",
+			"ByteWriter",
+			"Closer",
+			"ReadCloser",
+			"ReadSeeker",
+			"ReadWriteCloser",
+			"ReadWriteSeeker",
+			"ReadWriter",
+			"Reader",
+			"ReaderAt",
+			"ReaderFrom",
+			"RuneReader",
+			"RuneScanner",
+			"Seeker",
+			"WriteCloser",
+			"WriteSeeker",
+			"Writer",
+			"WriterAt",
+			"WriterTo",
+		},
 	},
-	"bufio": {
-		"SplitFunc",
+	{
+		path: "os",
+		names: []string{
+			"FileInfo",
+			"Signal",
+		},
 	},
-	"bytes":          {},
-	"compress/bzip2": {},
-	"compress/flate": {
-		"Reader",
-		"Resetter",
+	{
+		path: "fmt",
+		names: []string{
+			"Formatter",
+			"GoStringer",
+			"ScanState",
+			"Scanner",
+			"State",
+			"Stringer",
+		},
 	},
-	"compress/gzip": {},
-	"compress/lzw":  {},
-	"compress/zlib": {
-		"Resetter",
+	{
+		path:  "log",
+		names: []string{},
 	},
-	"container/heap": {
-		"Interface",
+	{
+		path: "net",
+		names: []string{
+			"Addr",
+			"Conn",
+			"Error",
+			"Listener",
+			"PacketConn",
+			"dnsConn",
+			"dnsRR",
+			"sockaddr",
+		},
 	},
-	"container/list": {},
-	"container/ring": {},
-	"crypto": {
-		"Decrypter",
-		"Signer",
-		"SignerOpts",
+	{
+		path: "flag",
+		names: []string{
+			"Getter",
+			"Value",
+		},
 	},
-	"crypto/aes": {},
-	"crypto/cipher": {
-		"AEAD",
-		"Block",
-		"BlockMode",
-		"Stream",
+	{
+		path: "hash",
+		names: []string{
+			"Hash",
+			"Hash32",
+			"Hash64",
+		},
 	},
-	"crypto/des":   {},
-	"crypto/dsa":   {},
-	"crypto/ecdsa": {},
-	"crypto/elliptic": {
-		"Curve",
+	{
+		path:  "html",
+		names: []string{},
 	},
-	"crypto/hmac":   {},
-	"crypto/md5":    {},
-	"crypto/rand":   {},
-	"crypto/rc4":    {},
-	"crypto/rsa":    {},
-	"crypto/sha1":   {},
-	"crypto/sha256": {},
-	"crypto/sha512": {},
-	"crypto/subtle": {},
-	"crypto/tls": {
-		"ClientSessionCache",
-		"macFunction",
+	{
+		path:  "math",
+		names: []string{},
 	},
-	"crypto/x509":      {},
-	"crypto/x509/pkix": {},
-	"database/sql": {
-		"Result",
-		"Scanner",
-		"finalCloser",
+	{
+		path:  "mime",
+		names: []string{},
 	},
-	"database/sql/driver": {
-		"ColumnConverter",
-		"Conn",
-		"Driver",
-		"Execer",
-		"Queryer",
-		"Result",
-		"Rows",
-		"Stmt",
-		"Tx",
-		"ValueConverter",
-		"Valuer",
+	{
+		path:  "path",
+		names: []string{},
 	},
-	"debug/dwarf": {
-		"Type",
-		"dataFormat",
-		"typeReader",
+	{
+		path: "sort",
+		names: []string{
+			"Interface",
+		},
 	},
-	"debug/elf":   {},
-	"debug/gosym": {},
-	"debug/macho": {
-		"Load",
+	{
+		path: "sync",
+		names: []string{
+			"Locker",
+		},
 	},
-	"debug/pe":       {},
-	"debug/plan9obj": {},
-	"encoding": {
-		"BinaryMarshaler",
-		"BinaryUnmarshaler",
-		"TextMarshaler",
-		"TextUnmarshaler",
+	{
+		path:  "time",
+		names: []string{},
 	},
-	"encoding/ascii85": {},
-	"encoding/asn1":    {},
-	"encoding/base32":  {},
-	"encoding/base64":  {},
-	"encoding/binary": {
-		"ByteOrder",
+	{
+		path: "bufio",
+		names: []string{
+			"SplitFunc",
+		},
 	},
-	"encoding/csv": {},
-	"encoding/gob": {
-		"GobDecoder",
-		"GobEncoder",
-		"decHelper",
-		"decOp",
-		"encHelper",
-		"encOp",
-		"gobType",
+	{
+		path:  "bytes",
+		names: []string{},
 	},
-	"encoding/hex": {},
-	"encoding/json": {
-		"Marshaler",
-		"Unmarshaler",
+	{
+		path: "image",
+		names: []string{
+			"Image",
+			"PalettedImage",
+		},
 	},
-	"encoding/pem": {},
-	"encoding/xml": {
-		"Marshaler",
-		"MarshalerAttr",
-		"Unmarshaler",
-		"UnmarshalerAttr",
+	{
+		path: "crypto",
+		names: []string{
+			"Decrypter",
+			"Signer",
+			"SignerOpts",
+		},
 	},
-	"errors": {},
-	"flag": {
-		"Getter",
-		"Value",
+	{
+		path:  "errors",
+		names: []string{},
 	},
-	"fmt": {
-		"Formatter",
-		"GoStringer",
-		"ScanState",
-		"Scanner",
-		"State",
-		"Stringer",
+	{
+		path: "expvar",
+		names: []string{
+			"Func",
+			"Var",
+		},
 	},
-	"go/ast": {
-		"Decl",
-		"Expr",
-		"FieldFilter",
-		"Filter",
-		"Importer",
-		"Node",
-		"Spec",
-		"Stmt",
-		"Visitor",
+	{
+		path: "go/ast",
+		names: []string{
+			"Decl",
+			"Expr",
+			"FieldFilter",
+			"Filter",
+			"Importer",
+			"Node",
+			"Spec",
+			"Stmt",
+			"Visitor",
+		},
 	},
-	"go/build": {},
-	"go/constant": {
-		"Value",
+	{
+		path: "go/doc",
+		names: []string{
+			"Filter",
+		},
 	},
-	"go/doc": {
-		"Filter",
+	{
+		path: "regexp",
+		names: []string{
+			"input",
+		},
 	},
-	"go/format": {},
-	"go/importer": {
-		"Lookup",
+	{
+		path: "net/rpc",
+		names: []string{
+			"ClientCodec",
+			"ServerCodec",
+		},
 	},
-	"go/parser":  {},
-	"go/printer": {},
-	"go/scanner": {
-		"ErrorHandler",
+	{
+		path:  "net/url",
+		names: []string{},
 	},
-	"go/token": {},
-	"go/types": {
-		"Importer",
-		"Object",
-		"Qualifier",
-		"Sizes",
-		"Type",
-		"getter",
+	{
+		path:  "os/exec",
+		names: []string{},
 	},
-	"hash": {
-		"Hash",
-		"Hash32",
-		"Hash64",
+	{
+		path:  "os/user",
+		names: []string{},
 	},
-	"hash/adler32":  {},
-	"hash/crc32":    {},
-	"hash/crc64":    {},
-	"hash/fnv":      {},
-	"html":          {},
-	"html/template": {},
-	"image": {
-		"Image",
-		"PalettedImage",
+	{
+		path: "reflect",
+		names: []string{
+			"Type",
+		},
 	},
-	"image/color": {
-		"Color",
-		"Model",
+	{
+		path: "runtime",
+		names: []string{
+			"Error",
+		},
 	},
-	"image/color/palette": {},
-	"image/draw": {
-		"Drawer",
-		"Image",
-		"Quantizer",
+	{
+		path:  "strconv",
+		names: []string{},
 	},
-	"image/gif": {},
-	"image/jpeg": {
-		"Reader",
+	{
+		path: "strings",
+		names: []string{
+			"replacer",
+		},
 	},
-	"image/png":         {},
-	"index/suffixarray": {},
-	"io": {
-		"ByteReader",
-		"ByteScanner",
-		"ByteWriter",
-		"Closer",
-		"ReadCloser",
-		"ReadSeeker",
-		"ReadWriteCloser",
-		"ReadWriteSeeker",
-		"ReadWriter",
-		"Reader",
-		"ReaderAt",
-		"ReaderFrom",
-		"RuneReader",
-		"RuneScanner",
-		"Seeker",
-		"WriteCloser",
-		"WriteSeeker",
-		"Writer",
-		"WriterAt",
-		"WriterTo",
+	{
+		path: "syscall",
+		names: []string{
+			"Sockaddr",
+		},
 	},
-	"io/ioutil": {},
-	"log":       {},
-	"log/syslog": {
-		"serverConn",
+	{
+		path: "testing",
+		names: []string{
+			"TB",
+		},
 	},
-	"math":       {},
-	"math/big":   {},
-	"math/cmplx": {},
-	"math/rand": {
-		"Source",
+	{
+		path:  "unicode",
+		names: []string{},
 	},
-	"mime": {},
-	"mime/multipart": {
-		"File",
+	{
+		path:  "debug/pe",
+		names: []string{},
 	},
-	"mime/quotedprintable": {},
-	"net": {
-		"Addr",
-		"Conn",
-		"Error",
-		"Listener",
-		"PacketConn",
-		"dnsConn",
-		"dnsRR",
-		"sockaddr",
+	{
+		path: "encoding",
+		names: []string{
+			"BinaryMarshaler",
+			"BinaryUnmarshaler",
+			"TextMarshaler",
+			"TextUnmarshaler",
+		},
 	},
-	"net/http": {
-		"CloseNotifier",
-		"CookieJar",
-		"File",
-		"FileSystem",
-		"Flusher",
-		"Handler",
-		"HandlerFunc",
-		"Hijacker",
-		"ResponseWriter",
-		"RoundTripper",
+	{
+		path:  "go/build",
+		names: []string{},
 	},
-	"net/http/cgi": {},
-	"net/http/cookiejar": {
-		"PublicSuffixList",
+	{
+		path:  "go/token",
+		names: []string{},
 	},
-	"net/http/fcgi":     {},
-	"net/http/httptest": {},
-	"net/http/httputil": {},
-	"net/http/pprof":    {},
-	"net/mail":          {},
-	"net/rpc": {
-		"ClientCodec",
-		"ServerCodec",
+	{
+		path: "go/types",
+		names: []string{
+			"Importer",
+			"Object",
+			"Qualifier",
+			"Sizes",
+			"Type",
+			"getter",
+		},
 	},
-	"net/rpc/jsonrpc": {},
-	"net/smtp": {
-		"Auth",
+	{
+		path:  "hash/fnv",
+		names: []string{},
 	},
-	"net/textproto": {},
-	"net/url":       {},
-	"os": {
-		"FileInfo",
-		"Signal",
+	{
+		path:  "math/big",
+		names: []string{},
 	},
-	"os/exec":   {},
-	"os/signal": {},
-	"os/user":   {},
-	"path":      {},
-	"path/filepath": {
-		"WalkFunc",
+	{
+		path: "net/http",
+		names: []string{
+			"CloseNotifier",
+			"CookieJar",
+			"File",
+			"FileSystem",
+			"Flusher",
+			"Handler",
+			"HandlerFunc",
+			"Hijacker",
+			"ResponseWriter",
+			"RoundTripper",
+		},
 	},
-	"reflect": {
-		"Type",
+	{
+		path:  "net/mail",
+		names: []string{},
 	},
-	"regexp": {
-		"input",
+	{
+		path: "net/smtp",
+		names: []string{
+			"Auth",
+		},
 	},
-	"regexp/syntax": {},
-	"runtime": {
-		"Error",
+	{
+		path:  "debug/elf",
+		names: []string{},
 	},
-	"runtime/cgo":   {},
-	"runtime/debug": {},
-	"runtime/pprof": {},
-	"runtime/race":  {},
-	"runtime/trace": {},
-	"sort": {
-		"Interface",
+	{
+		path:  "go/format",
+		names: []string{},
 	},
-	"strconv": {},
-	"strings": {
-		"replacer",
+	{
+		path:  "go/parser",
+		names: []string{},
 	},
-	"sync": {
-		"Locker",
+	{
+		path:  "image/gif",
+		names: []string{},
 	},
-	"sync/atomic": {},
-	"syscall": {
-		"Sockaddr",
+	{
+		path:  "image/png",
+		names: []string{},
 	},
-	"testing": {
-		"TB",
+	{
+		path:  "io/ioutil",
+		names: []string{},
 	},
-	"testing/iotest": {},
-	"testing/quick": {
-		"Generator",
+	{
+		path: "math/rand",
+		names: []string{
+			"Source",
+		},
 	},
-	"text/scanner":   {},
-	"text/tabwriter": {},
-	"text/template":  {},
-	"text/template/parse": {
-		"Node",
-		"stateFn",
+	{
+		path:  "os/signal",
+		names: []string{},
 	},
-	"time":          {},
-	"unicode":       {},
-	"unicode/utf16": {},
-	"unicode/utf8":  {},
+	{
+		path:  "crypto/aes",
+		names: []string{},
+	},
+	{
+		path:  "crypto/des",
+		names: []string{},
+	},
+	{
+		path:  "crypto/dsa",
+		names: []string{},
+	},
+	{
+		path:  "crypto/md5",
+		names: []string{},
+	},
+	{
+		path:  "crypto/rc4",
+		names: []string{},
+	},
+	{
+		path:  "crypto/rsa",
+		names: []string{},
+	},
+	{
+		path: "crypto/tls",
+		names: []string{
+			"ClientSessionCache",
+			"macFunction",
+		},
+	},
+	{
+		path:  "go/printer",
+		names: []string{},
+	},
+	{
+		path: "go/scanner",
+		names: []string{
+			"ErrorHandler",
+		},
+	},
+	{
+		path:  "hash/crc32",
+		names: []string{},
+	},
+	{
+		path:  "hash/crc64",
+		names: []string{},
+	},
+	{
+		path: "image/draw",
+		names: []string{
+			"Drawer",
+			"Image",
+			"Quantizer",
+		},
+	},
+	{
+		path: "image/jpeg",
+		names: []string{
+			"Reader",
+		},
+	},
+	{
+		path: "log/syslog",
+		names: []string{
+			"serverConn",
+		},
+	},
+	{
+		path:  "math/cmplx",
+		names: []string{},
+	},
+	{
+		path: "archive/tar",
+		names: []string{
+			"numBytesReader",
+		},
+	},
+	{
+		path: "archive/zip",
+		names: []string{
+			"Compressor",
+			"Decompressor",
+		},
+	},
+	{
+		path:  "crypto/hmac",
+		names: []string{},
+	},
+	{
+		path:  "crypto/rand",
+		names: []string{},
+	},
+	{
+		path:  "crypto/sha1",
+		names: []string{},
+	},
+	{
+		path:  "crypto/x509",
+		names: []string{},
+	},
+	{
+		path: "debug/dwarf",
+		names: []string{
+			"Type",
+			"dataFormat",
+			"typeReader",
+		},
+	},
+	{
+		path:  "debug/gosym",
+		names: []string{},
+	},
+	{
+		path: "debug/macho",
+		names: []string{
+			"Load",
+		},
+	},
+	{
+		path: "go/constant",
+		names: []string{
+			"Value",
+		},
+	},
+	{
+		path: "go/importer",
+		names: []string{
+			"Lookup",
+		},
+	},
+	{
+		path: "image/color",
+		names: []string{
+			"Color",
+			"Model",
+		},
+	},
+	{
+		path:  "runtime/cgo",
+		names: []string{},
+	},
+	{
+		path:  "sync/atomic",
+		names: []string{},
+	},
+	{
+		path:  "compress/lzw",
+		names: []string{},
+	},
+	{
+		path:  "crypto/ecdsa",
+		names: []string{},
+	},
+	{
+		path: "database/sql",
+		names: []string{
+			"Result",
+			"Scanner",
+			"finalCloser",
+		},
+	},
+	{
+		path:  "encoding/csv",
+		names: []string{},
+	},
+	{
+		path: "encoding/gob",
+		names: []string{
+			"GobDecoder",
+			"GobEncoder",
+			"decHelper",
+			"decOp",
+			"encHelper",
+			"encOp",
+			"gobType",
+		},
+	},
+	{
+		path:  "encoding/hex",
+		names: []string{},
+	},
+	{
+		path:  "encoding/pem",
+		names: []string{},
+	},
+	{
+		path: "encoding/xml",
+		names: []string{
+			"Marshaler",
+			"MarshalerAttr",
+			"Unmarshaler",
+			"UnmarshalerAttr",
+		},
+	},
+	{
+		path:  "hash/adler32",
+		names: []string{},
+	},
+	{
+		path:  "net/http/cgi",
+		names: []string{},
+	},
+	{
+		path:  "runtime/race",
+		names: []string{},
+	},
+	{
+		path:  "text/scanner",
+		names: []string{},
+	},
+	{
+		path:  "unicode/utf8",
+		names: []string{},
+	},
+	{
+		path:  "compress/gzip",
+		names: []string{},
+	},
+	{
+		path: "compress/zlib",
+		names: []string{
+			"Resetter",
+		},
+	},
+	{
+		path: "crypto/cipher",
+		names: []string{
+			"AEAD",
+			"Block",
+			"BlockMode",
+			"Stream",
+		},
+	},
+	{
+		path:  "crypto/sha256",
+		names: []string{},
+	},
+	{
+		path:  "crypto/sha512",
+		names: []string{},
+	},
+	{
+		path:  "crypto/subtle",
+		names: []string{},
+	},
+	{
+		path:  "encoding/asn1",
+		names: []string{},
+	},
+	{
+		path: "encoding/json",
+		names: []string{
+			"Marshaler",
+			"Unmarshaler",
+		},
+	},
+	{
+		path:  "html/template",
+		names: []string{},
+	},
+	{
+		path:  "net/http/fcgi",
+		names: []string{},
+	},
+	{
+		path:  "net/textproto",
+		names: []string{},
+	},
+	{
+		path: "path/filepath",
+		names: []string{
+			"WalkFunc",
+		},
+	},
+	{
+		path:  "regexp/syntax",
+		names: []string{},
+	},
+	{
+		path:  "runtime/debug",
+		names: []string{},
+	},
+	{
+		path:  "runtime/pprof",
+		names: []string{},
+	},
+	{
+		path:  "runtime/trace",
+		names: []string{},
+	},
+	{
+		path: "testing/quick",
+		names: []string{
+			"Generator",
+		},
+	},
+	{
+		path:  "text/template",
+		names: []string{},
+	},
+	{
+		path:  "unicode/utf16",
+		names: []string{},
+	},
+	{
+		path:  "compress/bzip2",
+		names: []string{},
+	},
+	{
+		path: "compress/flate",
+		names: []string{
+			"Reader",
+			"Resetter",
+		},
+	},
+	{
+		path: "container/heap",
+		names: []string{
+			"Interface",
+		},
+	},
+	{
+		path:  "container/list",
+		names: []string{},
+	},
+	{
+		path:  "container/ring",
+		names: []string{},
+	},
+	{
+		path:  "debug/plan9obj",
+		names: []string{},
+	},
+	{
+		path: "mime/multipart",
+		names: []string{
+			"File",
+		},
+	},
+	{
+		path:  "net/http/pprof",
+		names: []string{},
+	},
+	{
+		path:  "testing/iotest",
+		names: []string{},
+	},
+	{
+		path:  "text/tabwriter",
+		names: []string{},
+	},
+	{
+		path: "crypto/elliptic",
+		names: []string{
+			"Curve",
+		},
+	},
+	{
+		path:  "encoding/base32",
+		names: []string{},
+	},
+	{
+		path:  "encoding/base64",
+		names: []string{},
+	},
+	{
+		path: "encoding/binary",
+		names: []string{
+			"ByteOrder",
+		},
+	},
+	{
+		path:  "net/rpc/jsonrpc",
+		names: []string{},
+	},
+	{
+		path:  "crypto/x509/pkix",
+		names: []string{},
+	},
+	{
+		path:  "encoding/ascii85",
+		names: []string{},
+	},
+	{
+		path:  "index/suffixarray",
+		names: []string{},
+	},
+	{
+		path:  "net/http/httptest",
+		names: []string{},
+	},
+	{
+		path:  "net/http/httputil",
+		names: []string{},
+	},
+	{
+		path: "net/http/cookiejar",
+		names: []string{
+			"PublicSuffixList",
+		},
+	},
+	{
+		path: "database/sql/driver",
+		names: []string{
+			"ColumnConverter",
+			"Conn",
+			"Driver",
+			"Execer",
+			"Queryer",
+			"Result",
+			"Rows",
+			"Stmt",
+			"Tx",
+			"ValueConverter",
+			"Valuer",
+		},
+	},
+	{
+		path:  "image/color/palette",
+		names: []string{},
+	},
+	{
+		path: "text/template/parse",
+		names: []string{
+			"Node",
+			"stateFn",
+		},
+	},
+	{
+		path:  "mime/quotedprintable",
+		names: []string{},
+	},
 }
