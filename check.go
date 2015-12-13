@@ -280,6 +280,7 @@ func grabRecurse(pkg *types.Package, impPath string) {
 		return
 	}
 	c.grabFromScope(pkg.Scope(), true, false, impPath)
+	c.done[impPath] = struct{}{}
 	for _, ipkg := range pkg.Imports() {
 		grabRecurse(ipkg, ipkg.Path())
 	}
@@ -299,6 +300,8 @@ func (gp *goPkg) check(conf *types.Config, w io.Writer) error {
 	if ownPath == "" {
 		ownPath = "."
 	}
+	c.done = make(map[string]struct{})
+	c.ownIfaces = make(map[string]ifaceSign)
 	grabRecurse(pkg, ownPath)
 	v := &Visitor{
 		Info: info,

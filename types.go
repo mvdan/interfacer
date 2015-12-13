@@ -56,9 +56,7 @@ type cache struct {
 
 func typesInit() error {
 	c = &cache{
-		done:      make(map[string]struct{}),
 		stdIfaces: make(map[string]ifaceSign),
-		ownIfaces: make(map[string]ifaceSign),
 	}
 	imp := importer.Default()
 	for _, path := range pkgs {
@@ -79,7 +77,6 @@ func (c *cache) grabFromScope(scope *types.Scope, own, unexported bool, impPath 
 	if own {
 		ifaces = c.ownIfaces
 	}
-	c.done[impPath] = struct{}{}
 	for _, name := range scope.Names() {
 		tn, ok := scope.Lookup(name).(*types.TypeName)
 		if !ok {
