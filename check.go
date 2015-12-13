@@ -66,9 +66,6 @@ func matchesIface(p *param, iface ifaceSign, canEmpty bool) bool {
 		if to.discard {
 			return false
 		}
-		if !matchesIface(to, iface, true) {
-			return false
-		}
 	}
 	return true
 }
