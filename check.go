@@ -98,18 +98,9 @@ func isFunc(sign *types.Signature, fsign funcSign) bool {
 }
 
 func implementsIface(sign *types.Signature) bool {
-	for _, iface := range c.stdIfaces {
-		for _, f := range iface.funcs {
-			if isFunc(sign, f) {
-				return true
-			}
-		}
-	}
-	for _, iface := range c.ownIfaces {
-		for _, f := range iface.funcs {
-			if isFunc(sign, f) {
-				return true
-			}
+	for _, f := range c.funcs {
+		if isFunc(sign, f) {
+			return true
 		}
 	}
 	return false

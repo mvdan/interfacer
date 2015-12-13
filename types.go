@@ -44,8 +44,14 @@ type ifaceSign struct {
 type cache struct {
 	done map[string]struct{}
 
+	// key is importPath.typeName
+	// TODO: do something about duplicates, especially to behave
+	// deterministically if two keys map to equal ifaceSigns.
 	stdIfaces map[string]ifaceSign
 	ownIfaces map[string]ifaceSign
+
+	// TODO: avoid duplicates
+	funcs []funcSign
 }
 
 func typesInit() error {
@@ -104,10 +110,12 @@ func (c *cache) grabFromScope(scope *types.Scope, own, unexported bool, impPath 
 			f := iface.Method(i)
 			fname := f.Name()
 			sign := f.Type().(*types.Signature)
-			ifsign.funcs[fname] = funcSign{
+			fsign := funcSign{
 				params:  typeList(sign.Params()),
 				results: typeList(sign.Results()),
 			}
+			c.funcs = append(c.funcs, fsign)
+			ifsign.funcs[fname] = fsign
 		}
 		ifaces[name] = ifsign
 	}
