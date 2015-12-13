@@ -95,29 +95,34 @@ func (c *cache) grabFromScope(scope *types.Scope, own, unexported bool, impPath 
 		if _, e := ifaces[name]; e {
 			continue
 		}
-		iface, ok := t.Underlying().(*types.Interface)
-		if !ok {
-			continue
-		}
-		if iface.NumMethods() == 0 {
-			continue
-		}
-		ifsign := ifaceSign{
-			t:     iface,
-			funcs: make(map[string]funcSign, iface.NumMethods()),
-		}
-		for i := 0; i < iface.NumMethods(); i++ {
-			f := iface.Method(i)
-			fname := f.Name()
-			sign := f.Type().(*types.Signature)
+		switch x := t.Underlying().(type) {
+		case *types.Interface:
+			if x.NumMethods() == 0 {
+				continue
+			}
+			ifsign := ifaceSign{
+				t:     x,
+				funcs: make(map[string]funcSign, x.NumMethods()),
+			}
+			for i := 0; i < x.NumMethods(); i++ {
+				f := x.Method(i)
+				fname := f.Name()
+				sign := f.Type().(*types.Signature)
+				fsign := funcSign{
+					params:  typeList(sign.Params()),
+					results: typeList(sign.Results()),
+				}
+				c.funcs = append(c.funcs, fsign)
+				ifsign.funcs[fname] = fsign
+			}
+			ifaces[name] = ifsign
+		case *types.Signature:
 			fsign := funcSign{
-				params:  typeList(sign.Params()),
-				results: typeList(sign.Results()),
+				params:  typeList(x.Params()),
+				results: typeList(x.Results()),
 			}
 			c.funcs = append(c.funcs, fsign)
-			ifsign.funcs[fname] = fsign
 		}
-		ifaces[name] = ifsign
 	}
 }
 

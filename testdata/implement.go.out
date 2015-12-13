@@ -1,2 +1,3 @@
 command-line-arguments
-implement.go:11: w can be io.Writer
+implement.go:12: w can be io.Writer
+implement.go:23: f can be io.Closer
