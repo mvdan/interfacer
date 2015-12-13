@@ -55,11 +55,7 @@ func generate(w io.Writer) error {
 		if err != nil {
 			return err
 		}
-		names := fromScope(pkg.Scope())
-		if len(names) == 0 {
-			continue
-		}
-		wanted[path] = names
+		wanted[path] = fromScope(pkg.Scope())
 	}
 	return tmpl.Execute(w, wanted)
 }

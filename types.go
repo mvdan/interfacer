@@ -10,6 +10,7 @@ import (
 )
 
 //go:generate go run generate/std/main.go generate/std/pkgs.go
+//go:generate gofmt -w std.go
 
 type funcSign struct {
 	params  []types.Type
@@ -48,6 +49,9 @@ func typesInit() error {
 	imp := importer.Default()
 	for path, names := range pkgs {
 		c.done[path] = struct{}{}
+		if len(names) == 0 {
+			continue
+		}
 		pkg, err := imp.Import(path)
 		if err != nil {
 			return err

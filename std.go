@@ -13,34 +13,55 @@ var pkgs = map[string][]string{
 	"bufio": {
 		"SplitFunc",
 	},
+	"bytes":          {},
+	"compress/bzip2": {},
 	"compress/flate": {
 		"Reader",
 		"Resetter",
 	},
+	"compress/gzip": {},
+	"compress/lzw":  {},
 	"compress/zlib": {
 		"Resetter",
 	},
 	"container/heap": {
 		"Interface",
 	},
+	"container/list": {},
+	"container/ring": {},
 	"crypto": {
 		"Decrypter",
 		"Signer",
 		"SignerOpts",
 	},
+	"crypto/aes": {},
 	"crypto/cipher": {
 		"AEAD",
 		"Block",
 		"BlockMode",
 		"Stream",
 	},
+	"crypto/des":   {},
+	"crypto/dsa":   {},
+	"crypto/ecdsa": {},
 	"crypto/elliptic": {
 		"Curve",
 	},
+	"crypto/hmac":   {},
+	"crypto/md5":    {},
+	"crypto/rand":   {},
+	"crypto/rc4":    {},
+	"crypto/rsa":    {},
+	"crypto/sha1":   {},
+	"crypto/sha256": {},
+	"crypto/sha512": {},
+	"crypto/subtle": {},
 	"crypto/tls": {
 		"ClientSessionCache",
 		"macFunction",
 	},
+	"crypto/x509":      {},
+	"crypto/x509/pkix": {},
 	"database/sql": {
 		"Result",
 		"Scanner",
@@ -64,18 +85,27 @@ var pkgs = map[string][]string{
 		"dataFormat",
 		"typeReader",
 	},
+	"debug/elf":   {},
+	"debug/gosym": {},
 	"debug/macho": {
 		"Load",
 	},
+	"debug/pe":       {},
+	"debug/plan9obj": {},
 	"encoding": {
 		"BinaryMarshaler",
 		"BinaryUnmarshaler",
 		"TextMarshaler",
 		"TextUnmarshaler",
 	},
+	"encoding/ascii85": {},
+	"encoding/asn1":    {},
+	"encoding/base32":  {},
+	"encoding/base64":  {},
 	"encoding/binary": {
 		"ByteOrder",
 	},
+	"encoding/csv": {},
 	"encoding/gob": {
 		"GobDecoder",
 		"GobEncoder",
@@ -85,16 +115,19 @@ var pkgs = map[string][]string{
 		"encOp",
 		"gobType",
 	},
+	"encoding/hex": {},
 	"encoding/json": {
 		"Marshaler",
 		"Unmarshaler",
 	},
+	"encoding/pem": {},
 	"encoding/xml": {
 		"Marshaler",
 		"MarshalerAttr",
 		"Unmarshaler",
 		"UnmarshalerAttr",
 	},
+	"errors": {},
 	"flag": {
 		"Getter",
 		"Value",
@@ -118,18 +151,23 @@ var pkgs = map[string][]string{
 		"Stmt",
 		"Visitor",
 	},
+	"go/build": {},
 	"go/constant": {
 		"Value",
 	},
 	"go/doc": {
 		"Filter",
 	},
+	"go/format": {},
 	"go/importer": {
 		"Lookup",
 	},
+	"go/parser":  {},
+	"go/printer": {},
 	"go/scanner": {
 		"ErrorHandler",
 	},
+	"go/token": {},
 	"go/types": {
 		"Importer",
 		"Object",
@@ -143,6 +181,12 @@ var pkgs = map[string][]string{
 		"Hash32",
 		"Hash64",
 	},
+	"hash/adler32":  {},
+	"hash/crc32":    {},
+	"hash/crc64":    {},
+	"hash/fnv":      {},
+	"html":          {},
+	"html/template": {},
 	"image": {
 		"Image",
 		"PalettedImage",
@@ -151,14 +195,18 @@ var pkgs = map[string][]string{
 		"Color",
 		"Model",
 	},
+	"image/color/palette": {},
 	"image/draw": {
 		"Drawer",
 		"Image",
 		"Quantizer",
 	},
+	"image/gif": {},
 	"image/jpeg": {
 		"Reader",
 	},
+	"image/png":         {},
+	"index/suffixarray": {},
 	"io": {
 		"ByteReader",
 		"ByteScanner",
@@ -181,15 +229,22 @@ var pkgs = map[string][]string{
 		"WriterAt",
 		"WriterTo",
 	},
+	"io/ioutil": {},
+	"log":       {},
 	"log/syslog": {
 		"serverConn",
 	},
+	"math":       {},
+	"math/big":   {},
+	"math/cmplx": {},
 	"math/rand": {
 		"Source",
 	},
+	"mime": {},
 	"mime/multipart": {
 		"File",
 	},
+	"mime/quotedprintable": {},
 	"net": {
 		"Addr",
 		"Conn",
@@ -212,20 +267,33 @@ var pkgs = map[string][]string{
 		"ResponseWriter",
 		"RoundTripper",
 	},
+	"net/http/cgi": {},
 	"net/http/cookiejar": {
 		"PublicSuffixList",
 	},
+	"net/http/fcgi":     {},
+	"net/http/httptest": {},
+	"net/http/httputil": {},
+	"net/http/pprof":    {},
+	"net/mail":          {},
 	"net/rpc": {
 		"ClientCodec",
 		"ServerCodec",
 	},
+	"net/rpc/jsonrpc": {},
 	"net/smtp": {
 		"Auth",
 	},
+	"net/textproto": {},
+	"net/url":       {},
 	"os": {
 		"FileInfo",
 		"Signal",
 	},
+	"os/exec":   {},
+	"os/signal": {},
+	"os/user":   {},
+	"path":      {},
 	"path/filepath": {
 		"WalkFunc",
 	},
@@ -235,29 +303,45 @@ var pkgs = map[string][]string{
 	"regexp": {
 		"input",
 	},
+	"regexp/syntax": {},
 	"runtime": {
 		"Error",
 	},
+	"runtime/cgo":   {},
+	"runtime/debug": {},
+	"runtime/pprof": {},
+	"runtime/race":  {},
+	"runtime/trace": {},
 	"sort": {
 		"Interface",
 	},
+	"strconv": {},
 	"strings": {
 		"replacer",
 	},
 	"sync": {
 		"Locker",
 	},
+	"sync/atomic": {},
 	"syscall": {
 		"Sockaddr",
 	},
 	"testing": {
 		"TB",
 	},
+	"testing/iotest": {},
 	"testing/quick": {
 		"Generator",
 	},
+	"text/scanner":   {},
+	"text/tabwriter": {},
+	"text/template":  {},
 	"text/template/parse": {
 		"Node",
 		"stateFn",
 	},
+	"time":          {},
+	"unicode":       {},
+	"unicode/utf16": {},
+	"unicode/utf8":  {},
 }
