@@ -57,9 +57,7 @@ var pkgs = [...]pkgNames{
 			"Stringer",
 		},
 	},
-	{
-		path: "log",
-	},
+	{path: "log"},
 	{
 		path: "net",
 		names: []string{
@@ -88,18 +86,10 @@ var pkgs = [...]pkgNames{
 			"Hash64",
 		},
 	},
-	{
-		path: "html",
-	},
-	{
-		path: "math",
-	},
-	{
-		path: "mime",
-	},
-	{
-		path: "path",
-	},
+	{path: "html"},
+	{path: "math"},
+	{path: "mime"},
+	{path: "path"},
 	{
 		path: "sort",
 		names: []string{
@@ -112,18 +102,14 @@ var pkgs = [...]pkgNames{
 			"Locker",
 		},
 	},
-	{
-		path: "time",
-	},
+	{path: "time"},
 	{
 		path: "bufio",
 		names: []string{
 			"SplitFunc",
 		},
 	},
-	{
-		path: "bytes",
-	},
+	{path: "bytes"},
 	{
 		path: "image",
 		names: []string{
@@ -139,9 +125,7 @@ var pkgs = [...]pkgNames{
 			"SignerOpts",
 		},
 	},
-	{
-		path: "errors",
-	},
+	{path: "errors"},
 	{
 		path: "expvar",
 		names: []string{
@@ -182,15 +166,9 @@ var pkgs = [...]pkgNames{
 			"ServerCodec",
 		},
 	},
-	{
-		path: "net/url",
-	},
-	{
-		path: "os/exec",
-	},
-	{
-		path: "os/user",
-	},
+	{path: "net/url"},
+	{path: "os/exec"},
+	{path: "os/user"},
 	{
 		path: "reflect",
 		names: []string{
@@ -203,9 +181,7 @@ var pkgs = [...]pkgNames{
 			"Error",
 		},
 	},
-	{
-		path: "strconv",
-	},
+	{path: "strconv"},
 	{
 		path: "strings",
 		names: []string{
@@ -224,12 +200,8 @@ var pkgs = [...]pkgNames{
 			"TB",
 		},
 	},
-	{
-		path: "unicode",
-	},
-	{
-		path: "debug/pe",
-	},
+	{path: "unicode"},
+	{path: "debug/pe"},
 	{
 		path: "encoding",
 		names: []string{
@@ -239,12 +211,8 @@ var pkgs = [...]pkgNames{
 			"TextUnmarshaler",
 		},
 	},
-	{
-		path: "go/build",
-	},
-	{
-		path: "go/token",
-	},
+	{path: "go/build"},
+	{path: "go/token"},
 	{
 		path: "go/types",
 		names: []string{
@@ -256,12 +224,8 @@ var pkgs = [...]pkgNames{
 			"getter",
 		},
 	},
-	{
-		path: "hash/fnv",
-	},
-	{
-		path: "math/big",
-	},
+	{path: "hash/fnv"},
+	{path: "math/big"},
 	{
 		path: "net/http",
 		names: []string{
@@ -277,60 +241,32 @@ var pkgs = [...]pkgNames{
 			"RoundTripper",
 		},
 	},
-	{
-		path: "net/mail",
-	},
+	{path: "net/mail"},
 	{
 		path: "net/smtp",
 		names: []string{
 			"Auth",
 		},
 	},
-	{
-		path: "debug/elf",
-	},
-	{
-		path: "go/format",
-	},
-	{
-		path: "go/parser",
-	},
-	{
-		path: "image/gif",
-	},
-	{
-		path: "image/png",
-	},
-	{
-		path: "io/ioutil",
-	},
+	{path: "debug/elf"},
+	{path: "go/format"},
+	{path: "go/parser"},
+	{path: "image/gif"},
+	{path: "image/png"},
+	{path: "io/ioutil"},
 	{
 		path: "math/rand",
 		names: []string{
 			"Source",
 		},
 	},
-	{
-		path: "os/signal",
-	},
-	{
-		path: "crypto/aes",
-	},
-	{
-		path: "crypto/des",
-	},
-	{
-		path: "crypto/dsa",
-	},
-	{
-		path: "crypto/md5",
-	},
-	{
-		path: "crypto/rc4",
-	},
-	{
-		path: "crypto/rsa",
-	},
+	{path: "os/signal"},
+	{path: "crypto/aes"},
+	{path: "crypto/des"},
+	{path: "crypto/dsa"},
+	{path: "crypto/md5"},
+	{path: "crypto/rc4"},
+	{path: "crypto/rsa"},
 	{
 		path: "crypto/tls",
 		names: []string{
@@ -338,21 +274,15 @@ var pkgs = [...]pkgNames{
 			"macFunction",
 		},
 	},
-	{
-		path: "go/printer",
-	},
+	{path: "go/printer"},
 	{
 		path: "go/scanner",
 		names: []string{
 			"ErrorHandler",
 		},
 	},
-	{
-		path: "hash/crc32",
-	},
-	{
-		path: "hash/crc64",
-	},
+	{path: "hash/crc32"},
+	{path: "hash/crc64"},
 	{
 		path: "image/draw",
 		names: []string{
@@ -373,9 +303,7 @@ var pkgs = [...]pkgNames{
 			"serverConn",
 		},
 	},
-	{
-		path: "math/cmplx",
-	},
+	{path: "math/cmplx"},
 	{
 		path: "archive/tar",
 		names: []string{
@@ -389,18 +317,10 @@ var pkgs = [...]pkgNames{
 			"Decompressor",
 		},
 	},
-	{
-		path: "crypto/hmac",
-	},
-	{
-		path: "crypto/rand",
-	},
-	{
-		path: "crypto/sha1",
-	},
-	{
-		path: "crypto/x509",
-	},
+	{path: "crypto/hmac"},
+	{path: "crypto/rand"},
+	{path: "crypto/sha1"},
+	{path: "crypto/x509"},
 	{
 		path: "debug/dwarf",
 		names: []string{
@@ -409,9 +329,7 @@ var pkgs = [...]pkgNames{
 			"typeReader",
 		},
 	},
-	{
-		path: "debug/gosym",
-	},
+	{path: "debug/gosym"},
 	{
 		path: "debug/macho",
 		names: []string{
@@ -437,18 +355,10 @@ var pkgs = [...]pkgNames{
 			"Model",
 		},
 	},
-	{
-		path: "runtime/cgo",
-	},
-	{
-		path: "sync/atomic",
-	},
-	{
-		path: "compress/lzw",
-	},
-	{
-		path: "crypto/ecdsa",
-	},
+	{path: "runtime/cgo"},
+	{path: "sync/atomic"},
+	{path: "compress/lzw"},
+	{path: "crypto/ecdsa"},
 	{
 		path: "database/sql",
 		names: []string{
@@ -457,9 +367,7 @@ var pkgs = [...]pkgNames{
 			"finalCloser",
 		},
 	},
-	{
-		path: "encoding/csv",
-	},
+	{path: "encoding/csv"},
 	{
 		path: "encoding/gob",
 		names: []string{
@@ -472,12 +380,8 @@ var pkgs = [...]pkgNames{
 			"gobType",
 		},
 	},
-	{
-		path: "encoding/hex",
-	},
-	{
-		path: "encoding/pem",
-	},
+	{path: "encoding/hex"},
+	{path: "encoding/pem"},
 	{
 		path: "encoding/xml",
 		names: []string{
@@ -487,24 +391,12 @@ var pkgs = [...]pkgNames{
 			"UnmarshalerAttr",
 		},
 	},
-	{
-		path: "hash/adler32",
-	},
-	{
-		path: "net/http/cgi",
-	},
-	{
-		path: "runtime/race",
-	},
-	{
-		path: "text/scanner",
-	},
-	{
-		path: "unicode/utf8",
-	},
-	{
-		path: "compress/gzip",
-	},
+	{path: "hash/adler32"},
+	{path: "net/http/cgi"},
+	{path: "runtime/race"},
+	{path: "text/scanner"},
+	{path: "unicode/utf8"},
+	{path: "compress/gzip"},
 	{
 		path: "compress/zlib",
 		names: []string{
@@ -520,18 +412,10 @@ var pkgs = [...]pkgNames{
 			"Stream",
 		},
 	},
-	{
-		path: "crypto/sha256",
-	},
-	{
-		path: "crypto/sha512",
-	},
-	{
-		path: "crypto/subtle",
-	},
-	{
-		path: "encoding/asn1",
-	},
+	{path: "crypto/sha256"},
+	{path: "crypto/sha512"},
+	{path: "crypto/subtle"},
+	{path: "encoding/asn1"},
 	{
 		path: "encoding/json",
 		names: []string{
@@ -539,48 +423,28 @@ var pkgs = [...]pkgNames{
 			"Unmarshaler",
 		},
 	},
-	{
-		path: "html/template",
-	},
-	{
-		path: "net/http/fcgi",
-	},
-	{
-		path: "net/textproto",
-	},
+	{path: "html/template"},
+	{path: "net/http/fcgi"},
+	{path: "net/textproto"},
 	{
 		path: "path/filepath",
 		names: []string{
 			"WalkFunc",
 		},
 	},
-	{
-		path: "regexp/syntax",
-	},
-	{
-		path: "runtime/debug",
-	},
-	{
-		path: "runtime/pprof",
-	},
-	{
-		path: "runtime/trace",
-	},
+	{path: "regexp/syntax"},
+	{path: "runtime/debug"},
+	{path: "runtime/pprof"},
+	{path: "runtime/trace"},
 	{
 		path: "testing/quick",
 		names: []string{
 			"Generator",
 		},
 	},
-	{
-		path: "text/template",
-	},
-	{
-		path: "unicode/utf16",
-	},
-	{
-		path: "compress/bzip2",
-	},
+	{path: "text/template"},
+	{path: "unicode/utf16"},
+	{path: "compress/bzip2"},
 	{
 		path: "compress/flate",
 		names: []string{
@@ -594,66 +458,38 @@ var pkgs = [...]pkgNames{
 			"Interface",
 		},
 	},
-	{
-		path: "container/list",
-	},
-	{
-		path: "container/ring",
-	},
-	{
-		path: "debug/plan9obj",
-	},
+	{path: "container/list"},
+	{path: "container/ring"},
+	{path: "debug/plan9obj"},
 	{
 		path: "mime/multipart",
 		names: []string{
 			"File",
 		},
 	},
-	{
-		path: "net/http/pprof",
-	},
-	{
-		path: "testing/iotest",
-	},
-	{
-		path: "text/tabwriter",
-	},
+	{path: "net/http/pprof"},
+	{path: "testing/iotest"},
+	{path: "text/tabwriter"},
 	{
 		path: "crypto/elliptic",
 		names: []string{
 			"Curve",
 		},
 	},
-	{
-		path: "encoding/base32",
-	},
-	{
-		path: "encoding/base64",
-	},
+	{path: "encoding/base32"},
+	{path: "encoding/base64"},
 	{
 		path: "encoding/binary",
 		names: []string{
 			"ByteOrder",
 		},
 	},
-	{
-		path: "net/rpc/jsonrpc",
-	},
-	{
-		path: "crypto/x509/pkix",
-	},
-	{
-		path: "encoding/ascii85",
-	},
-	{
-		path: "index/suffixarray",
-	},
-	{
-		path: "net/http/httptest",
-	},
-	{
-		path: "net/http/httputil",
-	},
+	{path: "net/rpc/jsonrpc"},
+	{path: "crypto/x509/pkix"},
+	{path: "encoding/ascii85"},
+	{path: "index/suffixarray"},
+	{path: "net/http/httptest"},
+	{path: "net/http/httputil"},
 	{
 		path: "net/http/cookiejar",
 		names: []string{
@@ -676,9 +512,7 @@ var pkgs = [...]pkgNames{
 			"Valuer",
 		},
 	},
-	{
-		path: "image/color/palette",
-	},
+	{path: "image/color/palette"},
 	{
 		path: "text/template/parse",
 		names: []string{
@@ -686,7 +520,5 @@ var pkgs = [...]pkgNames{
 			"stateFn",
 		},
 	},
-	{
-		path: "mime/quotedprintable",
-	},
+	{path: "mime/quotedprintable"},
 }
