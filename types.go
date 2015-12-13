@@ -50,7 +50,7 @@ func typesInit() error {
 		if err != nil {
 			return err
 		}
-		grabFromScope(stdIfaces, pkg.Scope(), true, path)
+		grabFromScope(stdIfaces, pkg.Scope(), false, path)
 	}
 	grabFromScope(stdIfaces, types.Universe, true, "")
 	return nil
