@@ -21,7 +21,11 @@ func init() {
 
 func main() {
 	flag.Parse()
-	if err := checkPaths(flag.Args(), os.Stdout); err != nil {
+	paths := flag.Args()
+	if paths == nil {
+		paths = []string{"."}
+	}
+	if err := checkPaths(paths, os.Stdout); err != nil {
 		errExit(err)
 	}
 }

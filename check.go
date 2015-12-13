@@ -212,9 +212,6 @@ func getPkgs(paths []string) ([]*build.Package, []string, error) {
 }
 
 func checkPaths(paths []string, w io.Writer) error {
-	if paths == nil {
-		return fmt.Errorf("No paths given")
-	}
 	conf := &types.Config{Importer: importer.Default()}
 	pkgs, basedirs, err := getPkgs(paths)
 	if err != nil {
