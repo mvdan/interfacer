@@ -45,3 +45,19 @@ func AssignedWrong(f *os.File) {
 	c = f
 	println(c)
 }
+
+type BangCloser interface {
+	io.Closer
+	Bang()
+}
+
+func Bang(bc BangCloser) {
+	var bc2 BangCloser
+	bc.Close()
+	bc2 = bc
+	bc2.Bang()
+}
+
+func BangWrong(bc BangCloser) {
+	bc.Close()
+}
