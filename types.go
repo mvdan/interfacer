@@ -46,36 +46,65 @@ func typesInit() error {
 		pkgIfaces: make(map[string][]ifaceSign),
 	}
 	imp := importer.Default()
-	for _, path := range pkgs {
+	for path, names := range pkgs {
 		pkg, err := imp.Import(path)
 		if err != nil {
 			return err
 		}
-		c.grabFromScope(pkg.Scope(), false, false, path)
+		c.grabNames(pkg.Scope(), path, names)
 	}
-	c.grabFromScope(types.Universe, false, true, "")
+	c.grabNames(types.Universe, "", []string{"error"})
 	delete(c.done, "")
 	return nil
 }
 
+func (c *cache) grabNames(scope *types.Scope, path string, names []string) {
+	pkgs := c.stdIfaces
+	c.done[path] = struct{}{}
+	for _, name := range names {
+		tn := scope.Lookup(name).(*types.TypeName)
+		switch x := tn.Type().Underlying().(type) {
+		case *types.Interface:
+			ifsign := ifaceSign{
+				name:  name,
+				t:     x,
+				funcs: make(map[string]funcSign, x.NumMethods()),
+			}
+			for i := 0; i < x.NumMethods(); i++ {
+				f := x.Method(i)
+				sign := f.Type().(*types.Signature)
+				fsign := funcSign{
+					params:  typeList(sign.Params()),
+					results: typeList(sign.Results()),
+				}
+				c.funcs = append(c.funcs, fsign)
+				ifsign.funcs[f.Name()] = fsign
+			}
+			pkgs[path] = append(pkgs[path], ifsign)
+		case *types.Signature:
+			fsign := funcSign{
+				params:  typeList(x.Params()),
+				results: typeList(x.Results()),
+			}
+			c.funcs = append(c.funcs, fsign)
+		}
+	}
+}
+
 var exported = regexp.MustCompile(`^[A-Z]`)
 
-func (c *cache) grabFromScope(scope *types.Scope, own, unexported bool, impPath string) {
-	pkgs := c.stdIfaces
-	if own {
-		pkgs = c.pkgIfaces
-	}
+func (c *cache) grabFromScope(scope *types.Scope, impPath string) {
+	pkgs := c.pkgIfaces
 	c.done[impPath] = struct{}{}
 	for _, name := range scope.Names() {
 		tn, ok := scope.Lookup(name).(*types.TypeName)
 		if !ok {
 			continue
 		}
-		if !unexported && !exported.MatchString(tn.Name()) {
+		if !exported.MatchString(tn.Name()) {
 			continue
 		}
-		t := tn.Type()
-		switch x := t.Underlying().(type) {
+		switch x := tn.Type().Underlying().(type) {
 		case *types.Interface:
 			if x.NumMethods() == 0 {
 				continue
