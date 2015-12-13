@@ -73,9 +73,6 @@ func (c *cache) grabFromScope(scope *types.Scope, own, unexported bool, impPath 
 	if own {
 		ifaces = c.ownIfaces
 	}
-	if _, e := c.done[impPath]; e {
-		return
-	}
 	c.done[impPath] = struct{}{}
 	for _, name := range scope.Names() {
 		tn, ok := scope.Lookup(name).(*types.TypeName)
