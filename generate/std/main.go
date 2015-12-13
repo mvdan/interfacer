@@ -26,11 +26,11 @@ type pkgNames struct {
 
 var pkgs = [...]pkgNames{
 {{range $_, $pkg := .}}	{
-		path:  "{{$pkg.Path}}",
-		names: []string{
+		path: "{{$pkg.Path}}",
+{{if $pkg.Names}}		names: []string{
 {{range $_, $name := $pkg.Names}}			"{{$name}}",
 {{end}}		},
-	},
+{{end}}	},
 {{end}}}
 `))
 

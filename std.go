@@ -58,8 +58,7 @@ var pkgs = [...]pkgNames{
 		},
 	},
 	{
-		path:  "log",
-		names: []string{},
+		path: "log",
 	},
 	{
 		path: "net",
@@ -90,20 +89,16 @@ var pkgs = [...]pkgNames{
 		},
 	},
 	{
-		path:  "html",
-		names: []string{},
+		path: "html",
 	},
 	{
-		path:  "math",
-		names: []string{},
+		path: "math",
 	},
 	{
-		path:  "mime",
-		names: []string{},
+		path: "mime",
 	},
 	{
-		path:  "path",
-		names: []string{},
+		path: "path",
 	},
 	{
 		path: "sort",
@@ -118,8 +113,7 @@ var pkgs = [...]pkgNames{
 		},
 	},
 	{
-		path:  "time",
-		names: []string{},
+		path: "time",
 	},
 	{
 		path: "bufio",
@@ -128,8 +122,7 @@ var pkgs = [...]pkgNames{
 		},
 	},
 	{
-		path:  "bytes",
-		names: []string{},
+		path: "bytes",
 	},
 	{
 		path: "image",
@@ -147,8 +140,7 @@ var pkgs = [...]pkgNames{
 		},
 	},
 	{
-		path:  "errors",
-		names: []string{},
+		path: "errors",
 	},
 	{
 		path: "expvar",
@@ -191,16 +183,13 @@ var pkgs = [...]pkgNames{
 		},
 	},
 	{
-		path:  "net/url",
-		names: []string{},
+		path: "net/url",
 	},
 	{
-		path:  "os/exec",
-		names: []string{},
+		path: "os/exec",
 	},
 	{
-		path:  "os/user",
-		names: []string{},
+		path: "os/user",
 	},
 	{
 		path: "reflect",
@@ -215,8 +204,7 @@ var pkgs = [...]pkgNames{
 		},
 	},
 	{
-		path:  "strconv",
-		names: []string{},
+		path: "strconv",
 	},
 	{
 		path: "strings",
@@ -237,12 +225,10 @@ var pkgs = [...]pkgNames{
 		},
 	},
 	{
-		path:  "unicode",
-		names: []string{},
+		path: "unicode",
 	},
 	{
-		path:  "debug/pe",
-		names: []string{},
+		path: "debug/pe",
 	},
 	{
 		path: "encoding",
@@ -254,12 +240,10 @@ var pkgs = [...]pkgNames{
 		},
 	},
 	{
-		path:  "go/build",
-		names: []string{},
+		path: "go/build",
 	},
 	{
-		path:  "go/token",
-		names: []string{},
+		path: "go/token",
 	},
 	{
 		path: "go/types",
@@ -273,12 +257,10 @@ var pkgs = [...]pkgNames{
 		},
 	},
 	{
-		path:  "hash/fnv",
-		names: []string{},
+		path: "hash/fnv",
 	},
 	{
-		path:  "math/big",
-		names: []string{},
+		path: "math/big",
 	},
 	{
 		path: "net/http",
@@ -296,8 +278,7 @@ var pkgs = [...]pkgNames{
 		},
 	},
 	{
-		path:  "net/mail",
-		names: []string{},
+		path: "net/mail",
 	},
 	{
 		path: "net/smtp",
@@ -306,28 +287,22 @@ var pkgs = [...]pkgNames{
 		},
 	},
 	{
-		path:  "debug/elf",
-		names: []string{},
+		path: "debug/elf",
 	},
 	{
-		path:  "go/format",
-		names: []string{},
+		path: "go/format",
 	},
 	{
-		path:  "go/parser",
-		names: []string{},
+		path: "go/parser",
 	},
 	{
-		path:  "image/gif",
-		names: []string{},
+		path: "image/gif",
 	},
 	{
-		path:  "image/png",
-		names: []string{},
+		path: "image/png",
 	},
 	{
-		path:  "io/ioutil",
-		names: []string{},
+		path: "io/ioutil",
 	},
 	{
 		path: "math/rand",
@@ -336,32 +311,25 @@ var pkgs = [...]pkgNames{
 		},
 	},
 	{
-		path:  "os/signal",
-		names: []string{},
+		path: "os/signal",
 	},
 	{
-		path:  "crypto/aes",
-		names: []string{},
+		path: "crypto/aes",
 	},
 	{
-		path:  "crypto/des",
-		names: []string{},
+		path: "crypto/des",
 	},
 	{
-		path:  "crypto/dsa",
-		names: []string{},
+		path: "crypto/dsa",
 	},
 	{
-		path:  "crypto/md5",
-		names: []string{},
+		path: "crypto/md5",
 	},
 	{
-		path:  "crypto/rc4",
-		names: []string{},
+		path: "crypto/rc4",
 	},
 	{
-		path:  "crypto/rsa",
-		names: []string{},
+		path: "crypto/rsa",
 	},
 	{
 		path: "crypto/tls",
@@ -371,8 +339,7 @@ var pkgs = [...]pkgNames{
 		},
 	},
 	{
-		path:  "go/printer",
-		names: []string{},
+		path: "go/printer",
 	},
 	{
 		path: "go/scanner",
@@ -381,12 +348,10 @@ var pkgs = [...]pkgNames{
 		},
 	},
 	{
-		path:  "hash/crc32",
-		names: []string{},
+		path: "hash/crc32",
 	},
 	{
-		path:  "hash/crc64",
-		names: []string{},
+		path: "hash/crc64",
 	},
 	{
 		path: "image/draw",
@@ -409,8 +374,7 @@ var pkgs = [...]pkgNames{
 		},
 	},
 	{
-		path:  "math/cmplx",
-		names: []string{},
+		path: "math/cmplx",
 	},
 	{
 		path: "archive/tar",
@@ -426,20 +390,16 @@ var pkgs = [...]pkgNames{
 		},
 	},
 	{
-		path:  "crypto/hmac",
-		names: []string{},
+		path: "crypto/hmac",
 	},
 	{
-		path:  "crypto/rand",
-		names: []string{},
+		path: "crypto/rand",
 	},
 	{
-		path:  "crypto/sha1",
-		names: []string{},
+		path: "crypto/sha1",
 	},
 	{
-		path:  "crypto/x509",
-		names: []string{},
+		path: "crypto/x509",
 	},
 	{
 		path: "debug/dwarf",
@@ -450,8 +410,7 @@ var pkgs = [...]pkgNames{
 		},
 	},
 	{
-		path:  "debug/gosym",
-		names: []string{},
+		path: "debug/gosym",
 	},
 	{
 		path: "debug/macho",
@@ -479,20 +438,16 @@ var pkgs = [...]pkgNames{
 		},
 	},
 	{
-		path:  "runtime/cgo",
-		names: []string{},
+		path: "runtime/cgo",
 	},
 	{
-		path:  "sync/atomic",
-		names: []string{},
+		path: "sync/atomic",
 	},
 	{
-		path:  "compress/lzw",
-		names: []string{},
+		path: "compress/lzw",
 	},
 	{
-		path:  "crypto/ecdsa",
-		names: []string{},
+		path: "crypto/ecdsa",
 	},
 	{
 		path: "database/sql",
@@ -503,8 +458,7 @@ var pkgs = [...]pkgNames{
 		},
 	},
 	{
-		path:  "encoding/csv",
-		names: []string{},
+		path: "encoding/csv",
 	},
 	{
 		path: "encoding/gob",
@@ -519,12 +473,10 @@ var pkgs = [...]pkgNames{
 		},
 	},
 	{
-		path:  "encoding/hex",
-		names: []string{},
+		path: "encoding/hex",
 	},
 	{
-		path:  "encoding/pem",
-		names: []string{},
+		path: "encoding/pem",
 	},
 	{
 		path: "encoding/xml",
@@ -536,28 +488,22 @@ var pkgs = [...]pkgNames{
 		},
 	},
 	{
-		path:  "hash/adler32",
-		names: []string{},
+		path: "hash/adler32",
 	},
 	{
-		path:  "net/http/cgi",
-		names: []string{},
+		path: "net/http/cgi",
 	},
 	{
-		path:  "runtime/race",
-		names: []string{},
+		path: "runtime/race",
 	},
 	{
-		path:  "text/scanner",
-		names: []string{},
+		path: "text/scanner",
 	},
 	{
-		path:  "unicode/utf8",
-		names: []string{},
+		path: "unicode/utf8",
 	},
 	{
-		path:  "compress/gzip",
-		names: []string{},
+		path: "compress/gzip",
 	},
 	{
 		path: "compress/zlib",
@@ -575,20 +521,16 @@ var pkgs = [...]pkgNames{
 		},
 	},
 	{
-		path:  "crypto/sha256",
-		names: []string{},
+		path: "crypto/sha256",
 	},
 	{
-		path:  "crypto/sha512",
-		names: []string{},
+		path: "crypto/sha512",
 	},
 	{
-		path:  "crypto/subtle",
-		names: []string{},
+		path: "crypto/subtle",
 	},
 	{
-		path:  "encoding/asn1",
-		names: []string{},
+		path: "encoding/asn1",
 	},
 	{
 		path: "encoding/json",
@@ -598,16 +540,13 @@ var pkgs = [...]pkgNames{
 		},
 	},
 	{
-		path:  "html/template",
-		names: []string{},
+		path: "html/template",
 	},
 	{
-		path:  "net/http/fcgi",
-		names: []string{},
+		path: "net/http/fcgi",
 	},
 	{
-		path:  "net/textproto",
-		names: []string{},
+		path: "net/textproto",
 	},
 	{
 		path: "path/filepath",
@@ -616,20 +555,16 @@ var pkgs = [...]pkgNames{
 		},
 	},
 	{
-		path:  "regexp/syntax",
-		names: []string{},
+		path: "regexp/syntax",
 	},
 	{
-		path:  "runtime/debug",
-		names: []string{},
+		path: "runtime/debug",
 	},
 	{
-		path:  "runtime/pprof",
-		names: []string{},
+		path: "runtime/pprof",
 	},
 	{
-		path:  "runtime/trace",
-		names: []string{},
+		path: "runtime/trace",
 	},
 	{
 		path: "testing/quick",
@@ -638,16 +573,13 @@ var pkgs = [...]pkgNames{
 		},
 	},
 	{
-		path:  "text/template",
-		names: []string{},
+		path: "text/template",
 	},
 	{
-		path:  "unicode/utf16",
-		names: []string{},
+		path: "unicode/utf16",
 	},
 	{
-		path:  "compress/bzip2",
-		names: []string{},
+		path: "compress/bzip2",
 	},
 	{
 		path: "compress/flate",
@@ -663,16 +595,13 @@ var pkgs = [...]pkgNames{
 		},
 	},
 	{
-		path:  "container/list",
-		names: []string{},
+		path: "container/list",
 	},
 	{
-		path:  "container/ring",
-		names: []string{},
+		path: "container/ring",
 	},
 	{
-		path:  "debug/plan9obj",
-		names: []string{},
+		path: "debug/plan9obj",
 	},
 	{
 		path: "mime/multipart",
@@ -681,16 +610,13 @@ var pkgs = [...]pkgNames{
 		},
 	},
 	{
-		path:  "net/http/pprof",
-		names: []string{},
+		path: "net/http/pprof",
 	},
 	{
-		path:  "testing/iotest",
-		names: []string{},
+		path: "testing/iotest",
 	},
 	{
-		path:  "text/tabwriter",
-		names: []string{},
+		path: "text/tabwriter",
 	},
 	{
 		path: "crypto/elliptic",
@@ -699,12 +625,10 @@ var pkgs = [...]pkgNames{
 		},
 	},
 	{
-		path:  "encoding/base32",
-		names: []string{},
+		path: "encoding/base32",
 	},
 	{
-		path:  "encoding/base64",
-		names: []string{},
+		path: "encoding/base64",
 	},
 	{
 		path: "encoding/binary",
@@ -713,28 +637,22 @@ var pkgs = [...]pkgNames{
 		},
 	},
 	{
-		path:  "net/rpc/jsonrpc",
-		names: []string{},
+		path: "net/rpc/jsonrpc",
 	},
 	{
-		path:  "crypto/x509/pkix",
-		names: []string{},
+		path: "crypto/x509/pkix",
 	},
 	{
-		path:  "encoding/ascii85",
-		names: []string{},
+		path: "encoding/ascii85",
 	},
 	{
-		path:  "index/suffixarray",
-		names: []string{},
+		path: "index/suffixarray",
 	},
 	{
-		path:  "net/http/httptest",
-		names: []string{},
+		path: "net/http/httptest",
 	},
 	{
-		path:  "net/http/httputil",
-		names: []string{},
+		path: "net/http/httputil",
 	},
 	{
 		path: "net/http/cookiejar",
@@ -759,8 +677,7 @@ var pkgs = [...]pkgNames{
 		},
 	},
 	{
-		path:  "image/color/palette",
-		names: []string{},
+		path: "image/color/palette",
 	},
 	{
 		path: "text/template/parse",
@@ -770,7 +687,6 @@ var pkgs = [...]pkgNames{
 		},
 	},
 	{
-		path:  "mime/quotedprintable",
-		names: []string{},
+		path: "mime/quotedprintable",
 	},
 }
