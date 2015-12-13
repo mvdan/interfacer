@@ -59,43 +59,45 @@ func typesInit() error {
 }
 
 func (c *cache) grabNames(scope *types.Scope, path string, names []string) {
-	pkgs := c.stdIfaces
 	c.done[path] = struct{}{}
 	for _, name := range names {
 		tn := scope.Lookup(name).(*types.TypeName)
 		switch x := tn.Type().Underlying().(type) {
 		case *types.Interface:
-			ifsign := ifaceSign{
-				name:  name,
-				t:     x,
-				funcs: make(map[string]funcSign, x.NumMethods()),
-			}
-			for i := 0; i < x.NumMethods(); i++ {
-				f := x.Method(i)
-				sign := f.Type().(*types.Signature)
-				fsign := funcSign{
-					params:  typeList(sign.Params()),
-					results: typeList(sign.Results()),
-				}
-				c.funcs = append(c.funcs, fsign)
-				ifsign.funcs[f.Name()] = fsign
-			}
-			pkgs[path] = append(pkgs[path], ifsign)
+			c.addInterface(c.stdIfaces, path, name, x)
 		case *types.Signature:
-			fsign := funcSign{
-				params:  typeList(x.Params()),
-				results: typeList(x.Results()),
-			}
-			c.funcs = append(c.funcs, fsign)
+			c.addFunc(x)
 		}
 	}
 }
 
+func (c *cache) addInterface(m map[string][]ifaceSign, path, name string, iface *types.Interface) {
+	ifsign := ifaceSign{
+		name:  name,
+		t:     iface,
+		funcs: make(map[string]funcSign, iface.NumMethods()),
+	}
+	for i := 0; i < iface.NumMethods(); i++ {
+		f := iface.Method(i)
+		sign := f.Type().(*types.Signature)
+		ifsign.funcs[f.Name()] = c.addFunc(sign)
+	}
+	m[path] = append(m[path], ifsign)
+}
+
+func (c *cache) addFunc(sign *types.Signature) funcSign {
+	fsign := funcSign{
+		params:  typeList(sign.Params()),
+		results: typeList(sign.Results()),
+	}
+	c.funcs = append(c.funcs, fsign)
+	return fsign
+}
+
 var exported = regexp.MustCompile(`^[A-Z]`)
 
-func (c *cache) grabFromScope(scope *types.Scope, impPath string) {
-	pkgs := c.pkgIfaces
-	c.done[impPath] = struct{}{}
+func (c *cache) grabExported(scope *types.Scope, path string) {
+	c.done[path] = struct{}{}
 	for _, name := range scope.Names() {
 		tn, ok := scope.Lookup(name).(*types.TypeName)
 		if !ok {
@@ -109,28 +111,9 @@ func (c *cache) grabFromScope(scope *types.Scope, impPath string) {
 			if x.NumMethods() == 0 {
 				continue
 			}
-			ifsign := ifaceSign{
-				name:  name,
-				t:     x,
-				funcs: make(map[string]funcSign, x.NumMethods()),
-			}
-			for i := 0; i < x.NumMethods(); i++ {
-				f := x.Method(i)
-				sign := f.Type().(*types.Signature)
-				fsign := funcSign{
-					params:  typeList(sign.Params()),
-					results: typeList(sign.Results()),
-				}
-				c.funcs = append(c.funcs, fsign)
-				ifsign.funcs[f.Name()] = fsign
-			}
-			pkgs[impPath] = append(pkgs[impPath], ifsign)
+			c.addInterface(c.pkgIfaces, path, name, x)
 		case *types.Signature:
-			fsign := funcSign{
-				params:  typeList(x.Params()),
-				results: typeList(x.Results()),
-			}
-			c.funcs = append(c.funcs, fsign)
+			c.addFunc(x)
 		}
 	}
 }

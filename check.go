@@ -304,7 +304,7 @@ func grabRecurse(pkg *types.Package, impPath string) {
 	if _, e := c.done[impPath]; e {
 		return
 	}
-	c.grabFromScope(pkg.Scope(), impPath)
+	c.grabExported(pkg.Scope(), impPath)
 	for _, ipkg := range pkg.Imports() {
 		grabRecurse(ipkg, ipkg.Path())
 	}
