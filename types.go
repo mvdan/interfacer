@@ -41,36 +41,42 @@ type ifaceSign struct {
 	funcs map[string]funcSign
 }
 
-var (
+type cache struct {
 	done map[string]struct{}
 
 	stdIfaces map[string]ifaceSign
 	ownIfaces map[string]ifaceSign
-)
+}
 
 func typesInit() error {
-	done = make(map[string]struct{})
-	stdIfaces = make(map[string]ifaceSign)
-	ownIfaces = make(map[string]ifaceSign)
+	c = &cache{
+		done:      make(map[string]struct{}),
+		stdIfaces: make(map[string]ifaceSign),
+		ownIfaces: make(map[string]ifaceSign),
+	}
 	imp := importer.Default()
 	for _, path := range pkgs {
 		pkg, err := imp.Import(path)
 		if err != nil {
 			return err
 		}
-		grabFromScope(stdIfaces, pkg.Scope(), false, path)
+		c.grabFromScope(pkg.Scope(), false, false, path)
 	}
-	grabFromScope(stdIfaces, types.Universe, true, "")
+	c.grabFromScope(types.Universe, false, true, "")
 	return nil
 }
 
 var exported = regexp.MustCompile(`^[A-Z]`)
 
-func grabFromScope(ifaces map[string]ifaceSign, scope *types.Scope, unexported bool, impPath string) {
-	if _, e := done[impPath]; e {
+func (c *cache) grabFromScope(scope *types.Scope, own, unexported bool, impPath string) {
+	ifaces := c.stdIfaces
+	if own {
+		ifaces = c.ownIfaces
+	}
+	if _, e := c.done[impPath]; e {
 		return
 	}
-	done[impPath] = struct{}{}
+	c.done[impPath] = struct{}{}
 	for _, name := range scope.Names() {
 		tn, ok := scope.Lookup(name).(*types.TypeName)
 		if !ok {
@@ -80,7 +86,7 @@ func grabFromScope(ifaces map[string]ifaceSign, scope *types.Scope, unexported b
 			continue
 		}
 		t := tn.Type()
-		if impPath != "" {
+		if impPath != "" && impPath[0] != '.' {
 			name = impPath + "." + name
 		}
 		if _, e := ifaces[name]; e {

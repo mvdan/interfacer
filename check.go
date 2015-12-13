@@ -18,6 +18,9 @@ import (
 	"strings"
 )
 
+// TODO: don't use a global state to allow concurrent use
+var c *cache
+
 func typesMatch(wanted, got []types.Type) bool {
 	if len(wanted) != len(got) {
 		return false
@@ -95,14 +98,14 @@ func isFunc(sign *types.Signature, fsign funcSign) bool {
 }
 
 func implementsIface(sign *types.Signature) bool {
-	for _, iface := range stdIfaces {
+	for _, iface := range c.stdIfaces {
 		for _, f := range iface.funcs {
 			if isFunc(sign, f) {
 				return true
 			}
 		}
 	}
-	for _, iface := range ownIfaces {
+	for _, iface := range c.ownIfaces {
 		for _, f := range iface.funcs {
 			if isFunc(sign, f) {
 				return true
@@ -113,12 +116,12 @@ func implementsIface(sign *types.Signature) bool {
 }
 
 func interfaceMatching(p *param) (string, *types.Interface) {
-	for name, iface := range stdIfaces {
+	for name, iface := range c.stdIfaces {
 		if matchesIface(p, iface, false) {
 			return name, iface.t
 		}
 	}
-	for name, iface := range ownIfaces {
+	for name, iface := range c.ownIfaces {
 		if matchesIface(p, iface, false) {
 			return name, iface.t
 		}
@@ -212,6 +215,9 @@ func getPkgs(paths []string) ([]*build.Package, []string, error) {
 }
 
 func checkPaths(paths []string, w io.Writer) error {
+	if err := typesInit(); err != nil {
+		return err
+	}
 	conf := &types.Config{Importer: importer.Default()}
 	pkgs, basedirs, err := getPkgs(paths)
 	if err != nil {
@@ -278,6 +284,16 @@ func (gp *goPkg) parseReader(name string, r io.Reader) error {
 	return nil
 }
 
+func grabRecurse(pkg *types.Package, impPath string) {
+	if _, e := c.done[impPath]; e {
+		return
+	}
+	c.grabFromScope(pkg.Scope(), true, false, impPath)
+	for _, ipkg := range pkg.Imports() {
+		grabRecurse(ipkg, ipkg.Path())
+	}
+}
+
 func (gp *goPkg) check(conf *types.Config, w io.Writer) error {
 	info := &types.Info{
 		Types: make(map[ast.Expr]types.TypeAndValue),
@@ -288,10 +304,11 @@ func (gp *goPkg) check(conf *types.Config, w io.Writer) error {
 	if err != nil {
 		return err
 	}
-	grabFromScope(ownIfaces, pkg.Scope(), false, gp.ImportPath)
-	for _, ipkg := range pkg.Imports() {
-		grabFromScope(ownIfaces, ipkg.Scope(), false, ipkg.Path())
+	ownPath := gp.ImportPath
+	if ownPath == "" {
+		ownPath = "."
 	}
+	grabRecurse(pkg, ownPath)
 	v := &Visitor{
 		Info: info,
 		w:    w,
