@@ -36,7 +36,8 @@ type funcSign struct {
 }
 
 type ifaceSign struct {
-	t *types.Interface
+	name string
+	t    *types.Interface
 
 	funcs map[string]funcSign
 }
@@ -47,8 +48,11 @@ type cache struct {
 	// key is importPath.typeName
 	// TODO: do something about duplicates, especially to behave
 	// deterministically if two keys map to equal ifaceSigns.
-	stdIfaces map[string]ifaceSign
-	ownIfaces map[string]ifaceSign
+	stdIfaces map[string][]ifaceSign
+
+	pkgIfaces map[string][]ifaceSign
+
+	curPaths []string
 
 	// TODO: avoid duplicates
 	funcs []funcSign
@@ -56,7 +60,9 @@ type cache struct {
 
 func typesInit() error {
 	c = &cache{
-		stdIfaces: make(map[string]ifaceSign),
+		done:      make(map[string]struct{}),
+		stdIfaces: make(map[string][]ifaceSign),
+		pkgIfaces: make(map[string][]ifaceSign),
 	}
 	imp := importer.Default()
 	for _, path := range pkgs {
@@ -67,16 +73,18 @@ func typesInit() error {
 		c.grabFromScope(pkg.Scope(), false, false, path)
 	}
 	c.grabFromScope(types.Universe, false, true, "")
+	delete(c.done, "")
 	return nil
 }
 
 var exported = regexp.MustCompile(`^[A-Z]`)
 
 func (c *cache) grabFromScope(scope *types.Scope, own, unexported bool, impPath string) {
-	ifaces := c.stdIfaces
+	pkgs := c.stdIfaces
 	if own {
-		ifaces = c.ownIfaces
+		pkgs = c.pkgIfaces
 	}
+	c.done[impPath] = struct{}{}
 	for _, name := range scope.Names() {
 		tn, ok := scope.Lookup(name).(*types.TypeName)
 		if !ok {
@@ -86,18 +94,13 @@ func (c *cache) grabFromScope(scope *types.Scope, own, unexported bool, impPath 
 			continue
 		}
 		t := tn.Type()
-		if impPath != "" && impPath[0] != '.' {
-			name = impPath + "." + name
-		}
-		if _, e := ifaces[name]; e {
-			continue
-		}
 		switch x := t.Underlying().(type) {
 		case *types.Interface:
 			if x.NumMethods() == 0 {
 				continue
 			}
 			ifsign := ifaceSign{
+				name:  name,
 				t:     x,
 				funcs: make(map[string]funcSign, x.NumMethods()),
 			}
@@ -112,7 +115,7 @@ func (c *cache) grabFromScope(scope *types.Scope, own, unexported bool, impPath 
 				c.funcs = append(c.funcs, fsign)
 				ifsign.funcs[fname] = fsign
 			}
-			ifaces[name] = ifsign
+			pkgs[impPath] = append(pkgs[impPath], ifsign)
 		case *types.Signature:
 			fsign := funcSign{
 				params:  typeList(x.Params()),

@@ -106,15 +106,26 @@ func implementsIface(sign *types.Signature) bool {
 	return false
 }
 
+func fullPath(path, name string) string {
+	if path == "" {
+		return name
+	}
+	return path + "." + name
+}
+
 func interfaceMatching(p *param) (string, *types.Interface) {
-	for name, iface := range c.stdIfaces {
-		if matchesIface(p, iface, false) {
-			return name, iface.t
+	for path, ifaces := range c.stdIfaces {
+		for _, iface := range ifaces {
+			if matchesIface(p, iface, false) {
+				return fullPath(path, iface.name), iface.t
+			}
 		}
 	}
-	for name, iface := range c.ownIfaces {
-		if matchesIface(p, iface, false) {
-			return name, iface.t
+	for _, path := range c.curPaths {
+		for _, iface := range c.pkgIfaces[path] {
+			if matchesIface(p, iface, false) {
+				return fullPath(path, iface.name), iface.t
+			}
 		}
 	}
 	return "", nil
@@ -275,12 +286,29 @@ func (gp *goPkg) parseReader(name string, r io.Reader) error {
 	return nil
 }
 
+func flattenImports(pkg *types.Package, impPath string) []string {
+	seen := make(map[string]struct{})
+	var paths []string
+	var addPkg func(*types.Package, string)
+	addPkg = func(pkg *types.Package, path string) {
+		if _, e := seen[path]; e {
+			return
+		}
+		seen[path] = struct{}{}
+		paths = append(paths, path)
+		for _, ipkg := range pkg.Imports() {
+			addPkg(ipkg, ipkg.Path())
+		}
+	}
+	addPkg(pkg, impPath)
+	return paths
+}
+
 func grabRecurse(pkg *types.Package, impPath string) {
 	if _, e := c.done[impPath]; e {
 		return
 	}
 	c.grabFromScope(pkg.Scope(), true, false, impPath)
-	c.done[impPath] = struct{}{}
 	for _, ipkg := range pkg.Imports() {
 		grabRecurse(ipkg, ipkg.Path())
 	}
@@ -297,11 +325,7 @@ func (gp *goPkg) check(conf *types.Config, w io.Writer) error {
 		return err
 	}
 	ownPath := gp.ImportPath
-	if ownPath == "" {
-		ownPath = "."
-	}
-	c.done = make(map[string]struct{})
-	c.ownIfaces = make(map[string]ifaceSign)
+	c.curPaths = flattenImports(pkg, ownPath)
 	grabRecurse(pkg, ownPath)
 	v := &Visitor{
 		Info: info,
