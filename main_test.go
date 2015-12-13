@@ -32,7 +32,7 @@ func want(t *testing.T, p string) (string, bool) {
 	if !os.IsNotExist(err) {
 		t.Fatal(err)
 	}
-	return "command-line-arguments\n", false
+	return "", false
 }
 
 func doTest(t *testing.T, p string) {
@@ -64,6 +64,9 @@ func doTest(t *testing.T, p string) {
 		t.Fatalf("Did not want error in %s:\n%v", p, err)
 	}
 	got := b.String()
+	if exp == "" && got == "command-line-arguments\n" {
+		return
+	}
 	if exp != got {
 		t.Fatalf("Output mismatch in %s:\nExpected:\n%sGot:\n%s",
 			p, exp, got)
