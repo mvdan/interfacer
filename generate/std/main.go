@@ -56,7 +56,7 @@ func generate(w io.Writer) error {
 			return err
 		}
 		names := fromScope(pkg.Scope())
-		if names == nil {
+		if len(names) == 0 {
 			continue
 		}
 		wanted[path] = names

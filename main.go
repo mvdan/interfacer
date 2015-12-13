@@ -16,7 +16,7 @@ var (
 func main() {
 	flag.Parse()
 	paths := flag.Args()
-	if paths == nil {
+	if len(paths) == 0 {
 		paths = []string{"."}
 	}
 	if err := checkPaths(paths, os.Stdout); err != nil {
