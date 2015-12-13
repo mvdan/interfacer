@@ -106,14 +106,13 @@ func (c *cache) grabFromScope(scope *types.Scope, own, unexported bool, impPath 
 			}
 			for i := 0; i < x.NumMethods(); i++ {
 				f := x.Method(i)
-				fname := f.Name()
 				sign := f.Type().(*types.Signature)
 				fsign := funcSign{
 					params:  typeList(sign.Params()),
 					results: typeList(sign.Results()),
 				}
 				c.funcs = append(c.funcs, fsign)
-				ifsign.funcs[fname] = fsign
+				ifsign.funcs[f.Name()] = fsign
 			}
 			pkgs[impPath] = append(pkgs[impPath], ifsign)
 		case *types.Signature:

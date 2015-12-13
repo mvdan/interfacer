@@ -21,13 +21,12 @@ import (
 // TODO: don't use a global state to allow concurrent use
 var c *cache
 
-func typesMatch(wanted, got []types.Type) bool {
-	if len(wanted) != len(got) {
+func typesMatch(want, got []types.Type) bool {
+	if len(want) != len(got) {
 		return false
 	}
-	for i, w := range wanted {
-		g := got[i]
-		if !types.ConvertibleTo(g, w) {
+	for i, w := range want {
+		if !types.ConvertibleTo(got[i], w) {
 			return false
 		}
 	}
@@ -217,11 +216,11 @@ func checkPaths(paths []string, w io.Writer) error {
 	if err := typesInit(); err != nil {
 		return err
 	}
-	conf := &types.Config{Importer: importer.Default()}
 	pkgs, basedirs, err := getPkgs(paths)
 	if err != nil {
 		return err
 	}
+	conf := &types.Config{Importer: importer.Default()}
 	for i, pkg := range pkgs {
 		basedir := basedirs[i]
 		if err := checkPkg(conf, pkg, basedir, w); err != nil {
@@ -506,11 +505,9 @@ func (v *Visitor) onCall(ce *ast.CallExpr) {
 		return
 	}
 	for i, e := range ce.Args {
-		id, ok := e.(*ast.Ident)
-		if !ok {
-			continue
+		if id, ok := e.(*ast.Ident); ok {
+			v.addUsed(id.Name, paramType(sign, i))
 		}
-		v.addUsed(id.Name, paramType(sign, i))
 	}
 	sel, ok := ce.Fun.(*ast.SelectorExpr)
 	if !ok {
@@ -534,11 +531,9 @@ func (v *Visitor) onCall(ce *ast.CallExpr) {
 }
 
 func (v *Visitor) onSelector(sel *ast.SelectorExpr) {
-	id, ok := sel.X.(*ast.Ident)
-	if !ok {
-		return
+	if id, ok := sel.X.(*ast.Ident); ok {
+		v.discard(id.Name)
 	}
-	v.discard(id.Name)
 }
 
 func (v *Visitor) funcEnded(pos token.Pos) {
