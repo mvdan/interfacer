@@ -12,7 +12,6 @@ import (
 )
 
 //go:generate go run generate/std/main.go generate/std/pkgs.go
-//go:generate gofmt -w std.go
 
 type funcSign struct {
 	params  []types.Type
