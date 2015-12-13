@@ -4,8 +4,10 @@
 package main
 
 import (
+	"bytes"
 	"go/importer"
 	"go/types"
+	"io"
 	"regexp"
 )
 
@@ -15,6 +17,22 @@ import (
 type funcSign struct {
 	params  []types.Type
 	results []types.Type
+}
+
+func (fs funcSign) String() string {
+	var b bytes.Buffer
+	io.WriteString(&b, "[")
+	for _, t := range fs.params {
+		io.WriteString(&b, t.String())
+		io.WriteString(&b, ",")
+	}
+	io.WriteString(&b, "] [")
+	for _, t := range fs.results {
+		io.WriteString(&b, t.String())
+		io.WriteString(&b, ",")
+	}
+	io.WriteString(&b, "]")
+	return b.String()
 }
 
 type ifaceSign struct {
@@ -31,13 +49,11 @@ type cache struct {
 	// TODO: do something about duplicates, especially to behave
 	// deterministically if two keys map to equal ifaceSigns.
 	stdIfaces map[string][]ifaceSign
-
 	pkgIfaces map[string][]ifaceSign
 
 	curPaths []string
 
-	// TODO: avoid duplicates
-	funcs []funcSign
+	funcs map[string]funcSign
 }
 
 func typesInit() error {
@@ -45,6 +61,7 @@ func typesInit() error {
 		done:      make(map[string]struct{}),
 		stdIfaces: make(map[string][]ifaceSign),
 		pkgIfaces: make(map[string][]ifaceSign),
+		funcs:     make(map[string]funcSign),
 	}
 	imp := importer.Default()
 	for path, names := range pkgs {
@@ -93,7 +110,10 @@ func (c *cache) addFunc(sign *types.Signature) funcSign {
 		params:  typeList(sign.Params()),
 		results: typeList(sign.Results()),
 	}
-	c.funcs = append(c.funcs, fsign)
+	s := fsign.String()
+	if _, e := c.funcs[s]; !e {
+		c.funcs[s] = fsign
+	}
 	return fsign
 }
 
