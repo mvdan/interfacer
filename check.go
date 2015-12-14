@@ -79,13 +79,13 @@ func isFunc(sign *types.Signature, fsign funcSign) bool {
 	}
 	for i, p := range fsign.params {
 		ip := params.At(i).Type()
-		if p.String() != ip.String() {
+		if !types.AssignableTo(p, ip) {
 			return false
 		}
 	}
 	for i, r := range fsign.results {
 		ir := results.At(i).Type()
-		if r.String() != ir.String() {
+		if !types.AssignableTo(r, ir) {
 			return false
 		}
 	}
@@ -545,10 +545,7 @@ func (v *Visitor) funcEnded(pos token.Pos) {
 		if iface == nil {
 			continue
 		}
-		// TODO: re-enable without reactivating false positive
-		// in alias.go
-		// if types.ConvertibleTo(iface, p.t) {
-		if iface.String() == p.t.String() {
+		if types.AssignableTo(iface, p.t) {
 			continue
 		}
 		pos := v.fset.Position(pos)
