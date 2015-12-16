@@ -11,27 +11,39 @@ import (
 	"strings"
 )
 
-var skipDir = regexp.MustCompile(`^(testdata|vendor|_.*|\..+)$`)
+var (
+	skipDir = regexp.MustCompile(`^(testdata|vendor|_.*|\..+)$`)
+	gopath  = os.Getenv("GOPATH")
+)
 
 func getDirs(d string) ([]string, error) {
-	var dirs []string
-	if !strings.HasPrefix(d, "./") {
-		return nil, fmt.Errorf("TODO: recursing into non-local import paths")
+	local := d == "." || strings.HasPrefix(d, "./")
+	if gopath == "" {
+		return nil, fmt.Errorf("GOPATH not found")
 	}
+	var dirs []string
 	walkFn := func(path string, info os.FileInfo, err error) error {
 		if err != nil {
 			return err
 		}
+		if !info.IsDir() {
+			return nil
+		}
 		if skipDir.MatchString(info.Name()) {
 			return filepath.SkipDir
 		}
-		if info.IsDir() {
+		if local {
 			if !strings.HasPrefix(path, "./") {
 				path = "./" + path
 			}
-			dirs = append(dirs, path)
+		} else {
+			path = path[len(gopath)+5:]
 		}
+		dirs = append(dirs, path)
 		return nil
+	}
+	if !local {
+		d = filepath.Join(gopath, "src", d)
 	}
 	if err := filepath.Walk(d, walkFn); err != nil {
 		return nil, err
