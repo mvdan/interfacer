@@ -11,7 +11,7 @@ import (
 	"strings"
 )
 
-var skipDir = regexp.MustCompile(`^(testdata|vendor|_.*|\.\+)$`)
+var skipDir = regexp.MustCompile(`^(testdata|vendor|_.*|\..+)$`)
 
 func getDirs(d string) ([]string, error) {
 	var dirs []string
