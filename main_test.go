@@ -44,7 +44,11 @@ func doTest(t *testing.T, p string) {
 		inPath = "./" + inPath + "/..."
 	}
 	var b bytes.Buffer
-	err := checkPaths([]string{inPath}, &b)
+	paths, err := recurse([]string{inPath})
+	if err != nil {
+		t.Fatal(err)
+	}
+	err = checkPaths(paths, &b)
 	exp, wantErr := want(t, p)
 	if wantErr {
 		if err == nil {
@@ -64,9 +68,6 @@ func doTest(t *testing.T, p string) {
 		t.Fatalf("Did not want error in %s:\n%v", p, err)
 	}
 	got := b.String()
-	if exp == "" && got == "command-line-arguments\n" {
-		return
-	}
 	if exp != got {
 		t.Fatalf("Output mismatch in %s:\nExpected:\n%sGot:\n%s",
 			p, exp, got)

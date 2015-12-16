@@ -1,3 +1,3 @@
-command-line-arguments
+foo
 pkgs.go:13: s can be fmt.Stringer
 pkgs.go:17: s can be error

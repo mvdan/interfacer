@@ -1,4 +1,4 @@
-command-line-arguments
+foo
 used.go:21: f can be io.Closer
 used.go:28: f1 can be io.Closer
 used.go:42: f can be io.Closer

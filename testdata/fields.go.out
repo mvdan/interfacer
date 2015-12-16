@@ -1,4 +1,4 @@
-command-line-arguments
+foo
 fields.go:21: s can be io.Closer
 fields.go:38: s can be io.Closer
 fields.go:48: s can be io.Closer

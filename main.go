@@ -13,17 +13,11 @@ var (
 	verbose = flag.Bool("v", false, "print the names of packages as they are checked")
 )
 
-func init() {
-	if err := typesInit(); err != nil {
-		errExit(err)
-	}
-}
-
 func main() {
 	flag.Parse()
-	paths := flag.Args()
-	if len(paths) == 0 {
-		paths = []string{"."}
+	paths, err := recurse(flag.Args())
+	if err != nil {
+		errExit(err)
 	}
 	if err := checkPaths(paths, os.Stdout); err != nil {
 		errExit(err)

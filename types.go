@@ -5,10 +5,11 @@ package main
 
 import (
 	"bytes"
-	"go/importer"
-	"go/types"
 	"io"
 	"regexp"
+
+	"golang.org/x/tools/go/loader"
+	"golang.org/x/tools/go/types"
 )
 
 //go:generate go run generate/std/main.go generate/std/pkgs.go
@@ -42,24 +43,12 @@ type ifaceSign struct {
 }
 
 type cache struct {
-	imp types.Importer
-
-	done map[string]struct{}
+	loader.Config
 
 	// key is importPath.typeName
-	stdIfaces map[string][]ifaceSign
-
-	// TODO: do something about duplicates, especially to behave
-	// deterministically if two keys map to equal ifaceSigns.
-	// This is solved in stdIfaces by sorting standard libary
-	// packages by length and alphabetically. We should sort the
-	// flattened list of imports by depth (BFS). Right now it's a
-	// DFS.
 	pkgIfaces map[string][]ifaceSign
 
-	// Useful to separate unknown packages from packages with proper
-	// import paths
-	nextUnknown int
+	std map[string]bool
 
 	curPaths []string
 
@@ -68,29 +57,44 @@ type cache struct {
 
 func typesInit() error {
 	c = &cache{
-		imp:       importer.Default(),
-		done:      make(map[string]struct{}),
-		stdIfaces: make(map[string][]ifaceSign),
 		pkgIfaces: make(map[string][]ifaceSign),
 		funcs:     make(map[string]funcSign),
+		std:       make(map[string]bool),
 	}
+	// TODO: once loader is ported to go/types, cache imported std
+	// packages across tests
 	for _, p := range pkgs {
-		c.done[p.path] = struct{}{}
-		if len(p.names) == 0 {
+		if p.path == "" || len(p.names) < 1 {
 			continue
 		}
-		scope := types.Universe
-		if p.path != "" {
-			pkg, err := c.imp.Import(p.path)
-			if err != nil {
-				return err
-			}
-			scope = pkg.Scope()
-		}
-		c.grabNames(scope, p.path, p.names)
+		c.Import(p.path)
+		c.std[p.path] = true
 	}
-	delete(c.done, "")
 	return nil
+}
+
+func typesGet(prog *loader.Program) {
+	done := make(map[string]bool)
+	for _, p := range pkgs {
+		path := p.path
+		done[path] = true
+		scope := types.Universe
+		if path != "" {
+			pkg := prog.Package(path)
+			if pkg == nil {
+				continue
+			}
+			scope = pkg.Pkg.Scope()
+		}
+		c.grabNames(scope, path, p.names)
+	}
+	for _, pkg := range prog.InitialPackages() {
+		path := pkg.Pkg.Path()
+		if done[path] {
+			continue
+		}
+		c.grabExported(pkg.Pkg.Scope(), path)
+	}
 }
 
 func (c *cache) grabNames(scope *types.Scope, path string, names []string) {
@@ -98,14 +102,14 @@ func (c *cache) grabNames(scope *types.Scope, path string, names []string) {
 		tn := scope.Lookup(name).(*types.TypeName)
 		switch x := tn.Type().Underlying().(type) {
 		case *types.Interface:
-			c.addInterface(c.stdIfaces, path, name, x)
+			c.addInterface(path, name, x)
 		case *types.Signature:
 			c.addFunc(x)
 		}
 	}
 }
 
-func (c *cache) addInterface(m map[string][]ifaceSign, path, name string, iface *types.Interface) {
+func (c *cache) addInterface(path, name string, iface *types.Interface) {
 	ifsign := ifaceSign{
 		name:  name,
 		t:     iface,
@@ -116,7 +120,7 @@ func (c *cache) addInterface(m map[string][]ifaceSign, path, name string, iface 
 		sign := f.Type().(*types.Signature)
 		ifsign.funcs[f.Name()] = c.addFunc(sign)
 	}
-	m[path] = append(m[path], ifsign)
+	c.pkgIfaces[path] = append(c.pkgIfaces[path], ifsign)
 }
 
 func (c *cache) addFunc(sign *types.Signature) funcSign {
@@ -134,7 +138,6 @@ func (c *cache) addFunc(sign *types.Signature) funcSign {
 var exported = regexp.MustCompile(`^[A-Z]`)
 
 func (c *cache) grabExported(scope *types.Scope, path string) {
-	c.done[path] = struct{}{}
 	for _, name := range scope.Names() {
 		tn, ok := scope.Lookup(name).(*types.TypeName)
 		if !ok {
@@ -148,7 +151,7 @@ func (c *cache) grabExported(scope *types.Scope, path string) {
 			if x.NumMethods() == 0 {
 				continue
 			}
-			c.addInterface(c.pkgIfaces, path, name, x)
+			c.addInterface(path, name, x)
 		case *types.Signature:
 			c.addFunc(x)
 		}

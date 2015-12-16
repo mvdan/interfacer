@@ -6,15 +6,13 @@ package main
 import (
 	"fmt"
 	"go/ast"
-	"go/build"
-	"go/parser"
 	"go/token"
-	"go/types"
 	"io"
-	"os"
 	"path/filepath"
-	"regexp"
 	"strings"
+
+	"golang.org/x/tools/go/loader"
+	"golang.org/x/tools/go/types"
 )
 
 // TODO: don't use a global state to allow concurrent use
@@ -101,234 +99,125 @@ func implementsIface(sign *types.Signature) bool {
 	return false
 }
 
-func fullPath(path, name string) string {
-	if path == "" || strings.HasPrefix(path, "_unknown-") {
+func (v *Visitor) fullPath(path, name string) string {
+	if path == "" || path == v.Pkg.Path() {
 		return name
 	}
 	return path + "." + name
 }
 
-func interfaceMatching(p *param) (string, *types.Interface) {
+func (v *Visitor) interfaceMatching(p *param) (string, *types.Interface) {
 	for _, pkg := range pkgs {
-		for _, iface := range c.stdIfaces[pkg.path] {
+		for _, iface := range c.pkgIfaces[pkg.path] {
 			if matchesIface(p, iface, false) {
-				return fullPath(pkg.path, iface.name), iface.t
+				return v.fullPath(pkg.path, iface.name), iface.t
 			}
 		}
 	}
 	for _, path := range c.curPaths {
 		for _, iface := range c.pkgIfaces[path] {
 			if matchesIface(p, iface, false) {
-				return fullPath(path, iface.name), iface.t
+				return v.fullPath(path, iface.name), iface.t
 			}
 		}
 	}
 	return "", nil
 }
 
-var skipDir = regexp.MustCompile(`^(testdata|vendor|_.*|\.\+)$`)
-
-func getDirs(d string) ([]string, error) {
-	var dirs []string
-	if d != "." && !strings.HasPrefix(d, "./") {
-		return nil, fmt.Errorf("TODO: recursing into non-local import paths")
-	}
-	walkFn := func(path string, info os.FileInfo, err error) error {
-		if err != nil {
-			return err
-		}
-		if skipDir.MatchString(info.Name()) {
-			return filepath.SkipDir
-		}
-		if info.IsDir() {
-			if !strings.HasPrefix(path, "./") {
-				path = "./" + path
-			}
-			dirs = append(dirs, path)
-		}
-		return nil
-	}
-	if err := filepath.Walk(d, walkFn); err != nil {
-		return nil, err
-	}
-	return dirs, nil
-}
-
-func fileExists(path string) (bool, error) {
-	info, err := os.Stat(path)
-	if os.IsNotExist(err) {
-		return false, nil
-	}
-	if err != nil {
-		return false, err
-	}
-	return !info.IsDir(), nil
-}
-
-func getPkgs(paths []string) ([]*build.Package, []string, error) {
-	ex, err := fileExists(paths[0])
-	if err != nil {
-		return nil, nil, err
-	}
-	if ex {
-		pkg := &build.Package{
-			Name:    ".",
-			GoFiles: paths,
-		}
-		return []*build.Package{pkg}, []string{"."}, nil
-	}
-	var pkgs []*build.Package
-	var basedirs []string
-	wd, err := os.Getwd()
-	if err != nil {
-		return nil, nil, err
-	}
-	for _, p := range paths {
-		var dirs []string
-		recursive := filepath.Base(p) == "..."
-		if !recursive {
-			dirs = []string{p}
-		} else {
-			d := p[:len(p)-4]
-			var err error
-			dirs, err = getDirs(d)
-			if err != nil {
-				return nil, nil, err
-			}
-		}
-		for _, d := range dirs {
-			pkg, err := build.Import(d, wd, 0)
-			if _, ok := err.(*build.NoGoError); ok {
-				continue
-			}
-			if err != nil {
-				return nil, nil, err
-			}
-			pkgs = append(pkgs, pkg)
-			basedirs = append(basedirs, d)
-		}
-	}
-	return pkgs, basedirs, nil
-}
-
-func checkPaths(paths []string, w io.Writer) error {
-	pkgs, basedirs, err := getPkgs(paths)
-	if err != nil {
-		return err
-	}
-	conf := &types.Config{Importer: c.imp}
-	for i, pkg := range pkgs {
-		basedir := basedirs[i]
-		if err := checkPkg(conf, pkg, basedir, w); err != nil {
-			return err
-		}
-	}
-	return nil
-}
-
-func checkPkg(conf *types.Config, pkg *build.Package, basedir string, w io.Writer) error {
-	if *verbose {
-		importPath := pkg.ImportPath
-		if importPath == "" {
-			importPath = "command-line-arguments"
-		}
-		fmt.Fprintln(w, importPath)
-	}
-	gp := &goPkg{
-		Package: pkg,
-		fset:    token.NewFileSet(),
-	}
-	for _, p := range pkg.GoFiles {
-		fp := filepath.Join(basedir, p)
-		if err := gp.parsePath(fp); err != nil {
-			return err
-		}
-	}
-	if err := gp.check(conf, w); err != nil {
-		return err
-	}
-	return nil
-}
-
-type goPkg struct {
-	*build.Package
-
-	fset  *token.FileSet
-	files []*ast.File
-}
-
-func (gp *goPkg) parsePath(fp string) error {
-	f, err := os.Open(fp)
-	if err != nil {
-		return err
-	}
-	defer f.Close()
-	if err := gp.parseReader(fp, f); err != nil {
-		return err
-	}
-	return nil
-}
-
-func (gp *goPkg) parseReader(name string, r io.Reader) error {
-	f, err := parser.ParseFile(gp.fset, name, r, 0)
-	if err != nil {
-		return err
-	}
-	gp.files = append(gp.files, f)
-	return nil
-}
-
-func flattenImports(pkg *types.Package, path string) []string {
-	seen := make(map[string]struct{})
+func flattenImports(pkg *types.Package) []string {
+	seen := make(map[string]bool)
 	var paths []string
-	var addPkg func(*types.Package, string)
-	addPkg = func(pkg *types.Package, path string) {
-		if _, e := seen[path]; e {
+	var fromPkg func(*types.Package)
+	fromPkg = func(pkg *types.Package) {
+		path := pkg.Path()
+		if seen[path] {
 			return
 		}
-		seen[path] = struct{}{}
+		if c.std[path] {
+			return
+		}
+		seen[path] = true
 		paths = append(paths, path)
 		for _, ipkg := range pkg.Imports() {
-			addPkg(ipkg, ipkg.Path())
+			fromPkg(ipkg)
 		}
 	}
-	addPkg(pkg, path)
+	fromPkg(pkg)
 	return paths
 }
 
-func grabRecurse(pkg *types.Package, path string) {
-	if _, e := c.done[path]; e {
-		return
+func orderedPkgs(prog *loader.Program, paths []string) []*loader.PackageInfo {
+	if strings.HasSuffix(paths[0], ".go") {
+		for _, pkg := range prog.InitialPackages() {
+			path := pkg.Pkg.Path()
+			if c.std[path] {
+				continue
+			}
+			return []*loader.PackageInfo{pkg}
+		}
 	}
-	c.grabExported(pkg.Scope(), path)
-	for _, ipkg := range pkg.Imports() {
-		grabRecurse(ipkg, ipkg.Path())
+	var pkgs []*loader.PackageInfo
+	for _, path := range paths {
+		pkgs = append(pkgs, prog.Package(path))
 	}
+	return pkgs
 }
 
-func (gp *goPkg) check(conf *types.Config, w io.Writer) error {
-	info := &types.Info{
-		Types: make(map[ast.Expr]types.TypeAndValue),
-		Defs:  make(map[*ast.Ident]types.Object),
-		Uses:  make(map[*ast.Ident]types.Object),
+func checkErrors(infos []*loader.PackageInfo) ([]*types.Package, error) {
+	var pkgs []*types.Package
+	for _, info := range infos {
+		if info.Errors != nil {
+			return nil, info.Errors[0]
+		}
+		pkgs = append(pkgs, info.Pkg)
 	}
-	pkg, err := conf.Check(gp.Name, gp.fset, gp.files, info)
+	return pkgs, nil
+}
+
+func checkPaths(paths []string, w io.Writer) error {
+	if err := typesInit(); err != nil {
+		return err
+	}
+	c.AllowErrors = true
+	c.TypeChecker.Error = func(e error) {}
+	c.TypeCheckFuncBodies = func(path string) bool {
+		return !c.std[path]
+	}
+	c.TypeChecker.DisableUnusedImportCheck = true
+	_, err := c.FromArgs(paths, false)
 	if err != nil {
 		return err
 	}
-	path := gp.ImportPath
-	if path == "" {
-		c.nextUnknown++
-		path = fmt.Sprintf("_unknown-%d", c.nextUnknown)
+	prog, err := c.Load()
+	if err != nil {
+		return err
 	}
-	c.curPaths = flattenImports(pkg, path)
-	grabRecurse(pkg, path)
+	pkgInfos := orderedPkgs(prog, paths)
+	pkgs, err := checkErrors(pkgInfos)
+	if err != nil {
+		return err
+	}
+	typesGet(prog)
+	for _, pkg := range pkgs {
+		c.curPaths = flattenImports(pkg)
+		info := prog.AllPackages[pkg]
+		if err := checkPkg(&c.TypeChecker, info, w); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func checkPkg(conf *types.Config, pkg *loader.PackageInfo, w io.Writer) error {
+	if *verbose {
+		fmt.Fprintln(w, pkg.Pkg.Path())
+	}
 	v := &Visitor{
-		Info: info,
-		w:    w,
-		fset: gp.fset,
+		PackageInfo: pkg,
+		w:           w,
+		fset:        c.Fset,
 	}
-	for _, f := range gp.files {
+	for _, f := range pkg.Files {
 		ast.Walk(v, f)
 	}
 	return nil
@@ -345,7 +234,7 @@ type param struct {
 }
 
 type Visitor struct {
-	*types.Info
+	*loader.PackageInfo
 
 	w     io.Writer
 	fset  *token.FileSet
@@ -541,7 +430,7 @@ func (v *Visitor) funcEnded(pos token.Pos) {
 		if p.discard {
 			continue
 		}
-		ifname, iface := interfaceMatching(p)
+		ifname, iface := v.interfaceMatching(p)
 		if iface == nil {
 			continue
 		}
@@ -549,7 +438,11 @@ func (v *Visitor) funcEnded(pos token.Pos) {
 			continue
 		}
 		pos := v.fset.Position(pos)
+		fname := pos.Filename
+		if fname[0] == '/' {
+			fname = filepath.Join(v.Pkg.Path(), filepath.Base(fname))
+		}
 		fmt.Fprintf(v.w, "%s:%d: %s can be %s\n",
-			pos.Filename, pos.Line, name, ifname)
+			fname, pos.Line, name, ifname)
 	}
 }
