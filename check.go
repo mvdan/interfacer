@@ -166,6 +166,9 @@ func orderedPkgs(prog *loader.Program, paths []string) []*loader.PackageInfo {
 func checkErrors(infos []*loader.PackageInfo) ([]*types.Package, error) {
 	var pkgs []*types.Package
 	for _, info := range infos {
+		if info == nil {
+			continue
+		}
 		if info.Errors != nil {
 			return nil, info.Errors[0]
 		}
