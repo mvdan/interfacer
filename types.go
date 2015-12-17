@@ -61,21 +61,24 @@ func typesInit() error {
 		funcs:     make(map[string]funcSign),
 		std:       make(map[string]bool),
 	}
-	// TODO: once loader is ported to go/types, cache imported std
-	// packages across tests
-	for _, p := range pkgs {
-		if p.path == "" || len(p.names) < 1 {
-			continue
-		}
-		c.Import(p.path)
-		c.std[p.path] = true
-	}
 	c.AllowErrors = true
 	c.TypeChecker.Error = func(e error) {}
 	c.TypeCheckFuncBodies = func(path string) bool {
 		return !c.std[path]
 	}
 	c.TypeChecker.DisableUnusedImportCheck = true
+	// TODO: once loader is ported to go/types, cache imported std
+	// packages across tests
+	for _, p := range pkgs {
+		if p.path == "" {
+			continue
+		}
+		c.std[p.path] = true
+		if len(p.names) < 1 {
+			continue
+		}
+		c.Import(p.path)
+	}
 	return nil
 }
 
