@@ -181,12 +181,6 @@ func checkPaths(paths []string, w io.Writer) error {
 	if err := typesInit(); err != nil {
 		return err
 	}
-	c.AllowErrors = true
-	c.TypeChecker.Error = func(e error) {}
-	c.TypeCheckFuncBodies = func(path string) bool {
-		return !c.std[path]
-	}
-	c.TypeChecker.DisableUnusedImportCheck = true
 	_, err := c.FromArgs(paths, false)
 	if err != nil {
 		return err

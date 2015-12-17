@@ -70,6 +70,12 @@ func typesInit() error {
 		c.Import(p.path)
 		c.std[p.path] = true
 	}
+	c.AllowErrors = true
+	c.TypeChecker.Error = func(e error) {}
+	c.TypeCheckFuncBodies = func(path string) bool {
+		return !c.std[path]
+	}
+	c.TypeChecker.DisableUnusedImportCheck = true
 	return nil
 }
 
