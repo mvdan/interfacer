@@ -7,6 +7,7 @@ import (
 	"bytes"
 	"io"
 	"regexp"
+	"strings"
 
 	"golang.org/x/tools/go/loader"
 	"golang.org/x/tools/go/types"
@@ -55,7 +56,7 @@ type cache struct {
 	funcs map[string]funcSign
 }
 
-func typesInit() error {
+func typesInit(paths []string) error {
 	c = &cache{
 		pkgIfaces: make(map[string][]ifaceSign),
 		funcs:     make(map[string]funcSign),
@@ -63,18 +64,30 @@ func typesInit() error {
 	}
 	c.AllowErrors = true
 	c.TypeChecker.Error = func(e error) {}
-	c.TypeCheckFuncBodies = func(path string) bool {
-		return !c.std[path]
-	}
 	c.TypeChecker.DisableUnusedImportCheck = true
-	// TODO: once loader is ported to go/types, cache imported std
-	// packages across tests
 	for _, p := range pkgs {
 		if p.path == "" {
 			continue
 		}
 		c.std[p.path] = true
-		if len(p.names) < 1 {
+	}
+	argPaths := make(map[string]bool, len(paths))
+	for _, path := range paths {
+		argPaths[path] = true
+	}
+	c.TypeCheckFuncBodies = func(path string) bool {
+		if c.std[path] {
+			return false
+		}
+		if !strings.Contains(path, "/") {
+			return true
+		}
+		return argPaths[path]
+	}
+	// TODO: once loader is ported to go/types, cache imported std
+	// packages across tests
+	for _, p := range pkgs {
+		if p.path == "" || len(p.names) < 1 {
 			continue
 		}
 		c.Import(p.path)

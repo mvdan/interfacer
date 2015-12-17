@@ -182,7 +182,7 @@ func checkArgs(args []string, w io.Writer) error {
 	if err != nil {
 		errExit(err)
 	}
-	if err := typesInit(); err != nil {
+	if err := typesInit(paths); err != nil {
 		return err
 	}
 	if _, err := c.FromArgs(paths, false); err != nil {
