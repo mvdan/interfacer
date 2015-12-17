@@ -177,12 +177,15 @@ func checkErrors(infos []*loader.PackageInfo) ([]*types.Package, error) {
 	return pkgs, nil
 }
 
-func checkPaths(paths []string, w io.Writer) error {
+func checkArgs(args []string, w io.Writer) error {
+	paths, err := recurse(args)
+	if err != nil {
+		errExit(err)
+	}
 	if err := typesInit(); err != nil {
 		return err
 	}
-	_, err := c.FromArgs(paths, false)
-	if err != nil {
+	if _, err := c.FromArgs(paths, false); err != nil {
 		return err
 	}
 	prog, err := c.Load()

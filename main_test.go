@@ -44,11 +44,7 @@ func doTest(t *testing.T, p string) {
 		inPath = "./" + inPath + "/..."
 	}
 	var b bytes.Buffer
-	paths, err := recurse([]string{inPath})
-	if err != nil {
-		t.Fatal(err)
-	}
-	err = checkPaths(paths, &b)
+	err := checkArgs([]string{inPath}, &b)
 	exp, wantErr := want(t, p)
 	if wantErr {
 		if err == nil {

@@ -15,11 +15,7 @@ var (
 
 func main() {
 	flag.Parse()
-	paths, err := recurse(flag.Args())
-	if err != nil {
-		errExit(err)
-	}
-	if err := checkPaths(paths, os.Stdout); err != nil {
+	if err := checkArgs(flag.Args(), os.Stdout); err != nil {
 		errExit(err)
 	}
 }
