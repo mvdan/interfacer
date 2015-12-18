@@ -3,10 +3,9 @@
 
 package main
 
-// Gotten from golang/go HEAD 85dd62d5dd5 via:
-// go list ./src/... | sed 's@.*/src/@@' | \
-//     grep -v -E '\<(vendor|internal|builtin|unsafe|cmd)\>'
-// The empty string at the beginning represents builtin.
+// Gotten from Go 1.5.2 via:
+// $ go list std | grep -v -E '\<(internal|unsafe)\>'
+// Plus empty string for builtin/Universe
 // TODO: see if this list can be obtained at runtime
 var pkgs = []string{
 	"",

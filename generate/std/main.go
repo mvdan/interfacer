@@ -77,7 +77,6 @@ type pkgNames struct {
 
 func generate(w io.Writer) error {
 	imp := importer.Default()
-	fromScope(types.Universe)
 	var wanted []pkgNames
 	sort.Sort(byLength(pkgs))
 	for _, path := range pkgs {
