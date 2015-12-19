@@ -34,7 +34,7 @@ var funcs = map[string]string{
 {{end}}}
 `))
 
-var out = flag.String("o", "", "output file (- is stdout)")
+var out = flag.String("o", "", "output file")
 
 type byLength []string
 
