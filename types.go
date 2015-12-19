@@ -12,7 +12,7 @@ import (
 	"golang.org/x/tools/go/types"
 )
 
-//go:generate go run generate/std/main.go generate/std/pkgs.go
+//go:generate go run generate/std/main.go generate/std/pkgs.go -o std.go
 //go:generate gofmt -w -s std.go
 
 type cache struct {
