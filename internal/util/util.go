@@ -72,26 +72,26 @@ func SignString(sign *types.Signature) string {
 	return fmt.Sprintf("(%s) (%s)", strings.Join(ps, ", "), strings.Join(rs, ", "))
 }
 
-func paramInteresting(t types.Type) bool {
+func Interesting(t types.Type) bool {
 	switch x := t.(type) {
 	case *types.Interface:
-		return x.NumMethods() > 0
+		return x.NumMethods() > 1
 	case *types.Struct:
 		return true
 	case *types.Named:
-		return paramInteresting(x.Underlying())
+		return Interesting(x.Underlying())
 	case *types.Pointer:
-		return paramInteresting(x.Elem())
+		return Interesting(x.Elem())
 	default:
 		return false
 	}
 }
 
-func countInterestingParams(params *types.Tuple) int {
+func CountInteresting(params *types.Tuple, level int) int {
 	count := 0
 	for i := 0; i < params.Len(); i++ {
 		t := params.At(i).Type()
-		if paramInteresting(t) {
+		if Interesting(t) {
 			count++
 		}
 	}
@@ -102,7 +102,7 @@ func FromScope(scope *types.Scope) (map[string]string, map[string]string) {
 	ifaces := make(map[string]string)
 	funcs := make(map[string]string)
 	signStr := func(sign *types.Signature) string {
-		if countInterestingParams(sign.Params()) < 1 {
+		if CountInteresting(sign.Params(), 2) < 1 {
 			return ""
 		}
 		s := SignString(sign)
