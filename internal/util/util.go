@@ -41,7 +41,7 @@ func MethoderFuncMap(m Methoder) map[string]string {
 }
 
 func FuncMapString(iface map[string]string) string {
-	var fnames []string
+	fnames := make([]string, 0, len(iface))
 	for fname := range iface {
 		fnames = append(fnames, fname)
 	}
@@ -58,7 +58,7 @@ func FuncMapString(iface map[string]string) string {
 }
 
 func tupleStrs(t *types.Tuple) []string {
-	var l []string
+	l := make([]string, 0, t.Len())
 	for i := 0; i < t.Len(); i++ {
 		v := t.At(i)
 		l = append(l, v.Type().String())
