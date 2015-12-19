@@ -14,6 +14,11 @@ import (
 	"golang.org/x/tools/go/types"
 )
 
+const (
+	maxLenFunc  = 160
+	maxLenIface = 320
+)
+
 type ByAlph []string
 
 func (l ByAlph) Len() int           { return len(l) }
@@ -106,7 +111,7 @@ func FromScope(scope *types.Scope) (map[string]string, map[string]string) {
 			return ""
 		}
 		s := SignString(sign)
-		if len(s) > 160 {
+		if len(s) > maxLenFunc {
 			return ""
 		}
 		return s
@@ -133,7 +138,7 @@ func FromScope(scope *types.Scope) (map[string]string, map[string]string) {
 				}
 			}
 			s := FuncMapString(iface)
-			if len(s) > 160 {
+			if len(s) > maxLenIface {
 				continue
 			}
 			ifaces[s] = tn.Name()
