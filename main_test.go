@@ -93,14 +93,3 @@ func TestAll(t *testing.T) {
 		doTest(t, p)
 	}
 }
-
-func BenchmarkImportStd(b *testing.B) {
-	for i := 0; i < b.N; i++ {
-		if err := typesInit(nil); err != nil {
-			b.Fatal(err)
-		}
-		if _, err := c.Load(); err != nil {
-			b.Fatal(err)
-		}
-	}
-}

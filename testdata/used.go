@@ -61,3 +61,29 @@ func Bang(bc BangCloser) {
 func BangWrong(bc BangCloser) {
 	bc.Close()
 }
+
+type st struct{}
+
+func (s st) Bang() {}
+func (s st) Close() error {
+	return nil
+}
+
+type Banger interface {
+	Bang()
+}
+
+func BangLighter(s st) {
+	s.Close()
+	var b Banger
+	b = s
+	b.Bang()
+}
+
+func BangLighterWrong(s st) {
+	s.Bang()
+	s.Close()
+	var c io.Closer
+	c = s
+	c.Close()
+}

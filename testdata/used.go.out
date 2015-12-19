@@ -3,3 +3,4 @@ used.go:21: f can be io.Closer
 used.go:28: f1 can be io.Closer
 used.go:42: f can be io.Closer
 used.go:61: bc can be io.Closer
+used.go:83: s can be BangCloser

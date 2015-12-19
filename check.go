@@ -11,6 +11,8 @@ import (
 	"path/filepath"
 	"strings"
 
+	"github.com/mvdan/interfacer/internal/util"
+
 	"golang.org/x/tools/go/loader"
 	"golang.org/x/tools/go/types"
 )
@@ -18,161 +20,98 @@ import (
 // TODO: don't use a global state to allow concurrent use
 var c *cache
 
-func typesMatch(want, got []types.Type) bool {
-	if len(want) != len(got) {
-		return false
-	}
-	for i, w := range want {
-		if !types.ConvertibleTo(got[i], w) {
-			return false
-		}
-	}
-	return true
-}
-
-func usedMatch(t types.Type, usedAs []types.Type) bool {
-	for _, u := range usedAs {
-		if !types.ConvertibleTo(t, u) {
-			return false
-		}
-	}
-	return true
-}
-
-func matchesIface(p *param, iface ifaceSign, canEmpty bool) bool {
-	if len(p.calls) > len(iface.funcs) {
-		return false
-	}
-	if !usedMatch(iface.t, p.usedAs) {
-		return false
-	}
-	for name, f := range iface.funcs {
-		c, e := p.calls[name]
-		if !e {
-			return canEmpty
-		}
-		if !typesMatch(f.params, c.params) {
-			return false
-		}
-		if !typesMatch(f.results, c.results) {
-			return false
-		}
-	}
-	for _, to := range p.assigned {
-		if to.discard {
-			return false
-		}
-	}
-	return true
-}
-
-func isFunc(sign *types.Signature, fsign funcSign) bool {
-	params := sign.Params()
-	if params.Len() != len(fsign.params) {
-		return false
-	}
-	results := sign.Results()
-	if results.Len() != len(fsign.results) {
-		return false
-	}
-	for i, p := range fsign.params {
-		ip := params.At(i).Type()
-		if !types.AssignableTo(p, ip) {
-			return false
-		}
-	}
-	for i, r := range fsign.results {
-		ir := results.At(i).Type()
-		if !types.AssignableTo(r, ir) {
-			return false
-		}
-	}
-	return true
-}
-
 func implementsIface(sign *types.Signature) bool {
-	for _, f := range c.funcs {
-		if isFunc(sign, f) {
-			return true
-		}
-	}
-	return false
+	s := util.SignString(sign)
+	_, e := funcs[s]
+	return e
 }
 
-func (v *Visitor) fullPath(path, name string) string {
-	if path == "" || path == v.Pkg.Path() {
-		return name
+func doMethoderType(t types.Type) map[string]string {
+	switch x := t.(type) {
+	case *types.Pointer:
+		return doMethoderType(x.Elem())
+	case *types.Named:
+		if u, ok := x.Underlying().(*types.Interface); ok {
+			return doMethoderType(u)
+		}
+		return util.MethoderFuncMap(x)
+	case *types.Interface:
+		return util.MethoderFuncMap(x)
+	case *types.Slice:
+		return doMethoderType(x.Elem())
+	case *types.Array:
+		return doMethoderType(x.Elem())
+	default:
+		return nil
 	}
-	return path + "." + name
 }
 
-func (v *Visitor) interfaceMatching(p *param) (string, *types.Interface) {
-	for _, pkg := range pkgs {
-		for _, iface := range c.pkgIfaces[pkg.path] {
-			if matchesIface(p, iface, false) {
-				return v.fullPath(pkg.path, iface.name), iface.t
-			}
+func assignable(s, t string, called, want map[string]string) bool {
+	if s == t {
+		return true
+	}
+	if len(t) >= len(s) {
+		return false
+	}
+	for fname, ftype := range want {
+		s, e := called[fname]
+		if !e || s != ftype {
+			return false
 		}
 	}
-	for _, path := range c.curPaths {
-		for _, iface := range c.pkgIfaces[path] {
-			if matchesIface(p, iface, false) {
-				return v.fullPath(path, iface.name), iface.t
-			}
-		}
-	}
-	return "", nil
+	return true
 }
 
-func flattenImports(pkg *types.Package) []string {
-	seen := make(map[string]bool)
-	var paths []string
-	var fromPkg func(*types.Package)
-	fromPkg = func(pkg *types.Package) {
-		path := pkg.Path()
-		if seen[path] {
-			return
-		}
-		if c.std[path] {
-			return
-		}
-		seen[path] = true
-		paths = append(paths, path)
-		for _, ipkg := range pkg.Imports() {
-			fromPkg(ipkg)
+func interfaceMatching(p *param) (string, string) {
+	for to := range p.assigned {
+		if to.discard {
+			return "", ""
 		}
 	}
-	fromPkg(pkg)
-	return paths
+	allFuncs := doMethoderType(p.t)
+	called := make(map[string]string, len(p.calls))
+	for fname := range p.calls {
+		called[fname] = allFuncs[fname]
+	}
+	s := util.FuncMapString(called)
+	name, e := ifaces[s]
+	if !e {
+		return "", ""
+	}
+	for t := range p.usedAs {
+		iface, ok := t.(*types.Interface)
+		if !ok {
+			return "", ""
+		}
+		asMethods := util.MethoderFuncMap(iface)
+		as := util.FuncMapString(asMethods)
+		if !assignable(s, as, called, asMethods) {
+			return "", ""
+		}
+	}
+	return name, s
 }
 
-func orderedPkgs(prog *loader.Program, paths []string) []*loader.PackageInfo {
+func orderedPkgs(prog *loader.Program, paths []string) ([]*types.Package, error) {
 	if strings.HasSuffix(paths[0], ".go") {
 		for _, pkg := range prog.InitialPackages() {
+			if pkg.Errors != nil {
+				return nil, pkg.Errors[0]
+			}
 			path := pkg.Pkg.Path()
-			if c.std[path] {
+			if _, e := pkgs[path]; e {
 				continue
 			}
-			return []*loader.PackageInfo{pkg}
+			return []*types.Package{pkg.Pkg}, nil
 		}
 	}
-	var pkgs []*loader.PackageInfo
-	for _, path := range paths {
-		pkgs = append(pkgs, prog.Package(path))
-	}
-	return pkgs
-}
-
-func checkErrors(infos []*loader.PackageInfo) ([]*types.Package, error) {
 	var pkgs []*types.Package
-	for _, info := range infos {
-		if info == nil {
-			continue
+	for _, path := range paths {
+		pkg := prog.Package(path)
+		if pkg.Errors != nil {
+			return nil, pkg.Errors[0]
 		}
-		if info.Errors != nil {
-			return nil, info.Errors[0]
-		}
-		pkgs = append(pkgs, info.Pkg)
+		pkgs = append(pkgs, pkg.Pkg)
 	}
 	return pkgs, nil
 }
@@ -192,14 +131,12 @@ func checkArgs(args []string, w io.Writer) error {
 	if err != nil {
 		return err
 	}
-	pkgInfos := orderedPkgs(prog, paths)
-	pkgs, err := checkErrors(pkgInfos)
+	pkgs, err := orderedPkgs(prog, paths)
 	if err != nil {
 		return err
 	}
 	typesGet(prog)
 	for _, pkg := range pkgs {
-		c.curPaths = flattenImports(pkg)
 		info := prog.AllPackages[pkg]
 		if err := checkPkg(&c.TypeChecker, info, w); err != nil {
 			return err
@@ -212,7 +149,7 @@ func checkPkg(conf *types.Config, pkg *loader.PackageInfo, w io.Writer) error {
 	if *verbose {
 		fmt.Fprintln(w, pkg.Pkg.Path())
 	}
-	v := &Visitor{
+	v := &visitor{
 		PackageInfo: pkg,
 		w:           w,
 		fset:        c.Fset,
@@ -226,14 +163,14 @@ func checkPkg(conf *types.Config, pkg *loader.PackageInfo, w io.Writer) error {
 type param struct {
 	t types.Type
 
-	calls   map[string]funcSign
-	usedAs  []types.Type
+	calls   map[string]struct{}
+	usedAs  map[types.Type]struct{}
 	discard bool
 
-	assigned []*param
+	assigned map[*param]struct{}
 }
 
-type Visitor struct {
+type visitor struct {
 	*loader.PackageInfo
 
 	w     io.Writer
@@ -247,7 +184,7 @@ type Visitor struct {
 	skipNext bool
 }
 
-func (v *Visitor) top() ast.Node {
+func (v *visitor) top() ast.Node {
 	return v.nodes[len(v.nodes)-1]
 }
 
@@ -256,8 +193,10 @@ func paramsMap(t *types.Tuple) map[string]*param {
 	for i := 0; i < t.Len(); i++ {
 		p := t.At(i)
 		m[p.Name()] = &param{
-			t:     p.Type().Underlying(),
-			calls: make(map[string]funcSign),
+			t:        p.Type(),
+			calls:    make(map[string]struct{}),
+			usedAs:   make(map[types.Type]struct{}),
+			assigned: make(map[*param]struct{}),
 		}
 	}
 	return m
@@ -282,7 +221,7 @@ func paramType(sign *types.Signature, i int) types.Type {
 	}
 }
 
-func (v *Visitor) param(name string) *param {
+func (v *visitor) param(name string) *param {
 	if p, e := v.params[name]; e {
 		return p
 	}
@@ -290,32 +229,34 @@ func (v *Visitor) param(name string) *param {
 		return p
 	}
 	p := &param{
-		calls: make(map[string]funcSign),
+		calls:    make(map[string]struct{}),
+		usedAs:   make(map[types.Type]struct{}),
+		assigned: make(map[*param]struct{}),
 	}
 	v.extras[name] = p
 	return p
 }
 
-func (v *Visitor) addUsed(name string, as types.Type) {
+func (v *visitor) addUsed(name string, as types.Type) {
 	if as == nil {
 		return
 	}
 	p := v.param(name)
-	p.usedAs = append(p.usedAs, as)
+	p.usedAs[as.Underlying()] = struct{}{}
 }
 
-func (v *Visitor) addAssign(to, from string) {
+func (v *visitor) addAssign(to, from string) {
 	pto := v.param(to)
 	pfrom := v.param(from)
-	pfrom.assigned = append(pfrom.assigned, pto)
+	pfrom.assigned[pto] = struct{}{}
 }
 
-func (v *Visitor) discard(name string) {
+func (v *visitor) discard(name string) {
 	p := v.param(name)
 	p.discard = true
 }
 
-func (v *Visitor) Visit(node ast.Node) ast.Visitor {
+func (v *visitor) Visit(node ast.Node) ast.Visitor {
 	if v.skipNext {
 		v.skipNext = false
 		return nil
@@ -388,7 +329,7 @@ func funcSignature(t types.Type) *types.Signature {
 	}
 }
 
-func (v *Visitor) onCall(ce *ast.CallExpr) {
+func (v *visitor) onCall(ce *ast.CallExpr) {
 	sign := funcSignature(v.Types[ce.Fun].Type)
 	if sign == nil {
 		return
@@ -407,40 +348,42 @@ func (v *Visitor) onCall(ce *ast.CallExpr) {
 		return
 	}
 	p := v.param(left.Name)
-	c := funcSign{}
-	results := sign.Results()
-	for i := 0; i < results.Len(); i++ {
-		c.results = append(c.results, results.At(i).Type())
-	}
-	for _, a := range ce.Args {
-		c.params = append(c.params, v.Types[a].Type)
-	}
-	p.calls[sel.Sel.Name] = c
+	p.calls[sel.Sel.Name] = struct{}{}
 	return
 }
 
-func (v *Visitor) onSelector(sel *ast.SelectorExpr) {
+func (v *visitor) onSelector(sel *ast.SelectorExpr) {
 	if id, ok := sel.X.(*ast.Ident); ok {
 		v.discard(id.Name)
 	}
 }
 
-func (v *Visitor) funcEnded(pos token.Pos) {
+func (v *visitor) funcEnded(pos token.Pos) {
 	for name, p := range v.params {
 		if p.discard {
 			continue
 		}
-		ifname, iface := v.interfaceMatching(p)
-		if iface == nil {
+		ifname, iftype := interfaceMatching(p)
+		if ifname == "" {
 			continue
 		}
-		if types.AssignableTo(iface, p.t) {
-			continue
+		if _, haveIface := p.t.Underlying().(*types.Interface); haveIface {
+			if ifname == p.t.String() {
+				continue
+			}
+			have := util.FuncMapString(doMethoderType(p.t))
+			if have == iftype {
+				continue
+			}
 		}
 		pos := v.fset.Position(pos)
 		fname := pos.Filename
 		if fname[0] == '/' {
 			fname = filepath.Join(v.Pkg.Path(), filepath.Base(fname))
+		}
+		pname := v.Pkg.Name()
+		if strings.HasPrefix(ifname, pname+".") {
+			ifname = ifname[len(pname)+1:]
 		}
 		fmt.Fprintf(v.w, "%s:%d: %s can be %s\n",
 			fname, pos.Line, name, ifname)
