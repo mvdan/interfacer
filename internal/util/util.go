@@ -74,6 +74,12 @@ func tupleStrs(t *types.Tuple) []string {
 func SignString(sign *types.Signature) string {
 	ps := tupleStrs(sign.Params())
 	rs := tupleStrs(sign.Results())
+	if len(rs) == 0 {
+		return fmt.Sprintf("(%s)", strings.Join(ps, ", "))
+	}
+	if len(rs) == 1 {
+		return fmt.Sprintf("(%s) %s", strings.Join(ps, ", "), rs[0])
+	}
 	return fmt.Sprintf("(%s) (%s)", strings.Join(ps, ", "), strings.Join(rs, ", "))
 }
 
