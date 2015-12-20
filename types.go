@@ -6,8 +6,6 @@ package interfacer
 import (
 	"strings"
 
-	"github.com/mvdan/interfacer/internal/util"
-
 	"golang.org/x/tools/go/loader"
 	"golang.org/x/tools/go/types"
 )
@@ -47,17 +45,17 @@ func typesGet(prog *loader.Program) {
 }
 
 func grabExported(scope *types.Scope, path string) {
-	ifs, funs := util.FromScope(scope)
+	ifs, funs := FromScope(scope)
 	for iftype, ifname := range ifs {
 		if _, e := ifaces[iftype]; e {
 			continue
 		}
-		ifaces[iftype] = util.FullName(path, ifname)
+		ifaces[iftype] = path + "." + ifname
 	}
 	for ftype, fname := range funs {
 		if _, e := funcs[ftype]; e {
 			continue
 		}
-		funcs[ftype] = util.FullName(path, fname)
+		funcs[ftype] = path + "." + fname
 	}
 }

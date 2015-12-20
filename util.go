@@ -1,7 +1,7 @@
 // Copyright (c) 2015, Daniel Martí <mvdan@mvdan.cc>
 // See LICENSE for licensing information
 
-package util
+package interfacer
 
 import (
 	"bytes"
@@ -155,19 +155,4 @@ func FromScope(scope *types.Scope) (map[string]string, map[string]string) {
 		}
 	}
 	return ifaces, funcs
-}
-
-func FullName(path, name string) string {
-	if path == "" {
-		return name
-	}
-	return path + "." + name
-}
-
-func PkgName(fullname string) string {
-	sp := strings.Split(fullname, ".")
-	if len(sp) == 1 {
-		return ""
-	}
-	return sp[0]
 }

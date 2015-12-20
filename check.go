@@ -11,8 +11,6 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/mvdan/interfacer/internal/util"
-
 	"golang.org/x/tools/go/loader"
 	"golang.org/x/tools/go/types"
 )
@@ -21,7 +19,7 @@ import (
 var c *cache
 
 func implementsIface(sign *types.Signature) bool {
-	s := util.SignString(sign)
+	s := SignString(sign)
 	_, e := funcs[s]
 	return e
 }
@@ -34,9 +32,9 @@ func doMethoderType(t types.Type) map[string]string {
 		if u, ok := x.Underlying().(*types.Interface); ok {
 			return doMethoderType(u)
 		}
-		return util.MethoderFuncMap(x)
+		return MethoderFuncMap(x)
 	case *types.Interface:
-		return util.MethoderFuncMap(x)
+		return MethoderFuncMap(x)
 	case *types.Slice:
 		return doMethoderType(x.Elem())
 	case *types.Array:
@@ -73,7 +71,7 @@ func interfaceMatching(p *param) (string, string) {
 	for fname := range p.calls {
 		called[fname] = allFuncs[fname]
 	}
-	s := util.FuncMapString(called)
+	s := FuncMapString(called)
 	name, e := ifaces[s]
 	if !e {
 		return "", ""
@@ -83,8 +81,8 @@ func interfaceMatching(p *param) (string, string) {
 		if !ok {
 			return "", ""
 		}
-		asMethods := util.MethoderFuncMap(iface)
-		as := util.FuncMapString(asMethods)
+		asMethods := MethoderFuncMap(iface)
+		as := FuncMapString(asMethods)
 		if !assignable(s, as, called, asMethods) {
 			return "", ""
 		}
@@ -367,7 +365,7 @@ func (v *visitor) funcEnded(pos token.Pos) {
 			if ifname == p.t.String() {
 				continue
 			}
-			have := util.FuncMapString(doMethoderType(p.t))
+			have := FuncMapString(doMethoderType(p.t))
 			if have == iftype {
 				continue
 			}
