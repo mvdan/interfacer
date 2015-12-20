@@ -98,10 +98,6 @@ func orderedPkgs(prog *loader.Program, paths []string) ([]*types.Package, error)
 			if pkg.Errors != nil {
 				return nil, pkg.Errors[0]
 			}
-			path := pkg.Pkg.Path()
-			if _, e := pkgs[path]; e {
-				continue
-			}
 			return []*types.Package{pkg.Pkg}, nil
 		}
 	}
