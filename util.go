@@ -27,12 +27,12 @@ func (l ByAlph) Swap(i, j int)      { l[i], l[j] = l[j], l[i] }
 
 var exported = regexp.MustCompile(`^[A-Z]`)
 
-type Methoder interface {
+type methoder interface {
 	NumMethods() int
 	Method(int) *types.Func
 }
 
-func MethoderFuncMap(m Methoder) map[string]string {
+func methoderFuncMap(m methoder) map[string]string {
 	ifuncs := make(map[string]string)
 	for i := 0; i < m.NumMethods(); i++ {
 		f := m.Method(i)
@@ -40,12 +40,12 @@ func MethoderFuncMap(m Methoder) map[string]string {
 			continue
 		}
 		sign := f.Type().(*types.Signature)
-		ifuncs[f.Name()] = SignString(sign)
+		ifuncs[f.Name()] = signString(sign)
 	}
 	return ifuncs
 }
 
-func FuncMapString(iface map[string]string) string {
+func funcMapString(iface map[string]string) string {
 	fnames := make([]string, 0, len(iface))
 	for fname := range iface {
 		fnames = append(fnames, fname)
@@ -71,7 +71,7 @@ func tupleStrs(t *types.Tuple) []string {
 	return l
 }
 
-func SignString(sign *types.Signature) string {
+func signString(sign *types.Signature) string {
 	ps := tupleStrs(sign.Params())
 	rs := tupleStrs(sign.Results())
 	if len(rs) == 0 {
@@ -83,26 +83,26 @@ func SignString(sign *types.Signature) string {
 	return fmt.Sprintf("(%s) (%s)", strings.Join(ps, ", "), strings.Join(rs, ", "))
 }
 
-func Interesting(t types.Type) bool {
+func interesting(t types.Type) bool {
 	switch x := t.(type) {
 	case *types.Interface:
 		return x.NumMethods() > 1
 	case *types.Struct:
 		return true
 	case *types.Named:
-		return Interesting(x.Underlying())
+		return interesting(x.Underlying())
 	case *types.Pointer:
-		return Interesting(x.Elem())
+		return interesting(x.Elem())
 	default:
 		return false
 	}
 }
 
-func CountInteresting(params *types.Tuple, level int) int {
+func countInteresting(params *types.Tuple, level int) int {
 	count := 0
 	for i := 0; i < params.Len(); i++ {
 		t := params.At(i).Type()
-		if Interesting(t) {
+		if interesting(t) {
 			count++
 		}
 	}
@@ -113,10 +113,10 @@ func FromScope(scope *types.Scope) (map[string]string, map[string]string) {
 	ifaces := make(map[string]string)
 	funcs := make(map[string]string)
 	signStr := func(sign *types.Signature) string {
-		if CountInteresting(sign.Params(), 2) < 1 {
+		if countInteresting(sign.Params(), 2) < 1 {
 			return ""
 		}
-		s := SignString(sign)
+		s := signString(sign)
 		if len(s) > maxLenFunc {
 			return ""
 		}
@@ -129,7 +129,7 @@ func FromScope(scope *types.Scope) (map[string]string, map[string]string) {
 		}
 		switch x := tn.Type().Underlying().(type) {
 		case *types.Interface:
-			iface := MethoderFuncMap(x)
+			iface := methoderFuncMap(x)
 			if len(iface) == 0 {
 				continue
 			}
@@ -143,7 +143,7 @@ func FromScope(scope *types.Scope) (map[string]string, map[string]string) {
 					funcs[s] = tn.Name() + "." + f.Name()
 				}
 			}
-			s := FuncMapString(iface)
+			s := funcMapString(iface)
 			if len(s) > maxLenIface {
 				continue
 			}

@@ -19,7 +19,7 @@ import (
 var c *cache
 
 func implementsIface(sign *types.Signature) bool {
-	s := SignString(sign)
+	s := signString(sign)
 	_, e := funcs[s]
 	return e
 }
@@ -32,9 +32,9 @@ func doMethoderType(t types.Type) map[string]string {
 		if u, ok := x.Underlying().(*types.Interface); ok {
 			return doMethoderType(u)
 		}
-		return MethoderFuncMap(x)
+		return methoderFuncMap(x)
 	case *types.Interface:
-		return MethoderFuncMap(x)
+		return methoderFuncMap(x)
 	case *types.Slice:
 		return doMethoderType(x.Elem())
 	case *types.Array:
@@ -71,7 +71,7 @@ func interfaceMatching(p *param) (string, string) {
 	for fname := range p.calls {
 		called[fname] = allFuncs[fname]
 	}
-	s := FuncMapString(called)
+	s := funcMapString(called)
 	name, e := ifaces[s]
 	if !e {
 		return "", ""
@@ -81,8 +81,8 @@ func interfaceMatching(p *param) (string, string) {
 		if !ok {
 			return "", ""
 		}
-		asMethods := MethoderFuncMap(iface)
-		as := FuncMapString(asMethods)
+		asMethods := methoderFuncMap(iface)
+		as := funcMapString(asMethods)
 		if !assignable(s, as, called, asMethods) {
 			return "", ""
 		}
@@ -365,7 +365,7 @@ func (v *visitor) funcEnded(pos token.Pos) {
 			if ifname == p.t.String() {
 				continue
 			}
-			have := FuncMapString(doMethoderType(p.t))
+			have := funcMapString(doMethoderType(p.t))
 			if have == iftype {
 				continue
 			}
