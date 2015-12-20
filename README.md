@@ -2,7 +2,7 @@
 
 A code checker that suggests interface types.
 
-	go get github.com/mvdan/interfacer
+	go get github.com/mvdan/interfacer/cmd/interfacer
 
 ### Usage
 

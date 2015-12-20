@@ -7,6 +7,8 @@ import (
 	"flag"
 	"fmt"
 	"os"
+
+	"github.com/mvdan/interfacer"
 )
 
 var (
@@ -15,7 +17,7 @@ var (
 
 func main() {
 	flag.Parse()
-	if err := checkArgs(flag.Args(), os.Stdout); err != nil {
+	if err := interfacer.CheckArgs(flag.Args(), os.Stdout, *verbose); err != nil {
 		errExit(err)
 	}
 }

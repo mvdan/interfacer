@@ -1,7 +1,7 @@
 // Copyright (c) 2015, Daniel Martí <mvdan@mvdan.cc>
 // See LICENSE for licensing information
 
-package main
+package interfacer
 
 import (
 	"bytes"
@@ -44,7 +44,7 @@ func doTest(t *testing.T, p string) {
 		inPath = "./" + inPath + "/..."
 	}
 	var b bytes.Buffer
-	err := checkArgs([]string{inPath}, &b)
+	err := CheckArgs([]string{inPath}, &b, true)
 	exp, wantErr := want(t, p)
 	if wantErr {
 		if err == nil {
@@ -71,7 +71,6 @@ func doTest(t *testing.T, p string) {
 }
 
 func TestAll(t *testing.T) {
-	*verbose = true
 	if err := os.Chdir("testdata"); err != nil {
 		t.Fatal(err)
 	}

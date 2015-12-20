@@ -1,7 +1,7 @@
 // Copyright (c) 2015, Daniel Martí <mvdan@mvdan.cc>
 // See LICENSE for licensing information
 
-package main
+package interfacer
 
 import (
 	"fmt"
@@ -112,10 +112,10 @@ func orderedPkgs(prog *loader.Program, paths []string) ([]*types.Package, error)
 	return pkgs, nil
 }
 
-func checkArgs(args []string, w io.Writer) error {
+func CheckArgs(args []string, w io.Writer, verbose bool) error {
 	paths, err := recurse(args)
 	if err != nil {
-		errExit(err)
+		return err
 	}
 	if err := typesInit(paths); err != nil {
 		return err
@@ -134,6 +134,9 @@ func checkArgs(args []string, w io.Writer) error {
 	typesGet(prog)
 	for _, pkg := range pkgs {
 		info := prog.AllPackages[pkg]
+		if verbose {
+			fmt.Fprintln(w, info.Pkg.Path())
+		}
 		if err := checkPkg(&c.TypeChecker, info, w); err != nil {
 			return err
 		}
@@ -141,16 +144,13 @@ func checkArgs(args []string, w io.Writer) error {
 	return nil
 }
 
-func checkPkg(conf *types.Config, pkg *loader.PackageInfo, w io.Writer) error {
-	if *verbose {
-		fmt.Fprintln(w, pkg.Pkg.Path())
-	}
+func checkPkg(conf *types.Config, info *loader.PackageInfo, w io.Writer) error {
 	v := &visitor{
-		PackageInfo: pkg,
+		PackageInfo: info,
 		w:           w,
 		fset:        c.Fset,
 	}
-	for _, f := range pkg.Files {
+	for _, f := range info.Files {
 		ast.Walk(v, f)
 	}
 	return nil
