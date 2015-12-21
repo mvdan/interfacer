@@ -4,7 +4,7 @@
 package interfacer
 
 import (
-	"fmt"
+	"go/build"
 	"os"
 	"path/filepath"
 	"regexp"
@@ -13,15 +13,12 @@ import (
 
 var (
 	skipDir = regexp.MustCompile(`^(testdata|vendor|_.*|\..+)$`)
-	gopath  = os.Getenv("GOPATH")
 )
 
 func getDirs(d string) ([]string, error) {
 	local := d == "." || strings.HasPrefix(d, "./")
-	if gopath == "" {
-		return nil, fmt.Errorf("GOPATH not found")
-	}
 	var dirs []string
+	gopath := build.Default.GOPATH
 	walkFn := func(path string, info os.FileInfo, err error) error {
 		if err != nil {
 			return err
