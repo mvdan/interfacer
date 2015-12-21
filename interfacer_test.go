@@ -22,6 +22,9 @@ func want(t *testing.T, p string) (string, bool) {
 	if !strings.HasPrefix(p, "./") {
 		p = filepath.Join("src", p)
 	}
+	if strings.HasSuffix(p, "/...") {
+		p = p[:len(p)-4]
+	}
 	outBytes, err := ioutil.ReadFile(p + ".out")
 	if err == nil {
 		return string(outBytes), false
@@ -36,16 +39,13 @@ func want(t *testing.T, p string) (string, bool) {
 	if !os.IsNotExist(err) {
 		t.Fatal(err)
 	}
+	t.Fatalf("Output file not found for %s", p)
 	return "", false
 }
 
 func doTest(t *testing.T, p string) {
-	inPath := p
-	if !strings.HasSuffix(p, ".go") {
-		inPath = inPath + "/..."
-	}
 	var b bytes.Buffer
-	err := CheckArgs([]string{inPath}, &b, true)
+	err := CheckArgs([]string{p}, &b, true)
 	exp, wantErr := want(t, p)
 	if wantErr {
 		if err == nil {
@@ -89,7 +89,23 @@ func TestAll(t *testing.T) {
 		doTest(t, *name)
 		return
 	}
-	dirs, err := filepath.Glob("*")
+	paths, err := filepath.Glob("*")
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, p := range paths {
+		if strings.HasSuffix(p, ".out") || strings.HasSuffix(p, ".err") {
+			continue
+		}
+		if p == "src" {
+			continue
+		}
+		if !strings.HasSuffix(p, ".go") {
+			p = p + "/..."
+		}
+		doTest(t, "./"+p)
+	}
+	dirs, err := filepath.Glob("src/*")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -97,19 +113,7 @@ func TestAll(t *testing.T) {
 		if strings.HasSuffix(d, ".out") || strings.HasSuffix(d, ".err") {
 			continue
 		}
-		if d == "src" {
-			continue
-		}
-		doTest(t, "./"+d)
+		doTest(t, d[4:]+"/...")
 	}
-	dirs, err = filepath.Glob("src/*")
-	if err != nil {
-		t.Fatal(err)
-	}
-	for _, d := range dirs {
-		if strings.HasSuffix(d, ".out") || strings.HasSuffix(d, ".err") {
-			continue
-		}
-		doTest(t, d[4:])
-	}
+	doTest(t, "single") // without /...
 }
