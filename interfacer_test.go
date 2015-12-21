@@ -6,6 +6,7 @@ package interfacer
 import (
 	"bytes"
 	"flag"
+	"go/build"
 	"io/ioutil"
 	"os"
 	"path/filepath"
@@ -18,6 +19,9 @@ var (
 )
 
 func want(t *testing.T, p string) (string, bool) {
+	if !strings.HasPrefix(p, "./") {
+		p = filepath.Join("src", p)
+	}
 	outBytes, err := ioutil.ReadFile(p + ".out")
 	if err == nil {
 		return string(outBytes), false
@@ -36,12 +40,9 @@ func want(t *testing.T, p string) (string, bool) {
 }
 
 func doTest(t *testing.T, p string) {
-	if strings.HasSuffix(p, ".out") || strings.HasSuffix(p, ".err") {
-		return
-	}
 	inPath := p
 	if !strings.HasSuffix(p, ".go") {
-		inPath = "./" + inPath + "/..."
+		inPath = inPath + "/..."
 	}
 	var b bytes.Buffer
 	err := CheckArgs([]string{inPath}, &b, true)
@@ -79,16 +80,36 @@ func TestAll(t *testing.T) {
 			t.Fatal(err)
 		}
 	}()
-	var tests []string
-	if *name != "" {
-		tests = []string{*name}
-	} else {
-		var err error
-		if tests, err = filepath.Glob("*"); err != nil {
-			t.Fatal(err)
-		}
+	wd, err := os.Getwd()
+	if err != nil {
+		t.Fatal(err)
 	}
-	for _, p := range tests {
-		doTest(t, p)
+	build.Default.GOPATH = wd
+	if *name != "" {
+		doTest(t, *name)
+		return
+	}
+	dirs, err := filepath.Glob("*")
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, d := range dirs {
+		if strings.HasSuffix(d, ".out") || strings.HasSuffix(d, ".err") {
+			continue
+		}
+		if d == "src" {
+			continue
+		}
+		doTest(t, "./"+d)
+	}
+	dirs, err = filepath.Glob("src/*")
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, d := range dirs {
+		if strings.HasSuffix(d, ".out") || strings.HasSuffix(d, ".err") {
+			continue
+		}
+		doTest(t, d[4:])
 	}
 }
