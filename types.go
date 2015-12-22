@@ -21,7 +21,7 @@ func typesInit(paths []string) {
 	c.TypeChecker.Error = func(e error) {}
 	c.TypeChecker.DisableUnusedImportCheck = true
 	c.TypeCheckFuncBodies = func(path string) bool {
-		if _, e := pkgs[path]; e {
+		if _, e := stdPkgs[path]; e {
 			return false
 		}
 		return true
@@ -30,7 +30,12 @@ func typesInit(paths []string) {
 
 func typesGet(pkgs []*types.Package) {
 	for _, pkg := range pkgs {
-		grabExported(pkg.Scope(), pkg.Path())
+		path := pkg.Path()
+		if _, e := stdPkgs[path]; e {
+			continue
+		}
+		grabExported(pkg.Scope(), path)
+		typesGet(pkg.Imports())
 	}
 }
 

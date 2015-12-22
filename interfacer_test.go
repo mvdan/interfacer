@@ -160,4 +160,6 @@ func TestAll(t *testing.T) {
 	// local non-existent recursive
 	doTest(t, "./missing-rec/...")
 	doTestWant(t, "wrong-args", "named files must be .go files: bar", true, "foo.go", "bar")
+	// make sure we don't miss a package's imports
+	doTestWant(t, "grab-import", "grab-import", false, "grab-import")
 }

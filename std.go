@@ -2,7 +2,7 @@
 
 package interfacer
 
-var pkgs = map[string]struct{}{
+var stdPkgs = map[string]struct{}{
 	"io":                        {},
 	"os":                        {},
 	"fmt":                       {},
