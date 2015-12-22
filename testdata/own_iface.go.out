@@ -1,2 +1,2 @@
 foo
-own_iface.go:18: s can be Barer
+own_iface.go:18:10: s can be Barer

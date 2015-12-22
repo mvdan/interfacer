@@ -1,4 +1,4 @@
 single
-single/simple.go:14: rc can be io.Closer
-single/simple.go:18: s can be io.Closer
-single/struct.go:17: rc can be io.Closer
+single/simple.go:14:17: rc can be io.Closer
+single/simple.go:18:18: s can be io.Closer
+single/struct.go:17:25: rc can be io.Closer

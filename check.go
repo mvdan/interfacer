@@ -147,7 +147,8 @@ func checkPkg(conf *types.Config, info *loader.PackageInfo, w io.Writer) {
 }
 
 type param struct {
-	t types.Type
+	t   types.Type
+	pos token.Pos
 
 	calls   map[string]struct{}
 	usedAs  map[types.Type]struct{}
@@ -180,6 +181,7 @@ func paramsMap(t *types.Tuple) map[string]*param {
 		p := t.At(i)
 		m[p.Name()] = &param{
 			t:        p.Type(),
+			pos:      p.Pos(),
 			calls:    make(map[string]struct{}),
 			usedAs:   make(map[types.Type]struct{}),
 			assigned: make(map[*param]struct{}),
@@ -293,8 +295,8 @@ func (v *visitor) Visit(node ast.Node) ast.Visitor {
 			}
 		}
 	case nil:
-		if fd, ok := v.top().(*ast.FuncDecl); ok {
-			v.funcEnded(fd.Pos())
+		if _, ok := v.top().(*ast.FuncDecl); ok {
+			v.funcEnded()
 			v.params = nil
 			v.extras = nil
 			v.inBlock = false
@@ -347,7 +349,7 @@ func (v *visitor) onSelector(sel *ast.SelectorExpr) {
 	}
 }
 
-func (v *visitor) funcEnded(pos token.Pos) {
+func (v *visitor) funcEnded() {
 	for name, p := range v.params {
 		if p.discard {
 			continue
@@ -365,7 +367,7 @@ func (v *visitor) funcEnded(pos token.Pos) {
 				continue
 			}
 		}
-		pos := v.fset.Position(pos)
+		pos := v.fset.Position(p.pos)
 		fname := pos.Filename
 		if fname[0] == '/' {
 			fname = filepath.Join(v.Pkg.Path(), filepath.Base(fname))
@@ -374,7 +376,7 @@ func (v *visitor) funcEnded(pos token.Pos) {
 		if strings.HasPrefix(ifname, pname+".") {
 			ifname = ifname[len(pname)+1:]
 		}
-		fmt.Fprintf(v.w, "%s:%d: %s can be %s\n",
-			fname, pos.Line, name, ifname)
+		fmt.Fprintf(v.w, "%s:%d:%d: %s can be %s\n",
+			fname, pos.Line, pos.Column, name, ifname)
 	}
 }

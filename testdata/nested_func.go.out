@@ -1,3 +1,3 @@
 foo
-nested_func.go:20: rc can be io.Closer
-nested_func.go:26: rc can be io.Closer
+nested_func.go:20:17: rc can be io.Closer
+nested_func.go:26:18: rc can be io.Closer

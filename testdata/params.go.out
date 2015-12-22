@@ -1,7 +1,7 @@
 foo
-params.go:14: rc can be io.Reader
-params.go:25: rs can be io.Seeker
-params.go:34: rs can be io.Reader
-params.go:43: rs can be io.Reader
-params.go:55: rc can be io.Reader
-params.go:80: a can be io.Reader
+params.go:14:16: rc can be io.Reader
+params.go:25:19: rs can be io.Seeker
+params.go:34:20: rs can be io.Reader
+params.go:43:19: rs can be io.Reader
+params.go:55:23: rc can be io.Reader
+params.go:80:16: a can be io.Reader
