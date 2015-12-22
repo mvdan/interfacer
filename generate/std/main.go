@@ -100,18 +100,20 @@ func generate(w io.Writer) error {
 	ifaces := make(map[string]string)
 	funcs := make(map[string]string)
 	for _, path := range pkgs {
-		scope := types.Universe
 		if strings.Contains(path, "internal") {
 			continue
 		}
+		scope := types.Universe
+		all := true
 		if path != "" {
 			pkg, err := types.DefaultImport(imported, path)
 			if err != nil {
 				return err
 			}
 			scope = pkg.Scope()
+			all = false
 		}
-		ifs, funs := interfacer.FromScope(scope)
+		ifs, funs := interfacer.FromScope(scope, all)
 		for iface, name := range ifs {
 			if _, e := ifaces[iface]; e {
 				continue

@@ -32,9 +32,9 @@ func doMethoderType(t types.Type) map[string]string {
 		if u, ok := x.Underlying().(*types.Interface); ok {
 			return doMethoderType(u)
 		}
-		return methoderFuncMap(x)
+		return namedMethodMap(x)
 	case *types.Interface:
-		return methoderFuncMap(x)
+		return ifaceFuncMap(x)
 	default:
 		return nil
 	}
@@ -77,7 +77,7 @@ func interfaceMatching(p *param) (string, string) {
 		if !ok {
 			return "", ""
 		}
-		asMethods := methoderFuncMap(iface)
+		asMethods := ifaceFuncMap(iface)
 		as := funcMapString(asMethods)
 		if !assignable(s, as, called, asMethods) {
 			return "", ""

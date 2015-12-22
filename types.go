@@ -35,7 +35,7 @@ func typesGet(pkgs []*types.Package) {
 }
 
 func grabExported(scope *types.Scope, path string) {
-	ifs, funs := FromScope(scope)
+	ifs, funs := FromScope(scope, false)
 	for iftype, ifname := range ifs {
 		if _, e := ifaces[iftype]; e {
 			continue

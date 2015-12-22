@@ -27,20 +27,30 @@ func (l ByAlph) Swap(i, j int)      { l[i], l[j] = l[j], l[i] }
 
 var exported = regexp.MustCompile(`^[A-Z]`)
 
-type methoder interface {
-	NumMethods() int
-	Method(int) *types.Func
+func ifaceFuncMap(iface *types.Interface) map[string]string {
+	ifuncs := make(map[string]string, iface.NumMethods())
+	for i := 0; i < iface.NumMethods(); i++ {
+		f := iface.Method(i)
+		fname := f.Name()
+		if !exported.MatchString(fname) {
+			return nil
+		}
+		sign := f.Type().(*types.Signature)
+		ifuncs[fname] = signString(sign)
+	}
+	return ifuncs
 }
 
-func methoderFuncMap(m methoder) map[string]string {
+func namedMethodMap(named *types.Named) map[string]string {
 	ifuncs := make(map[string]string)
-	for i := 0; i < m.NumMethods(); i++ {
-		f := m.Method(i)
-		if !exported.MatchString(f.Name()) {
+	for i := 0; i < named.NumMethods(); i++ {
+		f := named.Method(i)
+		fname := f.Name()
+		if !exported.MatchString(fname) {
 			continue
 		}
 		sign := f.Type().(*types.Signature)
-		ifuncs[f.Name()] = signString(sign)
+		ifuncs[fname] = signString(sign)
 	}
 	return ifuncs
 }
@@ -109,7 +119,7 @@ func countInteresting(params *types.Tuple, level int) int {
 	return count
 }
 
-func FromScope(scope *types.Scope) (map[string]string, map[string]string) {
+func FromScope(scope *types.Scope, all bool) (map[string]string, map[string]string) {
 	ifaces := make(map[string]string)
 	funcs := make(map[string]string)
 	signStr := func(sign *types.Signature) string {
@@ -123,13 +133,16 @@ func FromScope(scope *types.Scope) (map[string]string, map[string]string) {
 		return s
 	}
 	for _, name := range scope.Names() {
+		if !all && !exported.MatchString(name) {
+			continue
+		}
 		tn, ok := scope.Lookup(name).(*types.TypeName)
 		if !ok {
 			continue
 		}
 		switch x := tn.Type().Underlying().(type) {
 		case *types.Interface:
-			iface := methoderFuncMap(x)
+			iface := ifaceFuncMap(x)
 			if len(iface) == 0 {
 				continue
 			}
