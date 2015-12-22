@@ -17,7 +17,7 @@ type cache struct {
 	loader.Config
 }
 
-func typesInit(paths []string) error {
+func typesInit(paths []string) {
 	c = &cache{}
 	c.AllowErrors = true
 	c.TypeChecker.Error = func(e error) {}
@@ -35,7 +35,6 @@ func typesInit(paths []string) error {
 		}
 		return argPaths[path]
 	}
-	return nil
 }
 
 func typesGet(prog *loader.Program) {

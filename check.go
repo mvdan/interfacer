@@ -115,9 +115,7 @@ func CheckArgs(args []string, w io.Writer, verbose bool) error {
 	if err != nil {
 		return err
 	}
-	if err := typesInit(paths); err != nil {
-		return err
-	}
+	typesInit(paths)
 	if _, err := c.FromArgs(paths, false); err != nil {
 		return err
 	}
