@@ -35,10 +35,6 @@ func doMethoderType(t types.Type) map[string]string {
 		return methoderFuncMap(x)
 	case *types.Interface:
 		return methoderFuncMap(x)
-	case *types.Slice:
-		return doMethoderType(x.Elem())
-	case *types.Array:
-		return doMethoderType(x.Elem())
 	default:
 		return nil
 	}
