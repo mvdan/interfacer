@@ -15,24 +15,30 @@ import (
 )
 
 var (
-	name = flag.String("name", "", "name of the test to run")
+	name  = flag.String("name", "", "name of the test to run")
+	write = flag.Bool("write", false, "write output files")
 )
 
-func want(t *testing.T, p string) (string, bool) {
+func basePath(p string) string {
 	if !strings.HasPrefix(p, "./") && !strings.HasSuffix(p, ".go") {
 		p = filepath.Join("src", p)
 	}
 	if strings.HasSuffix(p, "/...") {
 		p = p[:len(p)-4]
 	}
-	outBytes, err := ioutil.ReadFile(p + ".out")
+	return p
+}
+
+func want(t *testing.T, p string) (string, bool) {
+	base := basePath(p)
+	outBytes, err := ioutil.ReadFile(base + ".out")
 	if err == nil {
 		return string(outBytes), false
 	}
 	if !os.IsNotExist(err) {
 		t.Fatal(err)
 	}
-	errBytes, err := ioutil.ReadFile(p + ".err")
+	errBytes, err := ioutil.ReadFile(base + ".err")
 	if err == nil {
 		return string(errBytes), true
 	}
@@ -44,11 +50,38 @@ func want(t *testing.T, p string) (string, bool) {
 }
 
 func doTest(t *testing.T, p string) {
+	if *write {
+		doTestWrite(t, p)
+		return
+	}
 	exp, wantErr := want(t, p)
 	if strings.HasPrefix(exp, "/") {
 		exp = build.Default.GOPATH + exp
 	}
 	doTestWant(t, p, exp, wantErr, p)
+}
+
+func doTestWrite(t *testing.T, p string) {
+	var b bytes.Buffer
+	err := CheckArgs([]string{p}, &b, true)
+	var outPath, outCont, rmPath string
+	base := basePath(p)
+	if err != nil {
+		outPath = base + ".err"
+		rmPath = base + ".out"
+		outCont = err.Error()
+	} else {
+		outPath = base + ".out"
+		rmPath = base + ".err"
+		outCont = b.String()
+	}
+	outCont = endNewline(outCont)
+	if err := ioutil.WriteFile(outPath, []byte(outCont), 0644); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.Remove(rmPath); err != nil && !os.IsNotExist(err) {
+		t.Fatal(err)
+	}
 }
 
 func endNewline(s string) string {
@@ -67,6 +100,9 @@ func mapCopy(m map[string]string) map[string]string {
 }
 
 func doTestWant(t *testing.T, name, exp string, wantErr bool, args ...string) {
+	if *write {
+		return
+	}
 	ifacesCopy := mapCopy(ifaces)
 	funcsCopy := mapCopy(funcs)
 	defer func() {
