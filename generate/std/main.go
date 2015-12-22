@@ -101,6 +101,9 @@ func generate(w io.Writer) error {
 	funcs := make(map[string]string)
 	for _, path := range pkgs {
 		scope := types.Universe
+		if strings.Contains(path, "internal") {
+			continue
+		}
 		if path != "" {
 			pkg, err := types.DefaultImport(imported, path)
 			if err != nil {

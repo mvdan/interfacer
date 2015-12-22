@@ -4,8 +4,6 @@
 package interfacer
 
 import (
-	"strings"
-
 	"golang.org/x/tools/go/loader"
 	"golang.org/x/tools/go/types"
 )
@@ -25,9 +23,6 @@ func typesInit(paths []string) {
 	c.TypeCheckFuncBodies = func(path string) bool {
 		if _, e := pkgs[path]; e {
 			return false
-		}
-		if !strings.Contains(path, "/") {
-			return true
 		}
 		return true
 	}

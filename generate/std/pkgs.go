@@ -4,7 +4,7 @@
 package main
 
 // Gotten from Go 1.5.2 via:
-// $ go list std | grep -v -E '\<(internal|unsafe)\>'
+// $ go list std | grep -v unsafe
 // Plus empty string for builtin/Universe
 // TODO: see if this list can be obtained at runtime
 var pkgs = []string{
@@ -70,6 +70,8 @@ var pkgs = []string{
 	"go/doc",
 	"go/format",
 	"go/importer",
+	"go/internal/gccgoimporter",
+	"go/internal/gcimporter",
 	"go/parser",
 	"go/printer",
 	"go/scanner",
@@ -87,9 +89,15 @@ var pkgs = []string{
 	"image/color/palette",
 	"image/draw",
 	"image/gif",
+	"image/internal/imageutil",
 	"image/jpeg",
 	"image/png",
 	"index/suffixarray",
+	"internal/format",
+	"internal/singleflight",
+	"internal/syscall/unix",
+	"internal/testenv",
+	"internal/trace",
 	"io",
 	"io/ioutil",
 	"log",
@@ -108,7 +116,9 @@ var pkgs = []string{
 	"net/http/fcgi",
 	"net/http/httptest",
 	"net/http/httputil",
+	"net/http/internal",
 	"net/http/pprof",
+	"net/internal/socktest",
 	"net/mail",
 	"net/rpc",
 	"net/rpc/jsonrpc",
