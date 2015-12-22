@@ -123,4 +123,10 @@ func TestAll(t *testing.T) {
 	doTest(t, "./single")
 	// non-local non-recursive
 	doTest(t, "single")
+	// non-existent Go file
+	doTest(t, "missing.go")
+	// local non-existent
+	doTest(t, "./missing")
+	// non-local non-existent
+	doTest(t, "missing")
 }
