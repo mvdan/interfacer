@@ -37,9 +37,9 @@ func typesInit(paths []string) {
 	}
 }
 
-func typesGet(prog *loader.Program) {
-	for _, info := range prog.InitialPackages() {
-		grabExported(info.Pkg.Scope(), info.Pkg.Path())
+func typesGet(pkgs []*types.Package) {
+	for _, pkg := range pkgs {
+		grabExported(pkg.Scope(), pkg.Path())
 	}
 }
 

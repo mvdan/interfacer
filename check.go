@@ -123,7 +123,7 @@ func CheckArgs(args []string, w io.Writer, verbose bool) error {
 	if err != nil {
 		return err
 	}
-	typesGet(prog)
+	typesGet(pkgs)
 	for _, pkg := range pkgs {
 		info := prog.AllPackages[pkg]
 		if verbose {
