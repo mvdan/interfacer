@@ -3,7 +3,6 @@
 package interfacer
 
 var pkgs = map[string]struct{}{
-	"":                          {},
 	"io":                        {},
 	"os":                        {},
 	"fmt":                       {},
@@ -27,6 +26,7 @@ var pkgs = map[string]struct{}{
 	"go/ast":                    {},
 	"go/doc":                    {},
 	"regexp":                    {},
+	"unsafe":                    {},
 	"net/rpc":                   {},
 	"net/url":                   {},
 	"os/exec":                   {},

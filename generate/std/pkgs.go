@@ -4,7 +4,7 @@
 package main
 
 // Gotten from Go 1.5.2 via:
-// $ go list std | grep -v unsafe
+// $ go list std
 // Plus empty string for builtin/Universe
 // TODO: see if this list can be obtained at runtime
 var pkgs = []string{
@@ -157,4 +157,5 @@ var pkgs = []string{
 	"unicode",
 	"unicode/utf16",
 	"unicode/utf8",
+	"unsafe",
 }

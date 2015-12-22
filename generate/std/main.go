@@ -99,13 +99,16 @@ func generate(w io.Writer) error {
 	sort.Sort(byLength(pkgs))
 	ifaces := make(map[string]string)
 	funcs := make(map[string]string)
+	var realPkgs []string
 	for _, path := range pkgs {
 		if strings.Contains(path, "internal") {
+			realPkgs = append(realPkgs, path)
 			continue
 		}
 		scope := types.Universe
 		all := true
 		if path != "" {
+			realPkgs = append(realPkgs, path)
 			pkg, err := types.DefaultImport(imported, path)
 			if err != nil {
 				return err
@@ -131,7 +134,7 @@ func generate(w io.Writer) error {
 		Pkgs          []string
 		Ifaces, Funcs []pkgType
 	}{
-		Pkgs:   pkgs,
+		Pkgs:   realPkgs,
 		Ifaces: prepare(ifaces),
 		Funcs:  prepare(funcs),
 	})
