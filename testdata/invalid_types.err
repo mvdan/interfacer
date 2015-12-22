@@ -1,0 +1,1 @@
+/invalid_types/invalid_types.go:5:6: cannot assign v (variable of type interface{}) to s (variable of type string)

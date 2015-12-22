@@ -45,6 +45,9 @@ func want(t *testing.T, p string) (string, bool) {
 
 func doTest(t *testing.T, p string) {
 	exp, wantErr := want(t, p)
+	if strings.HasPrefix(exp, "/") {
+		exp = build.Default.GOPATH + exp
+	}
 	doTestWant(t, p, exp, wantErr, p)
 }
 
