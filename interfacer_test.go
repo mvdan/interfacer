@@ -19,7 +19,7 @@ var (
 )
 
 func want(t *testing.T, p string) (string, bool) {
-	if !strings.HasPrefix(p, "./") {
+	if !strings.HasPrefix(p, "./") && !strings.HasSuffix(p, ".go") {
 		p = filepath.Join("src", p)
 	}
 	if strings.HasSuffix(p, "/...") {
