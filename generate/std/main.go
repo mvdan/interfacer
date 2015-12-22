@@ -37,6 +37,23 @@ var funcs = map[string]string{
 
 var out = flag.String("o", "", "output file")
 
+type byLength []string
+
+func (l byLength) Len() int {
+	return len(l)
+}
+
+func (l byLength) Less(i, j int) bool {
+	if len(l[i]) == len(l[j]) {
+		return l[i] < l[j]
+	}
+	return len(l[i]) < len(l[j])
+}
+
+func (l byLength) Swap(i, j int) {
+	l[i], l[j] = l[j], l[i]
+}
+
 type pkgType struct {
 	Type string
 	Path string
@@ -81,7 +98,7 @@ func prepare(in map[string]string) []pkgType {
 
 func generate(w io.Writer) error {
 	imported := make(map[string]*types.Package)
-	sort.Sort(interfacer.ByLength(pkgs))
+	sort.Sort(byLength(pkgs))
 	ifaces := make(map[string]string)
 	funcs := make(map[string]string)
 	var realPkgs []string

@@ -98,7 +98,7 @@ func orderedPkgs(prog *loader.Program) ([]*types.Package, error) {
 		}
 		paths = append(paths, info.Pkg.Path())
 	}
-	sort.Sort(ByLength(paths))
+	sort.Sort(ByAlph(paths))
 	var pkgs []*types.Package
 	for _, path := range paths {
 		info := prog.Package(path)
