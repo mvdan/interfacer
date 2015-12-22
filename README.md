@@ -1,5 +1,7 @@
 # interfacer
 
+[![Build Status](https://travis-ci.org/mvdan/interfacer.svg?branch=master)](https://travis-ci.org/mvdan/interfacer)
+
 A code checker that suggests interface types. In other words, it warns
 about the usage of types that are more specific than necessary.
 
