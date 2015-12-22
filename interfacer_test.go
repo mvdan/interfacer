@@ -110,6 +110,9 @@ func doTestWant(t *testing.T, name, exp string, wantErr bool, args ...string) {
 		funcs = funcsCopy
 	}()
 	var b bytes.Buffer
+	if len(args) == 0 {
+		args = []string{name}
+	}
 	err := CheckArgs(args, &b, true)
 	exp = endNewline(exp)
 	if wantErr {
@@ -188,14 +191,15 @@ func TestAll(t *testing.T) {
 	// non-local non-recursive
 	doTest(t, "single")
 	// non-existent Go file
-	doTest(t, "missing.go")
+	doTestWant(t, "missing.go", "open missing.go: no such file or directory", true)
 	// local non-existent non-recursive
-	doTest(t, "./missing")
+	doTestWant(t, "./missing", "no initial packages were loaded", true)
 	// non-local non-existent non-recursive
-	doTest(t, "missing")
+	doTestWant(t, "missing", "no initial packages were loaded", true)
 	// local non-existent recursive
-	doTest(t, "./missing-rec/...")
+	doTestWant(t, "./missing-rec/...", "lstat ./missing-rec: no such file or directory", true)
+	// Mixing Go files and dirs
 	doTestWant(t, "wrong-args", "named files must be .go files: bar", true, "foo.go", "bar")
 	// make sure we don't miss a package's imports
-	doTestWant(t, "grab-import", "grab-import", false, "grab-import")
+	doTestWant(t, "grab-import", "grab-import", false)
 }
