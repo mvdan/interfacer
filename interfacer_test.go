@@ -52,7 +52,7 @@ func doTest(t *testing.T, p string) {
 }
 
 func endNewline(s string) string {
-	if s[len(s)-1] == '\n' {
+	if strings.HasSuffix(s, "\n") {
 		return s
 	}
 	return s + "\n"
