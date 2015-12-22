@@ -133,14 +133,12 @@ func CheckArgs(args []string, w io.Writer, verbose bool) error {
 		if verbose {
 			fmt.Fprintln(w, info.Pkg.Path())
 		}
-		if err := checkPkg(&c.TypeChecker, info, w); err != nil {
-			return err
-		}
+		checkPkg(&c.TypeChecker, info, w)
 	}
 	return nil
 }
 
-func checkPkg(conf *types.Config, info *loader.PackageInfo, w io.Writer) error {
+func checkPkg(conf *types.Config, info *loader.PackageInfo, w io.Writer) {
 	v := &visitor{
 		PackageInfo: info,
 		w:           w,
@@ -149,7 +147,6 @@ func checkPkg(conf *types.Config, info *loader.PackageInfo, w io.Writer) error {
 	for _, f := range info.Files {
 		ast.Walk(v, f)
 	}
-	return nil
 }
 
 type param struct {
