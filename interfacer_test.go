@@ -44,30 +44,39 @@ func want(t *testing.T, p string) (string, bool) {
 }
 
 func doTest(t *testing.T, p string) {
-	var b bytes.Buffer
-	err := CheckArgs([]string{p}, &b, true)
 	exp, wantErr := want(t, p)
+	doTestWant(t, p, exp, wantErr, p)
+}
+
+func endNewline(s string) string {
+	if s[len(s)-1] == '\n' {
+		return s
+	}
+	return s + "\n"
+}
+
+func doTestWant(t *testing.T, name, exp string, wantErr bool, args ...string) {
+	var b bytes.Buffer
+	err := CheckArgs(args, &b, true)
+	exp = endNewline(exp)
 	if wantErr {
 		if err == nil {
-			t.Fatalf("Wanted error in %s, but none found.", p)
+			t.Fatalf("Wanted error in %s, but none found.", name)
 		}
-		got := err.Error()
-		if got[len(got)-1] != '\n' {
-			got += "\n"
-		}
+		got := endNewline(err.Error())
 		if exp != got {
 			t.Fatalf("Error mismatch in %s:\nExpected:\n%sGot:\n%s",
-				p, exp, got)
+				name, exp, got)
 		}
 		return
 	}
 	if err != nil {
-		t.Fatalf("Did not want error in %s:\n%v", p, err)
+		t.Fatalf("Did not want error in %s:\n%v", name, err)
 	}
-	got := b.String()
+	got := endNewline(b.String())
 	if exp != got {
 		t.Fatalf("Output mismatch in %s:\nExpected:\n%sGot:\n%s",
-			p, exp, got)
+			name, exp, got)
 	}
 }
 
@@ -131,4 +140,5 @@ func TestAll(t *testing.T) {
 	doTest(t, "missing")
 	// local non-existent recursive
 	doTest(t, "./missing-rec/...")
+	doTestWant(t, "wrong-args", "named files must be .go files: bar", true, "foo.go", "bar")
 }
