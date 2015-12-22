@@ -13,10 +13,14 @@ import (
 
 type cache struct {
 	loader.Config
+
+	grabbed map[string]struct{}
 }
 
 func typesInit(paths []string) {
-	c = &cache{}
+	c = &cache{
+		grabbed: make(map[string]struct{}),
+	}
 	c.AllowErrors = true
 	c.TypeChecker.Error = func(e error) {}
 	c.TypeChecker.DisableUnusedImportCheck = true
@@ -34,6 +38,10 @@ func typesGet(pkgs []*types.Package) {
 		if _, e := stdPkgs[path]; e {
 			continue
 		}
+		if _, e := c.grabbed[path]; e {
+			continue
+		}
+		c.grabbed[path] = struct{}{}
 		grabExported(pkg.Scope(), path)
 		typesGet(pkg.Imports())
 	}
