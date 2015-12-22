@@ -100,10 +100,13 @@ func TestAll(t *testing.T) {
 		if p == "src" {
 			continue
 		}
-		if !strings.HasSuffix(p, ".go") {
-			p = p + "/..."
+		if strings.HasSuffix(p, ".go") {
+			// Go file
+			doTest(t, p)
+		} else {
+			// local recursive
+			doTest(t, "./"+p+"/...")
 		}
-		doTest(t, "./"+p)
 	}
 	dirs, err := filepath.Glob("src/*")
 	if err != nil {
@@ -113,7 +116,11 @@ func TestAll(t *testing.T) {
 		if strings.HasSuffix(d, ".out") || strings.HasSuffix(d, ".err") {
 			continue
 		}
+		// non-local recursive
 		doTest(t, d[4:]+"/...")
 	}
-	doTest(t, "single") // without /...
+	// local non-recursive
+	doTest(t, "./single")
+	// non-local non-recursive
+	doTest(t, "single")
 }
