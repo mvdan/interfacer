@@ -1,7 +1,6 @@
 package foo
 
 import (
-	"io"
 	"os"
 )
 
