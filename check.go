@@ -239,8 +239,15 @@ func (v *visitor) addAssign(to, from string) {
 	pfrom.assigned[pto] = struct{}{}
 }
 
-func (v *visitor) discard(name string) {
-	p := v.param(name)
+func (v *visitor) discard(e ast.Expr) {
+	if !v.inBlock {
+		return
+	}
+	id, ok := e.(*ast.Ident)
+	if !ok {
+		return
+	}
+	p := v.param(id.Name)
 	p.discard = true
 }
 
@@ -262,10 +269,14 @@ func (v *visitor) Visit(node ast.Node) ast.Visitor {
 			v.inBlock = true
 		}
 	case *ast.SelectorExpr:
-		if !v.inBlock {
-			return nil
-		}
-		v.onSelector(x)
+		v.discard(x.X)
+	case *ast.UnaryExpr:
+		v.discard(x.X)
+	case *ast.BinaryExpr:
+		v.discard(x.X)
+		v.discard(x.Y)
+	case *ast.IndexExpr:
+		v.discard(x.X)
 	case *ast.AssignStmt:
 		if !v.inBlock {
 			return nil
@@ -341,12 +352,6 @@ func (v *visitor) onCall(ce *ast.CallExpr) {
 	p := v.param(left.Name)
 	p.calls[sel.Sel.Name] = struct{}{}
 	return
-}
-
-func (v *visitor) onSelector(sel *ast.SelectorExpr) {
-	if id, ok := sel.X.(*ast.Ident); ok {
-		v.discard(id.Name)
-	}
 }
 
 func (v *visitor) funcEnded() {
