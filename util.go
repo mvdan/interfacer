@@ -25,6 +25,21 @@ func (l ByAlph) Len() int           { return len(l) }
 func (l ByAlph) Less(i, j int) bool { return l[i] < l[j] }
 func (l ByAlph) Swap(i, j int)      { l[i], l[j] = l[j], l[i] }
 
+type ByLength []string
+
+func (l ByLength) Len() int {
+	return len(l)
+}
+func (l ByLength) Less(i, j int) bool {
+	if len(l[i]) == len(l[j]) {
+		return l[i] < l[j]
+	}
+	return len(l[i]) < len(l[j])
+}
+func (l ByLength) Swap(i, j int) {
+	l[i], l[j] = l[j], l[i]
+}
+
 var exported = regexp.MustCompile(`^[A-Z]`)
 
 func ifaceFuncMap(iface *types.Interface) map[string]string {

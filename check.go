@@ -9,6 +9,7 @@ import (
 	"go/token"
 	"io"
 	"path/filepath"
+	"sort"
 	"strings"
 
 	"golang.org/x/tools/go/loader"
@@ -86,21 +87,21 @@ func interfaceMatching(p *param) (string, string) {
 	return name, s
 }
 
-func orderedPkgs(prog *loader.Program, paths []string) ([]*types.Package, error) {
-	if strings.HasSuffix(paths[0], ".go") {
-		for _, info := range prog.InitialPackages() {
-			if info.Errors != nil {
-				return nil, info.Errors[0]
-			}
-			return []*types.Package{info.Pkg}, nil
-		}
-	}
-	var pkgs []*types.Package
-	for _, path := range paths {
-		info := prog.Package(path)
+func orderedPkgs(prog *loader.Program) ([]*types.Package, error) {
+	// TODO: InitialPackages() is not in the order that we passed to
+	// it via Import() calls.
+	// For now, make it deterministic by sorting by import path.
+	var paths []string
+	for _, info := range prog.InitialPackages() {
 		if info.Errors != nil {
 			return nil, info.Errors[0]
 		}
+		paths = append(paths, info.Pkg.Path())
+	}
+	sort.Sort(ByLength(paths))
+	var pkgs []*types.Package
+	for _, path := range paths {
+		info := prog.Package(path)
 		pkgs = append(pkgs, info.Pkg)
 	}
 	return pkgs, nil
@@ -119,7 +120,7 @@ func CheckArgs(args []string, w io.Writer, verbose bool) error {
 	if err != nil {
 		return err
 	}
-	pkgs, err := orderedPkgs(prog, paths)
+	pkgs, err := orderedPkgs(prog)
 	if err != nil {
 		return err
 	}
