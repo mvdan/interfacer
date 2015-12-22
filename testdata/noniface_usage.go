@@ -21,6 +21,11 @@ func BinaryRight(m mint) {
 	_ = 3 + m
 }
 
+func IncDec(m mint) {
+	m.String()
+	m++
+}
+
 type marr [3]int
 
 func (m marr) String() string {

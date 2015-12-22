@@ -277,6 +277,8 @@ func (v *visitor) Visit(node ast.Node) ast.Visitor {
 		v.discard(x.Y)
 	case *ast.IndexExpr:
 		v.discard(x.X)
+	case *ast.IncDecStmt:
+		v.discard(x.X)
 	case *ast.AssignStmt:
 		if !v.inBlock {
 			return nil
