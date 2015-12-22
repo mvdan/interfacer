@@ -283,30 +283,12 @@ func (v *visitor) Visit(node ast.Node) ast.Visitor {
 		if !v.inBlock {
 			return nil
 		}
-		for i, e := range x.Rhs {
-			id, ok := e.(*ast.Ident)
-			if !ok {
-				continue
-			}
-			left := x.Lhs[i]
-			v.addUsed(id.Name, v.Types[left].Type)
-			if lid, ok := left.(*ast.Ident); ok {
-				v.addAssign(lid.Name, id.Name)
-			}
-		}
+		v.onAssign(x)
 	case *ast.CallExpr:
 		if !v.inBlock {
 			return nil
 		}
 		v.onCall(x)
-		switch y := x.Fun.(type) {
-		case *ast.Ident:
-			v.skipNext = true
-		case *ast.SelectorExpr:
-			if _, ok := y.X.(*ast.Ident); ok {
-				v.skipNext = true
-			}
-		}
 	case nil:
 		if _, ok := v.top().(*ast.FuncDecl); ok {
 			v.funcEnded()
@@ -333,7 +315,29 @@ func funcSignature(t types.Type) *types.Signature {
 	}
 }
 
+func (v *visitor) onAssign(as *ast.AssignStmt) {
+	for i, e := range as.Rhs {
+		id, ok := e.(*ast.Ident)
+		if !ok {
+			continue
+		}
+		left := as.Lhs[i]
+		v.addUsed(id.Name, v.Types[left].Type)
+		if lid, ok := left.(*ast.Ident); ok {
+			v.addAssign(lid.Name, id.Name)
+		}
+	}
+}
+
 func (v *visitor) onCall(ce *ast.CallExpr) {
+	switch y := ce.Fun.(type) {
+	case *ast.Ident:
+		v.skipNext = true
+	case *ast.SelectorExpr:
+		if _, ok := y.X.(*ast.Ident); ok {
+			v.skipNext = true
+		}
+	}
 	sign := funcSignature(v.Types[ce.Fun].Type)
 	if sign == nil {
 		return
