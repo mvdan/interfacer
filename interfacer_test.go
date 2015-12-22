@@ -137,18 +137,20 @@ func doTestWant(t *testing.T, name, exp string, wantErr bool, args ...string) {
 }
 
 func runFileTests(t *testing.T) {
+	if err := os.Chdir("files"); err != nil {
+		t.Fatal(err)
+	}
+	defer func() {
+		if err := os.Chdir(".."); err != nil {
+			t.Fatal(err)
+		}
+	}()
 	paths, err := filepath.Glob("*")
 	if err != nil {
 		t.Fatal(err)
 	}
 	for _, p := range paths {
 		if strings.HasSuffix(p, ".out") || strings.HasSuffix(p, ".err") {
-			continue
-		}
-		if p == "src" {
-			continue
-		}
-		if !strings.HasSuffix(p, ".go") {
 			continue
 		}
 		doTest(t, p)
