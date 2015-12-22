@@ -15,10 +15,9 @@ var (
 	skipDir = regexp.MustCompile(`^(testdata|vendor|_.*|\..+)$`)
 )
 
-func getDirs(d string) ([]string, error) {
+func getDirsGopath(gopath, d string) ([]string, error) {
 	local := d == "." || strings.HasPrefix(d, "./")
 	var dirs []string
-	gopath := build.Default.GOPATH
 	walkFn := func(path string, info os.FileInfo, err error) error {
 		if err != nil {
 			return err
@@ -46,6 +45,18 @@ func getDirs(d string) ([]string, error) {
 		return nil, err
 	}
 	return dirs, nil
+}
+
+func getDirs(d string) ([]string, error) {
+	gopaths := build.Default.GOPATH
+	var err error
+	for _, gopath := range filepath.SplitList(gopaths) {
+		var dirs []string
+		if dirs, err = getDirsGopath(gopath, d); err == nil {
+			return dirs, err
+		}
+	}
+	return nil, err
 }
 
 func recurse(args []string) ([]string, error) {
