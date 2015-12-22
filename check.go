@@ -92,20 +92,20 @@ func interfaceMatching(p *param) (string, string) {
 
 func orderedPkgs(prog *loader.Program, paths []string) ([]*types.Package, error) {
 	if strings.HasSuffix(paths[0], ".go") {
-		for _, pkg := range prog.InitialPackages() {
-			if pkg.Errors != nil {
-				return nil, pkg.Errors[0]
+		for _, info := range prog.InitialPackages() {
+			if info.Errors != nil {
+				return nil, info.Errors[0]
 			}
-			return []*types.Package{pkg.Pkg}, nil
+			return []*types.Package{info.Pkg}, nil
 		}
 	}
 	var pkgs []*types.Package
 	for _, path := range paths {
-		pkg := prog.Package(path)
-		if pkg.Errors != nil {
-			return nil, pkg.Errors[0]
+		info := prog.Package(path)
+		if info.Errors != nil {
+			return nil, info.Errors[0]
 		}
-		pkgs = append(pkgs, pkg.Pkg)
+		pkgs = append(pkgs, info.Pkg)
 	}
 	return pkgs, nil
 }

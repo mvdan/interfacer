@@ -38,8 +38,8 @@ func typesInit(paths []string) {
 }
 
 func typesGet(prog *loader.Program) {
-	for _, pkg := range prog.InitialPackages() {
-		grabExported(pkg.Pkg.Scope(), pkg.Pkg.Path())
+	for _, info := range prog.InitialPackages() {
+		grabExported(info.Pkg.Scope(), info.Pkg.Path())
 	}
 }
 
