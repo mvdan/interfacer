@@ -56,7 +56,7 @@ func doTest(t *testing.T, p string) {
 	}
 	exp, wantErr := want(t, p)
 	if strings.HasPrefix(exp, "/") {
-		exp = build.Default.GOPATH + exp
+		exp = filepath.Join(build.Default.GOPATH, "local", exp)
 	}
 	doTestWant(t, p, exp, wantErr, p)
 }
@@ -136,6 +136,68 @@ func doTestWant(t *testing.T, name, exp string, wantErr bool, args ...string) {
 	}
 }
 
+func runFileTests(t *testing.T) {
+	paths, err := filepath.Glob("*")
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, p := range paths {
+		if strings.HasSuffix(p, ".out") || strings.HasSuffix(p, ".err") {
+			continue
+		}
+		if p == "src" {
+			continue
+		}
+		if !strings.HasSuffix(p, ".go") {
+			continue
+		}
+		doTest(t, p)
+	}
+}
+
+func runLocalTests(t *testing.T) {
+	if err := os.Chdir("local"); err != nil {
+		t.Fatal(err)
+	}
+	defer func() {
+		if err := os.Chdir(".."); err != nil {
+			t.Fatal(err)
+		}
+	}()
+	paths, err := filepath.Glob("*")
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, p := range paths {
+		if strings.HasSuffix(p, ".out") || strings.HasSuffix(p, ".err") {
+			continue
+		}
+		doTest(t, "./"+p+"/...")
+	}
+	// non-recursive
+	doTest(t, "./single")
+}
+
+func runNonlocalTests(t *testing.T) {
+	dirs, err := filepath.Glob("src/*")
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, d := range dirs {
+		if strings.HasSuffix(d, ".out") || strings.HasSuffix(d, ".err") {
+			continue
+		}
+		// non-local recursive
+		doTest(t, d[4:]+"/...")
+		// local recursive
+		doTest(t, "./"+d+"/...")
+	}
+	// non-recursive
+	doTest(t, "single")
+	// make sure we don't miss a package's imports
+	doTestWant(t, "grab-import", "grab-import", false)
+}
+
 func TestAll(t *testing.T) {
 	if err := os.Chdir("testdata"); err != nil {
 		t.Fatal(err)
@@ -154,42 +216,9 @@ func TestAll(t *testing.T) {
 		doTest(t, *name)
 		return
 	}
-	paths, err := filepath.Glob("*")
-	if err != nil {
-		t.Fatal(err)
-	}
-	for _, p := range paths {
-		if strings.HasSuffix(p, ".out") || strings.HasSuffix(p, ".err") {
-			continue
-		}
-		if p == "src" {
-			continue
-		}
-		if strings.HasSuffix(p, ".go") {
-			// Go file
-			doTest(t, p)
-		} else {
-			// local recursive
-			doTest(t, "./"+p+"/...")
-		}
-	}
-	dirs, err := filepath.Glob("src/*")
-	if err != nil {
-		t.Fatal(err)
-	}
-	for _, d := range dirs {
-		if strings.HasSuffix(d, ".out") || strings.HasSuffix(d, ".err") {
-			continue
-		}
-		// non-local recursive
-		doTest(t, d[4:]+"/...")
-		// local recursive
-		doTest(t, "./"+d+"/...")
-	}
-	// local non-recursive
-	doTest(t, "./single")
-	// non-local non-recursive
-	doTest(t, "single")
+	runFileTests(t)
+	runLocalTests(t)
+	runNonlocalTests(t)
 	// non-existent Go file
 	doTestWant(t, "missing.go", "open missing.go: no such file or directory", true)
 	// local non-existent non-recursive
@@ -200,6 +229,4 @@ func TestAll(t *testing.T) {
 	doTestWant(t, "./missing-rec/...", "lstat ./missing-rec: no such file or directory", true)
 	// Mixing Go files and dirs
 	doTestWant(t, "wrong-args", "named files must be .go files: bar", true, "foo.go", "bar")
-	// make sure we don't miss a package's imports
-	doTestWant(t, "grab-import", "grab-import", false)
 }
