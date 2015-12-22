@@ -1,0 +1,3 @@
+nested
+nested/pkg
+nested/pkg/simple.go:7: rc can be io.Closer

@@ -127,6 +127,8 @@ func TestAll(t *testing.T) {
 		}
 		// non-local recursive
 		doTest(t, d[4:]+"/...")
+		// local recursive
+		doTest(t, "./"+d+"/...")
 	}
 	// local non-recursive
 	doTest(t, "./single")

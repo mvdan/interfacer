@@ -22,10 +22,6 @@ func typesInit(paths []string) {
 	c.AllowErrors = true
 	c.TypeChecker.Error = func(e error) {}
 	c.TypeChecker.DisableUnusedImportCheck = true
-	argPaths := make(map[string]bool, len(paths))
-	for _, path := range paths {
-		argPaths[path] = true
-	}
 	c.TypeCheckFuncBodies = func(path string) bool {
 		if _, e := pkgs[path]; e {
 			return false
@@ -33,7 +29,7 @@ func typesInit(paths []string) {
 		if !strings.Contains(path, "/") {
 			return true
 		}
-		return argPaths[path]
+		return true
 	}
 }
 
