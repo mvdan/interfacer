@@ -8,6 +8,7 @@ import (
 	"go/ast"
 	"go/token"
 	"io"
+	"os"
 	"path/filepath"
 	"sort"
 	"strings"
@@ -110,6 +111,23 @@ func orderedPkgs(prog *loader.Program) ([]*types.Package, error) {
 	return pkgs, nil
 }
 
+// relPathErr makes converts errors by go/types and go/loader that use
+// absolute paths into errors with relative paths
+func relPathErr(err error) error {
+	errStr := fmt.Sprintf("%v", err)
+	if !strings.HasPrefix(errStr, "/") {
+		return err
+	}
+	wd, err := os.Getwd()
+	if err != nil {
+		return err
+	}
+	if strings.HasPrefix(errStr, wd) {
+		return fmt.Errorf(errStr[len(wd)+1:])
+	}
+	return err
+}
+
 func CheckArgs(args []string, w io.Writer, verbose bool) error {
 	paths, err := recurse(args)
 	if err != nil {
@@ -125,7 +143,7 @@ func CheckArgs(args []string, w io.Writer, verbose bool) error {
 	}
 	pkgs, err := orderedPkgs(prog)
 	if err != nil {
-		return err
+		return relPathErr(err)
 	}
 	typesGet(pkgs)
 	for _, pkg := range pkgs {

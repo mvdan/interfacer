@@ -55,9 +55,6 @@ func doTest(t *testing.T, p string) {
 		return
 	}
 	exp, wantErr := want(t, p)
-	if strings.HasPrefix(exp, "/") {
-		exp = filepath.Join(build.Default.GOPATH, "local", exp)
-	}
 	doTestWant(t, p, exp, wantErr, p)
 }
 
