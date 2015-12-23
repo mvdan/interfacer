@@ -45,7 +45,7 @@ func want(t *testing.T, p string) (string, bool) {
 	if !os.IsNotExist(err) {
 		t.Fatal(err)
 	}
-	t.Fatalf("Output file not found for %s", p)
+	t.Fatalf("Output file not found: %s.(out|err)", base)
 	return "", false
 }
 
@@ -139,6 +139,21 @@ func doTestWant(t *testing.T, name, exp string, wantErr bool, args ...string) {
 	}
 }
 
+func inputPaths(t *testing.T, glob string) []string {
+	all, err := filepath.Glob(glob)
+	if err != nil {
+		t.Fatal(err)
+	}
+	var paths []string
+	for _, p := range all {
+		if strings.HasSuffix(p, ".out") || strings.HasSuffix(p, ".err") {
+			continue
+		}
+		paths = append(paths, p)
+	}
+	return paths
+}
+
 func runFileTests(t *testing.T, paths ...string) {
 	if err := os.Chdir("files"); err != nil {
 		t.Fatal(err)
@@ -149,11 +164,8 @@ func runFileTests(t *testing.T, paths ...string) {
 		}
 	}()
 	if len(paths) == 0 {
-		all, err := filepath.Glob("*")
-		if err != nil {
-			t.Fatal(err)
-		}
-		for _, p := range all {
+		paths = inputPaths(t, "*")
+		for _, p := range inputPaths(t, "*") {
 			if strings.HasSuffix(p, ".out") || strings.HasSuffix(p, ".err") {
 				continue
 			}
@@ -175,14 +187,7 @@ func runLocalTests(t *testing.T, paths ...string) {
 		}
 	}()
 	if len(paths) == 0 {
-		all, err := filepath.Glob("*")
-		if err != nil {
-			t.Fatal(err)
-		}
-		for _, p := range all {
-			if strings.HasSuffix(p, ".out") || strings.HasSuffix(p, ".err") {
-				continue
-			}
+		for _, p := range inputPaths(t, "*") {
 			paths = append(paths, "./"+p+"/...")
 		}
 		// non-recursive
@@ -194,19 +199,12 @@ func runLocalTests(t *testing.T, paths ...string) {
 }
 
 func runNonlocalTests(t *testing.T) {
-	dirs, err := filepath.Glob("src/*")
-	if err != nil {
-		t.Fatal(err)
+	paths := inputPaths(t, "src/*")
+	for _, p := range paths {
+		doTest(t, "./"+p+"/...")
 	}
-	for _, d := range dirs {
-		if strings.HasSuffix(d, ".out") || strings.HasSuffix(d, ".err") {
-			continue
-		}
-		// non-local recursive
-		doTest(t, d[4:]+"/...")
-		// local recursive
-		doTest(t, "./"+d+"/...")
-	}
+	// local recursive
+	doTest(t, "./src/nested/...")
 	// non-recursive
 	doTest(t, "single")
 	// make sure we don't miss a package's imports
