@@ -142,7 +142,7 @@ func doTestWant(t *testing.T, name, exp string, wantErr bool, args ...string) {
 	}
 }
 
-func runFileTests(t *testing.T) {
+func runFileTests(t *testing.T, paths ...string) {
 	if err := os.Chdir("files"); err != nil {
 		t.Fatal(err)
 	}
@@ -151,19 +151,24 @@ func runFileTests(t *testing.T) {
 			t.Fatal(err)
 		}
 	}()
-	paths, err := filepath.Glob("*")
-	if err != nil {
-		t.Fatal(err)
+	if len(paths) == 0 {
+		all, err := filepath.Glob("*")
+		if err != nil {
+			t.Fatal(err)
+		}
+		for _, p := range all {
+			if strings.HasSuffix(p, ".out") || strings.HasSuffix(p, ".err") {
+				continue
+			}
+			paths = append(paths, p)
+		}
 	}
 	for _, p := range paths {
-		if strings.HasSuffix(p, ".out") || strings.HasSuffix(p, ".err") {
-			continue
-		}
 		doTest(t, p)
 	}
 }
 
-func runLocalTests(t *testing.T) {
+func runLocalTests(t *testing.T, paths ...string) {
 	if err := os.Chdir("local"); err != nil {
 		t.Fatal(err)
 	}
@@ -172,18 +177,23 @@ func runLocalTests(t *testing.T) {
 			t.Fatal(err)
 		}
 	}()
-	paths, err := filepath.Glob("*")
-	if err != nil {
-		t.Fatal(err)
+	if len(paths) == 0 {
+		all, err := filepath.Glob("*")
+		if err != nil {
+			t.Fatal(err)
+		}
+		for _, p := range all {
+			if strings.HasSuffix(p, ".out") || strings.HasSuffix(p, ".err") {
+				continue
+			}
+			paths = append(paths, "./"+p+"/...")
+		}
+		// non-recursive
+		paths = append(paths, "./single")
 	}
 	for _, p := range paths {
-		if strings.HasSuffix(p, ".out") || strings.HasSuffix(p, ".err") {
-			continue
-		}
-		doTest(t, "./"+p+"/...")
+		doTest(t, p)
 	}
-	// non-recursive
-	doTest(t, "./single")
 }
 
 func runNonlocalTests(t *testing.T) {
@@ -220,7 +230,15 @@ func TestAll(t *testing.T) {
 		t.Fatal(err)
 	}
 	build.Default.GOPATH = wd
-	if *name != "" {
+	switch {
+	case *name == "":
+	case strings.HasSuffix(*name, ".go"):
+		runFileTests(t, *name)
+		return
+	case strings.HasPrefix(*name, "./"):
+		runLocalTests(t, *name)
+		return
+	default:
 		doTest(t, *name)
 		return
 	}
