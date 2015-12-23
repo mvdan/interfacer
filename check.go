@@ -91,18 +91,21 @@ func orderedPkgs(prog *loader.Program) ([]*types.Package, error) {
 	// TODO: InitialPackages() is not in the order that we passed to
 	// it via Import() calls.
 	// For now, make it deterministic by sorting by import path.
-	var paths []string
-	for _, info := range prog.InitialPackages() {
+	unordered := prog.InitialPackages()
+	paths := make([]string, 0, len(unordered))
+	byPath := make(map[string]*types.Package, len(unordered))
+	for _, info := range unordered {
 		if info.Errors != nil {
 			return nil, info.Errors[0]
 		}
-		paths = append(paths, info.Pkg.Path())
+		path := info.Pkg.Path()
+		paths = append(paths, path)
+		byPath[path] = info.Pkg
 	}
 	sort.Sort(ByAlph(paths))
-	var pkgs []*types.Package
+	pkgs := make([]*types.Package, 0, len(unordered))
 	for _, path := range paths {
-		info := prog.Package(path)
-		pkgs = append(pkgs, info.Pkg)
+		pkgs = append(pkgs, byPath[path])
 	}
 	return pkgs, nil
 }
