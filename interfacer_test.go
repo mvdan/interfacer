@@ -62,6 +62,12 @@ func doTest(t *testing.T, p string) {
 }
 
 func doTestWrite(t *testing.T, p string) {
+	ifacesCopy := mapCopy(ifaces)
+	funcsCopy := mapCopy(funcs)
+	defer func() {
+		ifaces = ifacesCopy
+		funcs = funcsCopy
+	}()
 	var b bytes.Buffer
 	err := CheckArgs([]string{p}, &b, true)
 	var outPath, outCont, rmPath string
