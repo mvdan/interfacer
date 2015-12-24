@@ -201,7 +201,7 @@ func runLocalTests(t *testing.T, paths ...string) {
 func runNonlocalTests(t *testing.T) {
 	paths := inputPaths(t, "src/*")
 	for _, p := range paths {
-		doTest(t, "./"+p+"/...")
+		doTest(t, p[4:]+"/...")
 	}
 	// local recursive
 	doTest(t, "./src/nested/...")
