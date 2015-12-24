@@ -30,7 +30,7 @@ foo.go:10: f can be io.Reader
 This package relies on `go/types` for the heavy lifting: name
 resolution, constant folding and type inference.
 
-Once you know all the types, it inspects every declared function and
+Once all the types are clear, it inspects every declared function and
 sees if any of the arguments could be better typed. It uses a string
 representation of functions and interfaces to find exact matches.
 
@@ -41,14 +41,14 @@ us. Interfaces which contain unexported methods must be discarded, for
 example.
 
 The `ifaces` map is self-explanatory. The `funcs` map can be deceiving -
-it contains all function types that you might be implementing. These
-come from interfaces, such as `Read()`, and from function types, such as
-`WalkFunc`.
+it contains all the function types that may be purposedly implemented.
+These come from interfaces, such as `Read()`, and from function types,
+such as `WalkFunc`.
 
 When checking a series of packages, it builds on top of these two maps
 with the types it finds along the way.
 
-Then it uses `go/ast` to walk the source code. For every declared
+Next it uses `go/ast` to walk the source code. For every declared
 function, it first checks if its signature matches any recorded function
 type. If it does, it is skipped.
 
