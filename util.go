@@ -108,22 +108,21 @@ func interesting(t types.Type) bool {
 	}
 }
 
-func countInteresting(params *types.Tuple, level int) int {
-	count := 0
+func anyInteresting(params *types.Tuple) bool {
 	for i := 0; i < params.Len(); i++ {
 		t := params.At(i).Type()
 		if interesting(t) {
-			count++
+			return true
 		}
 	}
-	return count
+	return false
 }
 
 func FromScope(scope *types.Scope, all bool) (map[string]string, map[string]string) {
 	ifaces := make(map[string]string)
 	funcs := make(map[string]string)
 	signStr := func(sign *types.Signature) string {
-		if countInteresting(sign.Params(), 2) < 1 {
+		if !anyInteresting(sign.Params()) {
 			return ""
 		}
 		s := signString(sign)
