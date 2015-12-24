@@ -133,7 +133,7 @@ func CheckArgs(args []string, w io.Writer, verbose bool) error {
 	if err != nil {
 		return err
 	}
-	typesInit(paths)
+	typesInit()
 	if _, err := c.FromArgs(paths, false); err != nil {
 		return err
 	}

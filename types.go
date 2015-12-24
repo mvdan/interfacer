@@ -17,7 +17,7 @@ type cache struct {
 	grabbed map[string]struct{}
 }
 
-func typesInit(paths []string) {
+func typesInit() {
 	c = &cache{
 		grabbed: make(map[string]struct{}),
 	}
