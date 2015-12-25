@@ -83,7 +83,7 @@ func prepare(in map[string]string) []pkgType {
 		nameTypes[fullname] = typestr
 	}
 	var result []pkgType
-	for _, path := range pkgs {
+	addNames := func(path string) {
 		names := pkgNames[path]
 		sort.Sort(interfacer.ByAlph(names))
 		for _, fullname := range names {
@@ -93,6 +93,10 @@ func prepare(in map[string]string) []pkgType {
 			})
 		}
 	}
+	addNames("")
+	for _, path := range pkgs {
+		addNames(path)
+	}
 	return result
 }
 
@@ -101,23 +105,7 @@ func generate(w io.Writer) error {
 	sort.Sort(byLength(pkgs))
 	ifaces := make(map[string]string)
 	funcs := make(map[string]string)
-	var realPkgs []string
-	for _, path := range pkgs {
-		if strings.Contains(path, "internal") {
-			realPkgs = append(realPkgs, path)
-			continue
-		}
-		scope := types.Universe
-		all := true
-		if path != "" {
-			realPkgs = append(realPkgs, path)
-			pkg, err := types.DefaultImport(imported, path)
-			if err != nil {
-				return err
-			}
-			scope = pkg.Scope()
-			all = false
-		}
+	grabTypes := func(path string, scope *types.Scope, all bool) {
 		ifs, funs := interfacer.FromScope(scope, all)
 		for iface, name := range ifs {
 			if _, e := ifaces[iface]; e {
@@ -132,11 +120,22 @@ func generate(w io.Writer) error {
 			funcs[fun] = fullName(path, name)
 		}
 	}
+	grabTypes("", types.Universe, true)
+	for _, path := range pkgs {
+		if strings.Contains(path, "internal") {
+			continue
+		}
+		pkg, err := types.DefaultImport(imported, path)
+		if err != nil {
+			return err
+		}
+		grabTypes(path, pkg.Scope(), false)
+	}
 	return tmpl.Execute(w, struct {
 		Pkgs          []string
 		Ifaces, Funcs []pkgType
 	}{
-		Pkgs:   realPkgs,
+		Pkgs:   pkgs,
 		Ifaces: prepare(ifaces),
 		Funcs:  prepare(funcs),
 	})

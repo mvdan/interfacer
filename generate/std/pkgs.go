@@ -5,10 +5,8 @@ package main
 
 // Gotten from Go 1.5.2 via:
 // $ go list std
-// Plus empty string for builtin/Universe
 // TODO: see if this list can be obtained at runtime
 var pkgs = []string{
-	"",
 	"archive/tar",
 	"archive/zip",
 	"bufio",
