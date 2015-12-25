@@ -4,6 +4,7 @@
 package main
 
 import (
+	"bufio"
 	"flag"
 	"fmt"
 	"io"
@@ -74,7 +75,7 @@ func fullName(path, name string) string {
 	return path + "." + name
 }
 
-func prepare(in map[string]string) []pkgType {
+func prepare(in map[string]string, pkgs []string) []pkgType {
 	pkgNames := make(map[string][]string)
 	nameTypes := make(map[string]string)
 	for typestr, fullname := range in {
@@ -100,9 +101,8 @@ func prepare(in map[string]string) []pkgType {
 	return result
 }
 
-func generate(w io.Writer) error {
+func generate(w io.Writer, pkgs []string) error {
 	imported := make(map[string]*types.Package)
-	sort.Sort(byLength(pkgs))
 	ifaces := make(map[string]string)
 	funcs := make(map[string]string)
 	grabTypes := func(path string, scope *types.Scope, all bool) {
@@ -136,8 +136,8 @@ func generate(w io.Writer) error {
 		Ifaces, Funcs []pkgType
 	}{
 		Pkgs:   pkgs,
-		Ifaces: prepare(ifaces),
-		Funcs:  prepare(funcs),
+		Ifaces: prepare(ifaces, pkgs),
+		Funcs:  prepare(funcs, pkgs),
 	})
 }
 
@@ -152,7 +152,16 @@ func main() {
 		defer f.Close()
 		w = f
 	}
-	if err := generate(w); err != nil {
+	var pkgs []string
+	scanner := bufio.NewScanner(os.Stdin)
+	for scanner.Scan() {
+		pkgs = append(pkgs, scanner.Text())
+	}
+	if err := scanner.Err(); err != nil {
+		errExit(err)
+	}
+	sort.Sort(byLength(pkgs))
+	if err := generate(w, pkgs); err != nil {
 		errExit(err)
 	}
 }
