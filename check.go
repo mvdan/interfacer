@@ -58,9 +58,10 @@ func (v *visitor) interfaceMatching(obj types.Object, vr *variable) (string, str
 }
 
 func orderedPkgs(prog *loader.Program) ([]*types.Package, error) {
-	// TODO: InitialPackages() is not in the order that we passed to
-	// it via Import() calls.
-	// For now, make it deterministic by sorting by import path.
+	// InitialPackages() is not in the order that we passed to it
+	// via Import() calls.
+	// For now, make it deterministic by sorting import paths
+	// alphabetically.
 	unordered := prog.InitialPackages()
 	paths := make([]string, 0, len(unordered))
 	byPath := make(map[string]*types.Package, len(unordered))
@@ -332,7 +333,7 @@ func (v *visitor) funcEnded(sign *types.Signature) {
 	if v.level > 0 {
 		return
 	}
-	for i := len(v.warns)-1; i >= 0; i-- {
+	for i := len(v.warns) - 1; i >= 0; i-- {
 		warns := v.warns[i]
 		for _, warn := range warns {
 			fmt.Fprintln(v.w, warn)
