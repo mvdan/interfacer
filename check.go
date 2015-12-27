@@ -17,43 +17,6 @@ import (
 	"golang.org/x/tools/go/types"
 )
 
-func (v *visitor) implementsIface(sign *types.Signature) bool {
-	s := signString(sign)
-	return v.funcOf(s) != ""
-}
-
-func doMethoderType(t types.Type) map[string]string {
-	switch x := t.(type) {
-	case *types.Pointer:
-		return doMethoderType(x.Elem())
-	case *types.Named:
-		if u, ok := x.Underlying().(*types.Interface); ok {
-			return doMethoderType(u)
-		}
-		return namedMethodMap(x)
-	case *types.Interface:
-		return ifaceFuncMap(x)
-	default:
-		return nil
-	}
-}
-
-func assignable(s, t string, called, want map[string]string) bool {
-	if s == t {
-		return true
-	}
-	if len(t) >= len(s) {
-		return false
-	}
-	for fname, ftype := range want {
-		s, e := called[fname]
-		if !e || s != ftype {
-			return false
-		}
-	}
-	return true
-}
-
 func toDiscard(vr *variable) bool {
 	if vr.discard {
 		return true
@@ -261,6 +224,11 @@ func (v *visitor) discard(e ast.Expr) {
 	}
 	vr := v.variable(id)
 	vr.discard = true
+}
+
+func (v *visitor) implementsIface(sign *types.Signature) bool {
+	s := signString(sign)
+	return v.funcOf(s) != ""
 }
 
 func (v *visitor) Visit(node ast.Node) ast.Visitor {

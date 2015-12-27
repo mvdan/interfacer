@@ -55,6 +55,22 @@ func namedMethodMap(named *types.Named) map[string]string {
 	return ifuncs
 }
 
+func doMethoderType(t types.Type) map[string]string {
+	switch x := t.(type) {
+	case *types.Pointer:
+		return doMethoderType(x.Elem())
+	case *types.Named:
+		if u, ok := x.Underlying().(*types.Interface); ok {
+			return doMethoderType(u)
+		}
+		return namedMethodMap(x)
+	case *types.Interface:
+		return ifaceFuncMap(x)
+	default:
+		return nil
+	}
+}
+
 func funcMapString(iface map[string]string) string {
 	fnames := make([]string, 0, len(iface))
 	for fname := range iface {
@@ -167,4 +183,20 @@ func FromScope(scope *types.Scope, all bool) (map[string]string, map[string]stri
 		}
 	}
 	return ifaces, funcs
+}
+
+func assignable(s, t string, called, want map[string]string) bool {
+	if s == t {
+		return true
+	}
+	if len(t) >= len(s) {
+		return false
+	}
+	for fname, ftype := range want {
+		s, e := called[fname]
+		if !e || s != ftype {
+			return false
+		}
+	}
+	return true
 }
