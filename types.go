@@ -14,11 +14,16 @@ import (
 type cache struct {
 	loader.Config
 
+	ifaces map[string]string
+	funcs  map[string]string
+
 	grabbed map[string]struct{}
 }
 
 func newCache() *cache {
 	c := &cache{
+		ifaces:  make(map[string]string),
+		funcs:   make(map[string]string),
 		grabbed: make(map[string]struct{}),
 	}
 	c.AllowErrors = true
@@ -43,23 +48,29 @@ func (c *cache) typesGet(pkgs []*types.Package) {
 			continue
 		}
 		c.grabbed[path] = struct{}{}
-		grabExported(pkg.Scope(), path)
+		c.grabExported(pkg.Scope(), path)
 		c.typesGet(pkg.Imports())
 	}
 }
 
-func grabExported(scope *types.Scope, path string) {
+func (c *cache) grabExported(scope *types.Scope, path string) {
 	ifs, funs := FromScope(scope, false)
 	for iftype, ifname := range ifs {
-		if _, e := ifaces[iftype]; e {
+		if _, e := stdIfaces[iftype]; e {
 			continue
 		}
-		ifaces[iftype] = path + "." + ifname
+		if _, e := c.ifaces[iftype]; e {
+			continue
+		}
+		c.ifaces[iftype] = path + "." + ifname
 	}
 	for ftype, fname := range funs {
-		if _, e := funcs[ftype]; e {
+		if _, e := stdFuncs[ftype]; e {
 			continue
 		}
-		funcs[ftype] = path + "." + fname
+		if _, e := c.funcs[ftype]; e {
+			continue
+		}
+		c.funcs[ftype] = path + "." + fname
 	}
 }

@@ -17,9 +17,12 @@ import (
 	"golang.org/x/tools/go/types"
 )
 
-func implementsIface(sign *types.Signature) bool {
+func (v *visitor) implementsIface(sign *types.Signature) bool {
 	s := signString(sign)
-	_, e := funcs[s]
+	if _, e := stdFuncs[s]; e {
+		return true
+	}
+	_, e := v.funcs[s]
 	return e
 }
 
@@ -55,7 +58,7 @@ func assignable(s, t string, called, want map[string]string) bool {
 	return true
 }
 
-func interfaceMatching(obj types.Object, vr *variable) (string, string) {
+func (v *visitor) interfaceMatching(obj types.Object, vr *variable) (string, string) {
 	for to := range vr.assigned {
 		if to.discard {
 			return "", ""
@@ -67,9 +70,12 @@ func interfaceMatching(obj types.Object, vr *variable) (string, string) {
 		called[fname] = allFuncs[fname]
 	}
 	s := funcMapString(called)
-	name, e := ifaces[s]
+	name, e := stdIfaces[s]
 	if !e {
-		return "", ""
+		name, e = v.ifaces[s]
+		if !e {
+			return "", ""
+		}
 	}
 	for t := range vr.usedAs {
 		iface, ok := t.(*types.Interface)
@@ -148,13 +154,14 @@ func CheckArgs(args []string, w io.Writer, verbose bool) error {
 		if verbose {
 			fmt.Fprintln(w, info.Pkg.Path())
 		}
-		checkPkg(info, prog.Fset, w)
+		checkPkg(c, info, prog.Fset, w)
 	}
 	return nil
 }
 
-func checkPkg(info *loader.PackageInfo, fset *token.FileSet, w io.Writer) {
+func checkPkg(c *cache, info *loader.PackageInfo, fset *token.FileSet, w io.Writer) {
 	v := &visitor{
+		cache:       c,
 		PackageInfo: info,
 		w:           w,
 		fset:        fset,
@@ -174,6 +181,7 @@ type variable struct {
 }
 
 type visitor struct {
+	*cache
 	*loader.PackageInfo
 
 	w     io.Writer
@@ -261,13 +269,13 @@ func (v *visitor) Visit(node ast.Node) ast.Visitor {
 	switch x := node.(type) {
 	case *ast.FuncLit:
 		sign = v.Types[x].Type.(*types.Signature)
-		if implementsIface(sign) {
+		if v.implementsIface(sign) {
 			return nil
 		}
 		v.addParams(sign.Params())
 	case *ast.FuncDecl:
 		sign = v.Defs[x.Name].Type().(*types.Signature)
-		if implementsIface(sign) {
+		if v.implementsIface(sign) {
 			return nil
 		}
 		v.addParams(sign.Params())
@@ -368,7 +376,7 @@ func (v *visitor) evalParam(obj types.Object, vr *variable) {
 	if vr.discard {
 		return
 	}
-	ifname, iftype := interfaceMatching(obj, vr)
+	ifname, iftype := v.interfaceMatching(obj, vr)
 	if ifname == "" {
 		return
 	}

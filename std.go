@@ -154,7 +154,7 @@ var stdPkgs = map[string]struct{}{
 	"go/internal/gccgoimporter": {},
 }
 
-var ifaces = map[string]string{
+var stdIfaces = map[string]string{
 	"Error() string":                                                                                        "error",
 	"ReadByte() (byte, error)":                                                                              "io.ByteReader",
 	"ReadByte() (byte, error); UnreadByte() error":                                                          "io.ByteScanner",
@@ -265,7 +265,7 @@ var ifaces = map[string]string{
 	"Value() (database/sql/driver.Value, error)":                   "database/sql/driver.Valuer",
 }
 
-var funcs = map[string]string{
+var stdFuncs = map[string]string{
 	"(fmt.State, rune)":                                                                           "fmt.Formatter.Format",
 	"(fmt.ScanState, rune) error":                                                                 "fmt.Scanner.Scan",
 	"(time.Time) error":                                                                           "net.PacketConn.SetWriteDeadline",

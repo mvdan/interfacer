@@ -27,11 +27,11 @@ var stdPkgs = map[string]struct{}{
 {{range $_, $pkg := .Pkgs}}	"{{$pkg}}": struct{}{},
 {{end}}}
 
-var ifaces = map[string]string{
+var stdIfaces = map[string]string{
 {{range $_, $pt := .Ifaces}}	"{{$pt.Type}}": "{{$pt.Path}}",
 {{end}}}
 
-var funcs = map[string]string{
+var stdFuncs = map[string]string{
 {{range $_, $pt := .Funcs}}	"{{$pt.Type}}": "{{$pt.Path}}",
 {{end}}}
 `))

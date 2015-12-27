@@ -59,12 +59,6 @@ func doTest(t *testing.T, p string) {
 }
 
 func doTestWrite(t *testing.T, p string) {
-	ifacesCopy := mapCopy(ifaces)
-	funcsCopy := mapCopy(funcs)
-	defer func() {
-		ifaces = ifacesCopy
-		funcs = funcsCopy
-	}()
 	var b bytes.Buffer
 	err := CheckArgs([]string{p}, &b, true)
 	var outPath, outCont, rmPath string
@@ -94,24 +88,10 @@ func endNewline(s string) string {
 	return s + "\n"
 }
 
-func mapCopy(m map[string]string) map[string]string {
-	mc := make(map[string]string, len(m))
-	for k, v := range m {
-		mc[k] = v
-	}
-	return mc
-}
-
 func doTestWant(t *testing.T, name, exp string, wantErr bool, args ...string) {
 	if *write {
 		return
 	}
-	ifacesCopy := mapCopy(ifaces)
-	funcsCopy := mapCopy(funcs)
-	defer func() {
-		ifaces = ifacesCopy
-		funcs = funcsCopy
-	}()
 	var b bytes.Buffer
 	if len(args) == 0 {
 		args = []string{name}
