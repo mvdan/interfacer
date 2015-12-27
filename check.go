@@ -58,15 +58,15 @@ func assignable(s, t string, called, want map[string]string) bool {
 	return true
 }
 
-func interfaceMatching(obj types.Object, p *param) (string, string) {
-	for to := range p.assigned {
+func interfaceMatching(obj types.Object, vr *variable) (string, string) {
+	for to := range vr.assigned {
 		if to.discard {
 			return "", ""
 		}
 	}
 	allFuncs := doMethoderType(obj.Type())
-	called := make(map[string]string, len(p.calls))
-	for fname := range p.calls {
+	called := make(map[string]string, len(vr.calls))
+	for fname := range vr.calls {
 		called[fname] = allFuncs[fname]
 	}
 	s := funcMapString(called)
@@ -74,7 +74,7 @@ func interfaceMatching(obj types.Object, p *param) (string, string) {
 	if !e {
 		return "", ""
 	}
-	for t := range p.usedAs {
+	for t := range vr.usedAs {
 		iface, ok := t.(*types.Interface)
 		if !ok {
 			return "", ""
@@ -161,18 +161,19 @@ func checkPkg(conf *types.Config, info *loader.PackageInfo, w io.Writer) {
 		PackageInfo: info,
 		w:           w,
 		fset:        c.Fset,
+		vars:        make(map[types.Object]*variable),
 	}
 	for _, f := range info.Files {
 		ast.Walk(v, f)
 	}
 }
 
-type param struct {
+type variable struct {
 	calls   map[string]struct{}
 	usedAs  map[types.Type]struct{}
 	discard bool
 
-	assigned map[*param]struct{}
+	assigned map[*variable]struct{}
 }
 
 type visitor struct {
@@ -182,24 +183,20 @@ type visitor struct {
 	fset  *token.FileSet
 	signs []*types.Signature
 
-	params  map[types.Object]*param
-	extras  map[types.Object]*param
-	inBlock bool
+	vars map[types.Object]*variable
 
 	skipNext bool
 }
 
-func paramsMap(t *types.Tuple) map[types.Object]*param {
-	m := make(map[types.Object]*param, t.Len())
+func (v *visitor) addParams(t *types.Tuple) {
 	for i := 0; i < t.Len(); i++ {
-		p := t.At(i)
-		m[p] = &param{
+		obj := t.At(i)
+		v.vars[obj] = &variable{
 			calls:    make(map[string]struct{}),
 			usedAs:   make(map[types.Type]struct{}),
-			assigned: make(map[*param]struct{}),
+			assigned: make(map[*variable]struct{}),
 		}
 	}
-	return m
 }
 
 func paramType(sign *types.Signature, i int) types.Type {
@@ -221,50 +218,41 @@ func paramType(sign *types.Signature, i int) types.Type {
 	}
 }
 
-func (v *visitor) param(id *ast.Ident) *param {
+func (v *visitor) variable(id *ast.Ident) *variable {
 	obj := v.ObjectOf(id)
-	if obj == nil {
-		panic("unexpected nil object found")
+	if vr, e := v.vars[obj]; e {
+		return vr
 	}
-	if p, e := v.params[obj]; e {
-		return p
-	}
-	if p, e := v.extras[obj]; e {
-		return p
-	}
-	p := &param{
+	vr := &variable{
 		calls:    make(map[string]struct{}),
 		usedAs:   make(map[types.Type]struct{}),
-		assigned: make(map[*param]struct{}),
+		assigned: make(map[*variable]struct{}),
 	}
-	v.extras[obj] = p
-	return p
+	v.vars[obj] = vr
+	return vr
 }
 
 func (v *visitor) addUsed(id *ast.Ident, as types.Type) {
 	if as == nil {
 		return
 	}
-	p := v.param(id)
-	p.usedAs[as.Underlying()] = struct{}{}
+	vr := v.variable(id)
+	vr.usedAs[as.Underlying()] = struct{}{}
 }
 
 func (v *visitor) addAssign(to, from *ast.Ident) {
-	pto := v.param(to)
-	pfrom := v.param(from)
+	pto := v.variable(to)
+	pfrom := v.variable(from)
 	pfrom.assigned[pto] = struct{}{}
 }
 
 func (v *visitor) discard(e ast.Expr) {
-	if !v.inBlock {
-		return
-	}
 	id, ok := e.(*ast.Ident)
 	if !ok {
 		return
 	}
-	p := v.param(id)
-	p.discard = true
+	vr := v.variable(id)
+	vr.discard = true
 }
 
 func (v *visitor) Visit(node ast.Node) ast.Visitor {
@@ -275,26 +263,17 @@ func (v *visitor) Visit(node ast.Node) ast.Visitor {
 	var sign *types.Signature
 	switch x := node.(type) {
 	case *ast.FuncLit:
-		if v.inBlock {
-			break
-		}
 		sign = v.Types[x].Type.(*types.Signature)
 		if implementsIface(sign) {
 			return nil
 		}
-		v.params = paramsMap(sign.Params())
-		v.extras = make(map[types.Object]*param)
+		v.addParams(sign.Params())
 	case *ast.FuncDecl:
 		sign = v.Defs[x.Name].Type().(*types.Signature)
 		if implementsIface(sign) {
 			return nil
 		}
-		v.params = paramsMap(sign.Params())
-		v.extras = make(map[types.Object]*param)
-	case *ast.BlockStmt:
-		if v.params != nil {
-			v.inBlock = true
-		}
+		v.addParams(sign.Params())
 	case *ast.SelectorExpr:
 		v.discard(x.X)
 	case *ast.UnaryExpr:
@@ -307,22 +286,13 @@ func (v *visitor) Visit(node ast.Node) ast.Visitor {
 	case *ast.IncDecStmt:
 		v.discard(x.X)
 	case *ast.AssignStmt:
-		if !v.inBlock {
-			return nil
-		}
 		v.onAssign(x)
 	case *ast.CallExpr:
-		if !v.inBlock {
-			return nil
-		}
 		v.onCall(x)
 	case nil:
 		top := v.signs[len(v.signs)-1]
 		if top != nil {
 			v.funcEnded(top)
-			v.params = nil
-			v.extras = nil
-			v.inBlock = false
 		}
 		v.signs = v.signs[:len(v.signs)-1]
 	}
@@ -383,40 +353,47 @@ func (v *visitor) onCall(ce *ast.CallExpr) {
 	if !ok {
 		return
 	}
-	p := v.param(left)
-	p.calls[sel.Sel.Name] = struct{}{}
+	vr := v.variable(left)
+	vr.calls[sel.Sel.Name] = struct{}{}
 	return
 }
 
 func (v *visitor) funcEnded(sign *types.Signature) {
-	for obj, p := range v.params {
-		if p.discard {
-			continue
-		}
-		ifname, iftype := interfaceMatching(obj, p)
-		if ifname == "" {
-			continue
-		}
-		t := obj.Type()
-		if _, haveIface := t.Underlying().(*types.Interface); haveIface {
-			if ifname == t.String() {
-				continue
-			}
-			have := funcMapString(doMethoderType(t))
-			if have == iftype {
-				continue
-			}
-		}
-		pos := v.fset.Position(obj.Pos())
-		fname := pos.Filename
-		if fname[0] == '/' {
-			fname = filepath.Join(v.Pkg.Path(), filepath.Base(fname))
-		}
-		pname := v.Pkg.Name()
-		if strings.HasPrefix(ifname, pname+".") {
-			ifname = ifname[len(pname)+1:]
-		}
-		fmt.Fprintf(v.w, "%s:%d:%d: %s can be %s\n",
-			fname, pos.Line, pos.Column, obj.Name(), ifname)
+	params := sign.Params()
+	for i := 0; i < params.Len(); i++ {
+		obj := params.At(i)
+		vr := v.vars[obj]
+		v.evalParam(obj, vr)
 	}
+}
+
+func (v *visitor) evalParam(obj types.Object, vr *variable) {
+	if vr.discard {
+		return
+	}
+	ifname, iftype := interfaceMatching(obj, vr)
+	if ifname == "" {
+		return
+	}
+	t := obj.Type()
+	if _, haveIface := t.Underlying().(*types.Interface); haveIface {
+		if ifname == t.String() {
+			return
+		}
+		have := funcMapString(doMethoderType(t))
+		if have == iftype {
+			return
+		}
+	}
+	pos := v.fset.Position(obj.Pos())
+	fname := pos.Filename
+	if fname[0] == '/' {
+		fname = filepath.Join(v.Pkg.Path(), filepath.Base(fname))
+	}
+	pname := v.Pkg.Name()
+	if strings.HasPrefix(ifname, pname+".") {
+		ifname = ifname[len(pname)+1:]
+	}
+	fmt.Fprintf(v.w, "%s:%d:%d: %s can be %s\n",
+		fname, pos.Line, pos.Column, obj.Name(), ifname)
 }
