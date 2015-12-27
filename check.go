@@ -151,12 +151,12 @@ func CheckArgs(args []string, w io.Writer, verbose bool) error {
 		if verbose {
 			fmt.Fprintln(w, info.Pkg.Path())
 		}
-		checkPkg(&c.TypeChecker, info, w)
+		checkPkg(info, w)
 	}
 	return nil
 }
 
-func checkPkg(conf *types.Config, info *loader.PackageInfo, w io.Writer) {
+func checkPkg(info *loader.PackageInfo, w io.Writer) {
 	v := &visitor{
 		PackageInfo: info,
 		w:           w,
