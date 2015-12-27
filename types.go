@@ -17,8 +17,8 @@ type cache struct {
 	grabbed map[string]struct{}
 }
 
-func typesInit() {
-	c = &cache{
+func newCache() *cache {
+	c := &cache{
 		grabbed: make(map[string]struct{}),
 	}
 	c.AllowErrors = true
@@ -30,9 +30,10 @@ func typesInit() {
 		}
 		return true
 	}
+	return c
 }
 
-func typesGet(pkgs []*types.Package) {
+func (c *cache) typesGet(pkgs []*types.Package) {
 	for _, pkg := range pkgs {
 		path := pkg.Path()
 		if _, e := stdPkgs[path]; e {
@@ -43,7 +44,7 @@ func typesGet(pkgs []*types.Package) {
 		}
 		c.grabbed[path] = struct{}{}
 		grabExported(pkg.Scope(), path)
-		typesGet(pkg.Imports())
+		c.typesGet(pkg.Imports())
 	}
 }
 

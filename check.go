@@ -17,9 +17,6 @@ import (
 	"golang.org/x/tools/go/types"
 )
 
-// TODO: don't use a global state to allow concurrent use
-var c *cache
-
 func implementsIface(sign *types.Signature) bool {
 	s := signString(sign)
 	_, e := funcs[s]
@@ -133,7 +130,7 @@ func CheckArgs(args []string, w io.Writer, verbose bool) error {
 	if err != nil {
 		return err
 	}
-	typesInit()
+	c := newCache()
 	if _, err := c.FromArgs(paths, false); err != nil {
 		return err
 	}
@@ -145,22 +142,22 @@ func CheckArgs(args []string, w io.Writer, verbose bool) error {
 	if err != nil {
 		return relPathErr(err)
 	}
-	typesGet(pkgs)
+	c.typesGet(pkgs)
 	for _, pkg := range pkgs {
 		info := prog.AllPackages[pkg]
 		if verbose {
 			fmt.Fprintln(w, info.Pkg.Path())
 		}
-		checkPkg(info, w)
+		checkPkg(info, prog.Fset, w)
 	}
 	return nil
 }
 
-func checkPkg(info *loader.PackageInfo, w io.Writer) {
+func checkPkg(info *loader.PackageInfo, fset *token.FileSet, w io.Writer) {
 	v := &visitor{
 		PackageInfo: info,
 		w:           w,
-		fset:        c.Fset,
+		fset:        fset,
 		vars:        make(map[types.Object]*variable),
 	}
 	for _, f := range info.Files {
