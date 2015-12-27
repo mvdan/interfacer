@@ -27,3 +27,12 @@ func FooArgWrong(rc io.ReadCloser) {
 	f := func(err error) {}
 	f(rc.Close())
 }
+
+func FooNestedWrong(rc io.ReadCloser) {
+	f := func(rc io.ReadCloser) {
+		rc.Close()
+	}
+	f(nil)
+	b := make([]byte, 10)
+	rc.Read(b)
+}
