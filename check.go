@@ -121,22 +121,18 @@ func CheckArgs(args []string, w io.Writer, verbose bool) error {
 		if verbose {
 			fmt.Fprintln(w, info.Pkg.Path())
 		}
-		checkPkg(c, info, prog.Fset, w)
+		v := &visitor{
+			cache:       c,
+			PackageInfo: info,
+			w:           w,
+			fset:        prog.Fset,
+			vars:        make(map[types.Object]*variable),
+		}
+		for _, f := range info.Files {
+			ast.Walk(v, f)
+		}
 	}
 	return nil
-}
-
-func checkPkg(c *cache, info *loader.PackageInfo, fset *token.FileSet, w io.Writer) {
-	v := &visitor{
-		cache:       c,
-		PackageInfo: info,
-		w:           w,
-		fset:        fset,
-		vars:        make(map[types.Object]*variable),
-	}
-	for _, f := range info.Files {
-		ast.Walk(v, f)
-	}
 }
 
 type variable struct {
@@ -256,8 +252,7 @@ func (v *visitor) Visit(node ast.Node) ast.Visitor {
 	case *ast.CallExpr:
 		v.onCall(x)
 	case nil:
-		top := v.signs[len(v.signs)-1]
-		if top != nil {
+		if top := v.signs[len(v.signs)-1]; top != nil {
 			v.funcEnded(top)
 		}
 		v.signs = v.signs[:len(v.signs)-1]
