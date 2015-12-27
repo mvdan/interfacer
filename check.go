@@ -185,18 +185,18 @@ type visitor struct {
 	fset  *token.FileSet
 	signs []*types.Signature
 
-	params  map[string]*param
-	extras  map[string]*param
+	params  map[types.Object]*param
+	extras  map[types.Object]*param
 	inBlock bool
 
 	skipNext bool
 }
 
-func paramsMap(t *types.Tuple) map[string]*param {
-	m := make(map[string]*param, t.Len())
+func paramsMap(t *types.Tuple) map[types.Object]*param {
+	m := make(map[types.Object]*param, t.Len())
 	for i := 0; i < t.Len(); i++ {
 		p := t.At(i)
-		m[p.Name()] = &param{
+		m[p] = &param{
 			t:        p.Type(),
 			pos:      p.Pos(),
 			calls:    make(map[string]struct{}),
@@ -226,11 +226,15 @@ func paramType(sign *types.Signature, i int) types.Type {
 	}
 }
 
-func (v *visitor) param(name string) *param {
-	if p, e := v.params[name]; e {
+func (v *visitor) param(id *ast.Ident) *param {
+	obj := v.ObjectOf(id)
+	if obj == nil {
+		panic("unexpected nil object found")
+	}
+	if p, e := v.params[obj]; e {
 		return p
 	}
-	if p, e := v.extras[name]; e {
+	if p, e := v.extras[obj]; e {
 		return p
 	}
 	p := &param{
@@ -238,19 +242,19 @@ func (v *visitor) param(name string) *param {
 		usedAs:   make(map[types.Type]struct{}),
 		assigned: make(map[*param]struct{}),
 	}
-	v.extras[name] = p
+	v.extras[obj] = p
 	return p
 }
 
-func (v *visitor) addUsed(name string, as types.Type) {
+func (v *visitor) addUsed(id *ast.Ident, as types.Type) {
 	if as == nil {
 		return
 	}
-	p := v.param(name)
+	p := v.param(id)
 	p.usedAs[as.Underlying()] = struct{}{}
 }
 
-func (v *visitor) addAssign(to, from string) {
+func (v *visitor) addAssign(to, from *ast.Ident) {
 	pto := v.param(to)
 	pfrom := v.param(from)
 	pfrom.assigned[pto] = struct{}{}
@@ -264,7 +268,7 @@ func (v *visitor) discard(e ast.Expr) {
 	if !ok {
 		return
 	}
-	p := v.param(id.Name)
+	p := v.param(id)
 	p.discard = true
 }
 
@@ -284,14 +288,14 @@ func (v *visitor) Visit(node ast.Node) ast.Visitor {
 			return nil
 		}
 		v.params = paramsMap(sign.Params())
-		v.extras = make(map[string]*param)
+		v.extras = make(map[types.Object]*param)
 	case *ast.FuncDecl:
 		sign = v.Defs[x.Name].Type().(*types.Signature)
 		if implementsIface(sign) {
 			return nil
 		}
 		v.params = paramsMap(sign.Params())
-		v.extras = make(map[string]*param)
+		v.extras = make(map[types.Object]*param)
 	case *ast.BlockStmt:
 		if v.params != nil {
 			v.inBlock = true
@@ -351,9 +355,9 @@ func (v *visitor) onAssign(as *ast.AssignStmt) {
 			continue
 		}
 		left := as.Lhs[i]
-		v.addUsed(id.Name, v.Types[left].Type)
+		v.addUsed(id, v.Types[left].Type)
 		if lid, ok := left.(*ast.Ident); ok {
-			v.addAssign(lid.Name, id.Name)
+			v.addAssign(lid, id)
 		}
 	}
 }
@@ -373,7 +377,7 @@ func (v *visitor) onCall(ce *ast.CallExpr) {
 	}
 	for i, e := range ce.Args {
 		if id, ok := e.(*ast.Ident); ok {
-			v.addUsed(id.Name, paramType(sign, i))
+			v.addUsed(id, paramType(sign, i))
 		}
 	}
 	sel, ok := ce.Fun.(*ast.SelectorExpr)
@@ -384,13 +388,13 @@ func (v *visitor) onCall(ce *ast.CallExpr) {
 	if !ok {
 		return
 	}
-	p := v.param(left.Name)
+	p := v.param(left)
 	p.calls[sel.Sel.Name] = struct{}{}
 	return
 }
 
 func (v *visitor) funcEnded(sign *types.Signature) {
-	for name, p := range v.params {
+	for obj, p := range v.params {
 		if p.discard {
 			continue
 		}
@@ -417,6 +421,6 @@ func (v *visitor) funcEnded(sign *types.Signature) {
 			ifname = ifname[len(pname)+1:]
 		}
 		fmt.Fprintf(v.w, "%s:%d:%d: %s can be %s\n",
-			fname, pos.Line, pos.Column, name, ifname)
+			fname, pos.Line, pos.Column, obj.Name(), ifname)
 	}
 }

@@ -1,0 +1,2 @@
+foo
+shadow.go:7:16: rc can be io.Closer
