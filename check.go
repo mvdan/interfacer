@@ -183,17 +183,13 @@ type visitor struct {
 
 	w     io.Writer
 	fset  *token.FileSet
-	nodes []ast.Node
+	signs []*types.Signature
 
 	params  map[string]*param
 	extras  map[string]*param
 	inBlock bool
 
 	skipNext bool
-}
-
-func (v *visitor) top() ast.Node {
-	return v.nodes[len(v.nodes)-1]
 }
 
 func paramsMap(t *types.Tuple) map[string]*param {
@@ -277,9 +273,20 @@ func (v *visitor) Visit(node ast.Node) ast.Visitor {
 		v.skipNext = false
 		return nil
 	}
+	var sign *types.Signature
 	switch x := node.(type) {
+	case *ast.FuncLit:
+		if v.inBlock {
+			break
+		}
+		sign = v.Types[x].Type.(*types.Signature)
+		if implementsIface(sign) {
+			return nil
+		}
+		v.params = paramsMap(sign.Params())
+		v.extras = make(map[string]*param)
 	case *ast.FuncDecl:
-		sign := v.Defs[x.Name].Type().(*types.Signature)
+		sign = v.Defs[x.Name].Type().(*types.Signature)
 		if implementsIface(sign) {
 			return nil
 		}
@@ -311,16 +318,17 @@ func (v *visitor) Visit(node ast.Node) ast.Visitor {
 		}
 		v.onCall(x)
 	case nil:
-		if _, ok := v.top().(*ast.FuncDecl); ok {
-			v.funcEnded()
+		top := v.signs[len(v.signs)-1]
+		if top != nil {
+			v.funcEnded(top)
 			v.params = nil
 			v.extras = nil
 			v.inBlock = false
 		}
-		v.nodes = v.nodes[:len(v.nodes)-1]
+		v.signs = v.signs[:len(v.signs)-1]
 	}
 	if node != nil {
-		v.nodes = append(v.nodes, node)
+		v.signs = append(v.signs, sign)
 	}
 	return v
 }
@@ -381,7 +389,7 @@ func (v *visitor) onCall(ce *ast.CallExpr) {
 	return
 }
 
-func (v *visitor) funcEnded() {
+func (v *visitor) funcEnded(sign *types.Signature) {
 	for name, p := range v.params {
 		if p.discard {
 			continue

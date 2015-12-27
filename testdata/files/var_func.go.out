@@ -1,1 +1,2 @@
 foo
+var_func.go:11:23: rc can be io.Closer
