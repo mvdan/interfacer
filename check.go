@@ -159,17 +159,6 @@ type visitor struct {
 	skipNext bool
 }
 
-func (v *visitor) addParams(t *types.Tuple) {
-	for i := 0; i < t.Len(); i++ {
-		obj := t.At(i)
-		v.vars[obj] = &variable{
-			calls:    make(map[string]struct{}),
-			usedAs:   make(map[types.Type]struct{}),
-			assigned: make(map[*variable]struct{}),
-		}
-	}
-}
-
 func paramType(sign *types.Signature, i int) types.Type {
 	params := sign.Params()
 	extra := sign.Variadic() && i >= params.Len()-1
@@ -243,13 +232,11 @@ func (v *visitor) Visit(node ast.Node) ast.Visitor {
 		if v.implementsIface(sign) {
 			return nil
 		}
-		v.addParams(sign.Params())
 	case *ast.FuncDecl:
 		sign = v.Defs[x.Name].Type().(*types.Signature)
 		if v.implementsIface(sign) {
 			return nil
 		}
-		v.addParams(sign.Params())
 	case *ast.SelectorExpr:
 		v.discard(x.X)
 	case *ast.UnaryExpr:
@@ -339,6 +326,9 @@ func (v *visitor) funcEnded(sign *types.Signature) {
 	for i := 0; i < params.Len(); i++ {
 		obj := params.At(i)
 		vr := v.vars[obj]
+		if vr == nil {
+			continue
+		}
 		v.evalParam(obj, vr)
 	}
 }
