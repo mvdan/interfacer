@@ -58,13 +58,13 @@ func assignable(s, t string, called, want map[string]string) bool {
 	return true
 }
 
-func interfaceMatching(p *param) (string, string) {
+func interfaceMatching(obj types.Object, p *param) (string, string) {
 	for to := range p.assigned {
 		if to.discard {
 			return "", ""
 		}
 	}
-	allFuncs := doMethoderType(p.t)
+	allFuncs := doMethoderType(obj.Type())
 	called := make(map[string]string, len(p.calls))
 	for fname := range p.calls {
 		called[fname] = allFuncs[fname]
@@ -168,9 +168,6 @@ func checkPkg(conf *types.Config, info *loader.PackageInfo, w io.Writer) {
 }
 
 type param struct {
-	t   types.Type
-	pos token.Pos
-
 	calls   map[string]struct{}
 	usedAs  map[types.Type]struct{}
 	discard bool
@@ -197,8 +194,6 @@ func paramsMap(t *types.Tuple) map[types.Object]*param {
 	for i := 0; i < t.Len(); i++ {
 		p := t.At(i)
 		m[p] = &param{
-			t:        p.Type(),
-			pos:      p.Pos(),
 			calls:    make(map[string]struct{}),
 			usedAs:   make(map[types.Type]struct{}),
 			assigned: make(map[*param]struct{}),
@@ -398,20 +393,21 @@ func (v *visitor) funcEnded(sign *types.Signature) {
 		if p.discard {
 			continue
 		}
-		ifname, iftype := interfaceMatching(p)
+		ifname, iftype := interfaceMatching(obj, p)
 		if ifname == "" {
 			continue
 		}
-		if _, haveIface := p.t.Underlying().(*types.Interface); haveIface {
-			if ifname == p.t.String() {
+		t := obj.Type()
+		if _, haveIface := t.Underlying().(*types.Interface); haveIface {
+			if ifname == t.String() {
 				continue
 			}
-			have := funcMapString(doMethoderType(p.t))
+			have := funcMapString(doMethoderType(t))
 			if have == iftype {
 				continue
 			}
 		}
-		pos := v.fset.Position(p.pos)
+		pos := v.fset.Position(obj.Pos())
 		fname := pos.Filename
 		if fname[0] == '/' {
 			fname = filepath.Join(v.Pkg.Path(), filepath.Base(fname))
