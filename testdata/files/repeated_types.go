@@ -9,8 +9,16 @@ type Namer interface {
 }
 
 type MyWalkFunc func(path string, info os.FileInfo, err error) error
+type MyWalkFunc2 func(path string, info os.FileInfo, err error) error
 
 func Impl(path string, info os.FileInfo, err error) error {
 	info.Name()
 	return nil
+}
+
+type MyIface interface {
+	FooBar()
+}
+type MyIface2 interface {
+	MyIface
 }

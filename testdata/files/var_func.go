@@ -2,6 +2,7 @@ package foo
 
 import (
 	"io"
+	"net/http"
 )
 
 var Basic = func(c io.Closer) {
@@ -10,4 +11,8 @@ var Basic = func(c io.Closer) {
 
 var BasicWrong = func(rc io.ReadCloser) {
 	rc.Close()
+}
+
+var serveHTTP = func(w http.ResponseWriter, r *http.Request) {
+	w.Write([]byte{})
 }

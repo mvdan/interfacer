@@ -73,16 +73,10 @@ func (c *cache) grabExported(scope *types.Scope, path string) {
 		if _, e := stdIfaces[iftype]; e {
 			continue
 		}
-		if _, e := c.ifaces[iftype]; e {
-			continue
-		}
 		c.ifaces[iftype] = path + "." + ifname
 	}
 	for ftype, fname := range funs {
 		if _, e := stdFuncs[ftype]; e {
-			continue
-		}
-		if _, e := c.funcs[ftype]; e {
 			continue
 		}
 		c.funcs[ftype] = path + "." + fname
