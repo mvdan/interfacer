@@ -19,11 +19,7 @@ import (
 
 func (v *visitor) implementsIface(sign *types.Signature) bool {
 	s := signString(sign)
-	if _, e := stdFuncs[s]; e {
-		return true
-	}
-	_, e := v.funcs[s]
-	return e
+	return v.funcOf(s) != ""
 }
 
 func doMethoderType(t types.Type) map[string]string {
@@ -70,12 +66,9 @@ func (v *visitor) interfaceMatching(obj types.Object, vr *variable) (string, str
 		called[fname] = allFuncs[fname]
 	}
 	s := funcMapString(called)
-	name, e := stdIfaces[s]
-	if !e {
-		name, e = v.ifaces[s]
-		if !e {
-			return "", ""
-		}
+	name := v.ifaceOf(s)
+	if name == "" {
+		return "", ""
 	}
 	for t := range vr.usedAs {
 		iface, ok := t.(*types.Interface)

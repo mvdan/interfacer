@@ -38,6 +38,20 @@ func newCache() *cache {
 	return c
 }
 
+func (c *cache) funcOf(t string) string {
+	if s := stdFuncs[t]; s != "" {
+		return s
+	}
+	return c.funcs[t]
+}
+
+func (c *cache) ifaceOf(t string) string {
+	if s := stdIfaces[t]; s != "" {
+		return s
+	}
+	return c.ifaces[t]
+}
+
 func (c *cache) typesGet(pkgs []*types.Package) {
 	for _, pkg := range pkgs {
 		path := pkg.Path()
