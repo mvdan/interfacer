@@ -54,11 +54,21 @@ func assignable(s, t string, called, want map[string]string) bool {
 	return true
 }
 
-func (v *visitor) interfaceMatching(obj types.Object, vr *variable) (string, string) {
+func toDiscard(vr *variable) bool {
+	if vr.discard {
+		return true
+	}
 	for to := range vr.assigned {
-		if to.discard {
-			return "", ""
+		if toDiscard(to) {
+			return true
 		}
+	}
+	return false
+}
+
+func (v *visitor) interfaceMatching(obj types.Object, vr *variable) (string, string) {
+	if toDiscard(vr) {
+		return "", ""
 	}
 	allFuncs := doMethoderType(obj.Type())
 	called := make(map[string]string, len(vr.calls))
@@ -366,9 +376,6 @@ func (v *visitor) funcEnded(sign *types.Signature) {
 }
 
 func (v *visitor) evalParam(obj types.Object, vr *variable) {
-	if vr.discard {
-		return
-	}
 	ifname, iftype := v.interfaceMatching(obj, vr)
 	if ifname == "" {
 		return
