@@ -153,6 +153,8 @@ type visitor struct {
 	w     io.Writer
 	fset  *token.FileSet
 	signs []*types.Signature
+	warns [][]string
+	level int
 
 	vars map[types.Object]*variable
 
@@ -261,6 +263,9 @@ func (v *visitor) Visit(node ast.Node) ast.Visitor {
 	}
 	if node != nil {
 		v.signs = append(v.signs, sign)
+		if sign != nil {
+			v.level++
+		}
 	}
 	return v
 }
@@ -322,6 +327,22 @@ func (v *visitor) onCall(ce *ast.CallExpr) {
 }
 
 func (v *visitor) funcEnded(sign *types.Signature) {
+	v.level--
+	v.warns = append(v.warns, v.funcWarns(sign))
+	if v.level > 0 {
+		return
+	}
+	for i := len(v.warns)-1; i >= 0; i-- {
+		warns := v.warns[i]
+		for _, warn := range warns {
+			fmt.Fprintln(v.w, warn)
+		}
+	}
+	v.warns = nil
+}
+
+func (v *visitor) funcWarns(sign *types.Signature) []string {
+	var warns []string
 	params := sign.Params()
 	for i := 0; i < params.Len(); i++ {
 		obj := params.At(i)
@@ -329,23 +350,26 @@ func (v *visitor) funcEnded(sign *types.Signature) {
 		if vr == nil {
 			continue
 		}
-		v.evalParam(obj, vr)
+		if warn := v.paramWarn(obj, vr); warn != "" {
+			warns = append(warns, warn)
+		}
 	}
+	return warns
 }
 
-func (v *visitor) evalParam(obj types.Object, vr *variable) {
+func (v *visitor) paramWarn(obj types.Object, vr *variable) string {
 	ifname, iftype := v.interfaceMatching(obj, vr)
 	if ifname == "" {
-		return
+		return ""
 	}
 	t := obj.Type()
 	if _, haveIface := t.Underlying().(*types.Interface); haveIface {
 		if ifname == t.String() {
-			return
+			return ""
 		}
 		have := funcMapString(doMethoderType(t))
 		if have == iftype {
-			return
+			return ""
 		}
 	}
 	pos := v.fset.Position(obj.Pos())
@@ -357,6 +381,6 @@ func (v *visitor) evalParam(obj types.Object, vr *variable) {
 	if strings.HasPrefix(ifname, pname+".") {
 		ifname = ifname[len(pname)+1:]
 	}
-	fmt.Fprintf(v.w, "%s:%d:%d: %s can be %s\n",
+	return fmt.Sprintf("%s:%d:%d: %s can be %s",
 		fname, pos.Line, pos.Column, obj.Name(), ifname)
 }
