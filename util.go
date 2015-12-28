@@ -161,19 +161,32 @@ func FromScope(scope *types.Scope, all bool) (map[string]string, map[string]stri
 					continue
 				}
 				sign := f.Type().(*types.Signature)
-				if s := signStr(sign); s != "" {
-					funcs[s] = tn.Name() + "." + f.Name()
+				s := signStr(sign)
+				if s == "" {
+					continue
 				}
+				if _, e := funcs[s]; e {
+					continue
+				}
+				funcs[s] = tn.Name() + "." + f.Name()
 			}
 			s := funcMapString(iface)
 			if len(s) > maxLenIface {
 				continue
 			}
+			if _, e := ifaces[s]; e {
+				continue
+			}
 			ifaces[s] = tn.Name()
 		case *types.Signature:
-			if s := signStr(x); s != "" {
-				funcs[s] = tn.Name()
+			s := signStr(x)
+			if s == "" {
+				continue
 			}
+			if _, e := funcs[s]; e {
+				continue
+			}
+			funcs[s] = tn.Name()
 		}
 	}
 	return ifaces, funcs
