@@ -17,7 +17,7 @@ func Impl(path string, info os.FileInfo, err error) error {
 }
 
 type MyIface interface {
-	FooBar()
+	FooBar(f *os.File)
 }
 type MyIface2 interface {
 	MyIface
@@ -25,8 +25,8 @@ type MyIface2 interface {
 
 type st struct{}
 
-func (s st) FooBar() {}
+func (s st) FooBar(f *os.File) {}
 
 func FooWrong(s st) {
-	s.FooBar()
+	s.FooBar(nil)
 }

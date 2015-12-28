@@ -151,15 +151,12 @@ func FromScope(scope *types.Scope, all bool) (map[string]string, map[string]stri
 		}
 		switch x := tn.Type().Underlying().(type) {
 		case *types.Interface:
-			iface := methoderFuncMap(x, true)
+			iface := methoderFuncMap(x, false)
 			if len(iface) == 0 {
 				continue
 			}
 			for i := 0; i < x.NumMethods(); i++ {
 				f := x.Method(i)
-				if _, e := iface[f.Name()]; !e {
-					continue
-				}
 				sign := f.Type().(*types.Signature)
 				s := signStr(sign)
 				if s == "" {
