@@ -22,3 +22,11 @@ type MyIface interface {
 type MyIface2 interface {
 	MyIface
 }
+
+type st struct{}
+
+func (s st) FooBar() {}
+
+func FooWrong(s st) {
+	s.FooBar()
+}
