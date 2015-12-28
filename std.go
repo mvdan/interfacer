@@ -280,7 +280,7 @@ var stdFuncs = map[string]string{
 	"(go/types.Type) int64":                                                                       "go/types.Sizes.Alignof",
 	"(*net/url.URL) []*net/http.Cookie":                                                           "net/http.CookieJar.Cookies",
 	"(*net/url.URL, []*net/http.Cookie)":                                                          "net/http.CookieJar.SetCookies",
-	"(net/http.ResponseWriter, *net/http.Request)":                                                "net/http.Handler.ServeHTTP",
+	"(net/http.ResponseWriter, *net/http.Request)":                                                "net/http.HandlerFunc",
 	"(*net/http.Request) (*net/http.Response, error)":                                             "net/http.RoundTripper.RoundTrip",
 	"(*net/smtp.ServerInfo) (string, []byte, error)":                                              "net/smtp.Auth.Start",
 	"(string, *crypto/tls.ClientSessionState)":                                                    "crypto/tls.ClientSessionCache.Put",

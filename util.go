@@ -129,8 +129,6 @@ func anyInteresting(params *types.Tuple) bool {
 }
 
 func FromScope(scope *types.Scope, all bool) (map[string]string, map[string]string) {
-	ifaces := make(map[string]string)
-	funcs := make(map[string]string)
 	signStr := func(sign *types.Signature) string {
 		if !anyInteresting(sign.Params()) {
 			return ""
@@ -141,6 +139,9 @@ func FromScope(scope *types.Scope, all bool) (map[string]string, map[string]stri
 		}
 		return s
 	}
+	ifaces := make(map[string]string)
+	ifaceFuncs := make(map[string]string)
+	funcs := make(map[string]string)
 	for _, name := range scope.Names() {
 		if !all && !exported.MatchString(name) {
 			continue
@@ -162,10 +163,10 @@ func FromScope(scope *types.Scope, all bool) (map[string]string, map[string]stri
 				if s == "" {
 					continue
 				}
-				if _, e := funcs[s]; e {
+				if _, e := ifaceFuncs[s]; e {
 					continue
 				}
-				funcs[s] = tn.Name() + "." + f.Name()
+				ifaceFuncs[s] = tn.Name() + "." + f.Name()
 			}
 			s := funcMapString(iface)
 			if len(s) > maxLenIface {
@@ -185,6 +186,12 @@ func FromScope(scope *types.Scope, all bool) (map[string]string, map[string]stri
 			}
 			funcs[s] = tn.Name()
 		}
+	}
+	for s, name := range ifaceFuncs {
+		if _, e := funcs[s]; e {
+			continue
+		}
+		funcs[s] = name
 	}
 	return ifaces, funcs
 }
