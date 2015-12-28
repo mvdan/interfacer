@@ -30,10 +30,8 @@ func newCache() *cache {
 	c.TypeChecker.Error = func(e error) {}
 	c.TypeChecker.DisableUnusedImportCheck = true
 	c.TypeCheckFuncBodies = func(path string) bool {
-		if _, e := stdPkgs[path]; e {
-			return false
-		}
-		return true
+		_, e := stdPkgs[path]
+		return !e
 	}
 	return c
 }

@@ -124,12 +124,6 @@ func anyInteresting(params *types.Tuple) bool {
 }
 
 func FromScope(scope *types.Scope, all bool) (map[string]string, map[string]string) {
-	signStr := func(sign *types.Signature) string {
-		if !anyInteresting(sign.Params()) {
-			return ""
-		}
-		return signString(sign)
-	}
 	ifaces := make(map[string]string)
 	ifaceFuncs := make(map[string]string)
 	funcs := make(map[string]string)
@@ -150,36 +144,33 @@ func FromScope(scope *types.Scope, all bool) (map[string]string, map[string]stri
 			for i := 0; i < x.NumMethods(); i++ {
 				f := x.Method(i)
 				sign := f.Type().(*types.Signature)
-				s := signStr(sign)
-				if s == "" {
+				if !anyInteresting(sign.Params()) {
 					continue
 				}
+				s := signString(sign)
 				if _, e := ifaceFuncs[s]; e {
 					continue
 				}
 				ifaceFuncs[s] = tn.Name() + "." + f.Name()
 			}
 			s := funcMapString(iface)
-			if _, e := ifaces[s]; e {
-				continue
+			if _, e := ifaces[s]; !e {
+				ifaces[s] = tn.Name()
 			}
-			ifaces[s] = tn.Name()
 		case *types.Signature:
-			s := signStr(x)
-			if s == "" {
+			if !anyInteresting(x.Params()) {
 				continue
 			}
-			if _, e := funcs[s]; e {
-				continue
+			s := signString(x)
+			if _, e := funcs[s]; !e {
+				funcs[s] = tn.Name()
 			}
-			funcs[s] = tn.Name()
 		}
 	}
 	for s, name := range ifaceFuncs {
-		if _, e := funcs[s]; e {
-			continue
+		if _, e := funcs[s]; !e {
+			funcs[s] = name
 		}
-		funcs[s] = name
 	}
 	return ifaces, funcs
 }

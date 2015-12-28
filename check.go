@@ -308,7 +308,6 @@ func (v *visitor) onCall(ce *ast.CallExpr) {
 	}
 	vr := v.variable(left)
 	vr.calls[sel.Sel.Name] = struct{}{}
-	return
 }
 
 func (v *visitor) funcEnded(sign *types.Signature) {
