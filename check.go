@@ -266,17 +266,6 @@ func (v *visitor) Visit(node ast.Node) ast.Visitor {
 	return v
 }
 
-func funcSignature(t types.Type) *types.Signature {
-	switch x := t.(type) {
-	case *types.Signature:
-		return x
-	case *types.Named:
-		return funcSignature(x.Underlying())
-	default:
-		return nil
-	}
-}
-
 func (v *visitor) onAssign(as *ast.AssignStmt) {
 	for i, e := range as.Rhs {
 		id, ok := e.(*ast.Ident)
@@ -292,6 +281,10 @@ func (v *visitor) onAssign(as *ast.AssignStmt) {
 }
 
 func (v *visitor) onCall(ce *ast.CallExpr) {
+	sign, ok := v.Types[ce.Fun].Type.(*types.Signature)
+	if !ok {
+		return
+	}
 	switch y := ce.Fun.(type) {
 	case *ast.Ident:
 		v.skipNext = true
@@ -299,10 +292,6 @@ func (v *visitor) onCall(ce *ast.CallExpr) {
 		if _, ok := y.X.(*ast.Ident); ok {
 			v.skipNext = true
 		}
-	}
-	sign := funcSignature(v.Types[ce.Fun].Type)
-	if sign == nil {
-		return
 	}
 	for i, e := range ce.Args {
 		if id, ok := e.(*ast.Ident); ok {
