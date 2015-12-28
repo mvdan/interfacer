@@ -27,12 +27,20 @@ func (l ByAlph) Swap(i, j int)      { l[i], l[j] = l[j], l[i] }
 
 var exported = regexp.MustCompile(`^[A-Z]`)
 
-func ifaceFuncMap(iface *types.Interface) map[string]string {
-	ifuncs := make(map[string]string, iface.NumMethods())
-	for i := 0; i < iface.NumMethods(); i++ {
-		f := iface.Method(i)
+type methoder interface {
+	NumMethods() int
+	Method(int) *types.Func
+}
+
+func methoderFuncMap(m methoder, skip bool) map[string]string {
+	ifuncs := make(map[string]string, m.NumMethods())
+	for i := 0; i < m.NumMethods(); i++ {
+		f := m.Method(i)
 		fname := f.Name()
 		if !exported.MatchString(fname) {
+			if skip {
+				continue
+			}
 			return nil
 		}
 		sign := f.Type().(*types.Signature)
@@ -41,31 +49,17 @@ func ifaceFuncMap(iface *types.Interface) map[string]string {
 	return ifuncs
 }
 
-func namedMethodMap(named *types.Named) map[string]string {
-	ifuncs := make(map[string]string)
-	for i := 0; i < named.NumMethods(); i++ {
-		f := named.Method(i)
-		fname := f.Name()
-		if !exported.MatchString(fname) {
-			continue
-		}
-		sign := f.Type().(*types.Signature)
-		ifuncs[fname] = signString(sign)
-	}
-	return ifuncs
-}
-
-func doMethoderType(t types.Type) map[string]string {
+func typeFuncMap(t types.Type) map[string]string {
 	switch x := t.(type) {
 	case *types.Pointer:
-		return doMethoderType(x.Elem())
+		return typeFuncMap(x.Elem())
 	case *types.Named:
 		if u, ok := x.Underlying().(*types.Interface); ok {
-			return doMethoderType(u)
+			return typeFuncMap(u)
 		}
-		return namedMethodMap(x)
+		return methoderFuncMap(x, true)
 	case *types.Interface:
-		return ifaceFuncMap(x)
+		return methoderFuncMap(x, false)
 	default:
 		return nil
 	}
@@ -157,7 +151,7 @@ func FromScope(scope *types.Scope, all bool) (map[string]string, map[string]stri
 		}
 		switch x := tn.Type().Underlying().(type) {
 		case *types.Interface:
-			iface := ifaceFuncMap(x)
+			iface := methoderFuncMap(x, true)
 			if len(iface) == 0 {
 				continue
 			}

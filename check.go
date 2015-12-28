@@ -33,7 +33,7 @@ func (v *visitor) interfaceMatching(obj types.Object, vr *variable) (string, str
 	if toDiscard(vr) {
 		return "", ""
 	}
-	allFuncs := doMethoderType(obj.Type())
+	allFuncs := typeFuncMap(obj.Type())
 	called := make(map[string]string, len(vr.calls))
 	for fname := range vr.calls {
 		called[fname] = allFuncs[fname]
@@ -48,7 +48,7 @@ func (v *visitor) interfaceMatching(obj types.Object, vr *variable) (string, str
 		if !ok {
 			return "", ""
 		}
-		asMethods := ifaceFuncMap(iface)
+		asMethods := methoderFuncMap(iface, false)
 		as := funcMapString(asMethods)
 		if !assignable(s, as, called, asMethods) {
 			return "", ""
@@ -363,7 +363,7 @@ func (v *visitor) paramWarn(obj types.Object, vr *variable) string {
 		if ifname == t.String() {
 			return ""
 		}
-		have := funcMapString(doMethoderType(t))
+		have := funcMapString(typeFuncMap(t))
 		if have == iftype {
 			return ""
 		}
