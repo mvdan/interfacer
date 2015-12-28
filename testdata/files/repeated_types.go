@@ -30,3 +30,5 @@ func (s st) FooBar(f *os.File) {}
 func FooWrong(s st) {
 	s.FooBar(nil)
 }
+
+type FooBarFunc func(f *os.File)
