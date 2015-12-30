@@ -1,9 +1,10 @@
 package def
 
-import (
-	"io"
-)
+type ReadCloser interface {
+	Read([]byte) (int, error)
+	Close() error
+}
 
-type FooFunc func(io.ReadCloser, int) int
+type FooFunc func(ReadCloser, int) int
 
 var SomeVar int = 3
