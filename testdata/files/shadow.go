@@ -1,9 +1,5 @@
 package foo
 
-import (
-	"io"
-)
-
 type FooCloser interface {
 	Foo()
 	Close() error

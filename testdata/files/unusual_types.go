@@ -24,3 +24,7 @@ func Slice(ints []int) {}
 func SliceIface(rcs []ReadCloser) {
 	rcs[1].Close()
 }
+
+func TypeConversion(i int) int64 {
+	return int64(i)
+}

@@ -1,2 +1,2 @@
 foo
-shadow.go:12:16: fc can be io.Closer
+shadow.go:8:16: fc can be io.Closer
