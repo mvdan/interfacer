@@ -1,1 +1,2 @@
 foo
+unusual_types.go:12:17: rc can be Closer

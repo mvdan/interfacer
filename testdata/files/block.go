@@ -1,21 +1,25 @@
 package foo
 
-import (
-	"io"
-)
-
-func If(s io.Seeker) error {
-	for i := int64(0); i < 10; i++ {
-		if _, err := s.Seek(i, 0); err != nil {
-			return err
-		}
-	}
-	return nil
+type Closer interface {
+	Close()
 }
 
-func IfWrong(rc io.ReadCloser) error {
-	if err := rc.Close(); err != nil {
-		return err
+type ReadCloser interface {
+	Closer
+	Read()
+}
+
+func ForIf(rc ReadCloser) {
+	for i := 0; i < 10; i++ {
+		if i%2 == 0 {
+			rc.Close()
+		}
 	}
-	return nil
+	rc.Read()
+}
+
+func IfWrong(rc ReadCloser) {
+	if 3 > 2 {
+		rc.Close()
+	}
 }

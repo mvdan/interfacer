@@ -1,2 +1,2 @@
 foo
-block.go:16:14: rc can be io.Closer
+block.go:21:14: rc can be Closer
