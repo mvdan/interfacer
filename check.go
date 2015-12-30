@@ -44,13 +44,18 @@ func (v *visitor) interfaceMatching(vr *types.Var, vu *varUsage) (string, string
 		return "", ""
 	}
 	for t := range vu.usedAs {
-		iface, ok := t.(*types.Interface)
-		if !ok {
-			return "", ""
-		}
-		asMethods := methoderFuncMap(iface, false)
-		as := funcMapString(asMethods)
-		if !assignable(s, as, called, asMethods) {
+		switch x := t.(type) {
+		case *types.Interface:
+			asMethods := methoderFuncMap(x, false)
+			as := funcMapString(asMethods)
+			if !assignable(s, as, called, asMethods) {
+				return "", ""
+			}
+		case *types.Basic:
+			if x.Kind() != types.UntypedNil {
+				return "", ""
+			}
+		default:
 			return "", ""
 		}
 	}
@@ -255,13 +260,17 @@ func (v *visitor) Visit(node ast.Node) ast.Visitor {
 		v.discard(x.X)
 	case *ast.UnaryExpr:
 		v.discard(x.X)
-	case *ast.BinaryExpr:
-		v.discard(x.X)
-		v.discard(x.Y)
 	case *ast.IndexExpr:
 		v.discard(x.X)
 	case *ast.IncDecStmt:
 		v.discard(x.X)
+	case *ast.BinaryExpr:
+		if id, ok := x.X.(*ast.Ident); ok {
+			v.addUsed(id, v.TypeOf(x.Y))
+		}
+		if id, ok := x.Y.(*ast.Ident); ok {
+			v.addUsed(id, v.TypeOf(x.X))
+		}
 	case *ast.AssignStmt:
 		v.onAssign(x)
 	case *ast.CallExpr:

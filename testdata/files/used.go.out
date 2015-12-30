@@ -4,3 +4,4 @@ used.go:35:20: s1 can be io.Closer
 used.go:49:20: s can be io.Closer
 used.go:68:16: bc can be io.Closer
 used.go:83:23: s can be BangCloser
+used.go:91:22: rc can be io.Closer
