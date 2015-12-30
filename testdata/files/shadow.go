@@ -4,10 +4,15 @@ import (
 	"io"
 )
 
-func ShadowArg(rc io.ReadCloser) {
-	rc.Close()
+type FooCloser interface {
+	Foo()
+	Close() error
+}
+
+func ShadowArg(fc FooCloser) {
+	fc.Close()
 	for {
-		rc := 3
-		println(rc + 1)
+		fc := 3
+		println(fc + 1)
 	}
 }

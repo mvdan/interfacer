@@ -25,3 +25,7 @@ func Bar(s st) {
 }
 
 type NonInterestingFunc func() error
+
+func NonInterestingCall() {
+	os.Exit(3)
+}

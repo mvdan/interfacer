@@ -1,7 +1,7 @@
 package foo
 
-import (
-	"flag"
-)
+func someFunc() error {
+	return nil
+}
 
-var verbose = flag.Bool("v", false, "be verbose")
+var globalErr = someFunc()

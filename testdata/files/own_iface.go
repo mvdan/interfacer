@@ -1,25 +1,25 @@
 package foo
 
-import (
-	"os"
-)
+type FooCloser interface {
+	Foo()
+	Close() error
+}
 
 type Barer interface {
-	Bar(f *os.File) int
+	Bar(fc FooCloser) int
 }
 
 type st struct{}
 
-func (s *st) Bar(f *os.File) int {
-	_ = f.Fd()
+func (s st) Bar(fc FooCloser) int {
 	return 2
 }
 
-func Foo(s *st) {
+func Foo(s st) {
 	_ = s.Bar(nil)
 }
 
-func Bar(f *os.File) int {
-	f.Close()
+func Bar(fc FooCloser) int {
+	fc.Close()
 	return 3
 }

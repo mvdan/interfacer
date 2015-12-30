@@ -1,3 +1,0 @@
-foo
-pkgs.go:13:15: s can be fmt.Stringer
-pkgs.go:17:12: s can be error

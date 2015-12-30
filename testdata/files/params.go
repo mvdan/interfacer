@@ -1,7 +1,6 @@
 package foo
 
 import (
-	"fmt"
 	"io"
 )
 
@@ -87,7 +86,7 @@ func ArgsMismatchNum(a argBad) {
 }
 
 func ArgsExtra() {
-	fmt.Printf("%d %v\n", 12, nil)
+	println(12, "foo")
 }
 
 func BuiltinExtra(s string) {

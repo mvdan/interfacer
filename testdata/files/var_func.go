@@ -12,7 +12,7 @@ var BasicWrong = func(rc io.ReadCloser) {
 	rc.Close()
 }
 
-type st struct {}
+type st struct{}
 
 func (s st) Close() error {
 	return nil
