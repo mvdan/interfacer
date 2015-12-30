@@ -391,6 +391,9 @@ func (v *visitor) paramWarn(vr *types.Var, vu *varUsage) string {
 		fname = filepath.Join(v.Pkg.Path(), filepath.Base(fname))
 	}
 	pname := v.Pkg.Name()
+	if strings.HasPrefix(ifname, "./") {
+		ifname = ifname[2:]
+	}
 	if strings.HasPrefix(ifname, pname+".") {
 		ifname = ifname[len(pname)+1:]
 	}
