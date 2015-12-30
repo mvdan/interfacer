@@ -1,2 +1,2 @@
 foo
-repeated_types.go:30:15: s can be MyIface
+repeated_types.go:32:15: im can be MyIface

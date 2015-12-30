@@ -1,6 +1,6 @@
 foo
-used.go:21:15: f can be io.Closer
-used.go:28:20: f1 can be io.Closer
-used.go:42:20: f can be io.Closer
-used.go:61:16: bc can be io.Closer
+used.go:28:15: s can be io.Closer
+used.go:35:20: s1 can be io.Closer
+used.go:49:20: s can be io.Closer
+used.go:68:16: bc can be io.Closer
 used.go:83:23: s can be BangCloser

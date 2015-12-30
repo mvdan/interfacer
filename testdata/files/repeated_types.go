@@ -1,34 +1,36 @@
 package foo
 
-import (
-	"os"
-)
-
 type Namer interface {
 	Name() string
 }
 
-type MyWalkFunc func(path string, info os.FileInfo, err error) error
-type MyWalkFunc2 func(path string, info os.FileInfo, err error) error
+type st struct{}
 
-func Impl(path string, info os.FileInfo, err error) error {
-	info.Name()
+func (s st) Name() string {
+	return ""
+}
+
+type MyPathFunc func(path string, s st) error
+type MyPathFunc2 func(path string, s st) error
+
+func Impl(path string, s st) error {
+	s.Name()
 	return nil
 }
 
 type MyIface interface {
-	FooBar(f *os.File)
+	FooBar(s *st)
 }
 type MyIface2 interface {
 	MyIface
 }
 
-type st struct{}
+type impl struct{}
 
-func (s st) FooBar(f *os.File) {}
+func (im impl) FooBar(s *st) {}
 
-func FooWrong(s st) {
-	s.FooBar(nil)
+func FooWrong(im impl) {
+	im.FooBar(nil)
 }
 
-type FooBarFunc func(f *os.File)
+type FooBarFunc func(s st)

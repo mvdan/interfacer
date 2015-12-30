@@ -2,47 +2,54 @@ package foo
 
 import (
 	"io"
-	"os"
 )
+
+type st struct{}
+
+func (s st) Bang() {}
+func (s st) Close() error {
+	return nil
+}
+func (s st) Other() {}
 
 func FooCloser(c io.Closer) {
 	c.Close()
 }
 
-func FooFile(f *os.File) {
-	f.Stat()
+func FooSt(s st) {
+	s.Other()
 }
 
-func Bar(f *os.File) {
-	f.Close()
-	FooFile(f)
+func Bar(s st) {
+	s.Close()
+	FooSt(s)
 }
 
-func BarWrong(f *os.File) {
-	f.Close()
-	FooCloser(f)
+func BarWrong(s st) {
+	s.Close()
+	FooCloser(s)
 }
 
 func Extra(n int, cs ...io.Closer) {}
 
-func ArgExtraWrong(f1 *os.File) {
-	var f2 *os.File
-	f1.Close()
-	f2.Close()
-	Extra(3, f1, f2)
+func ArgExtraWrong(s1 st) {
+	var s2 st
+	s1.Close()
+	s2.Close()
+	Extra(3, s1, s2)
 }
 
-func Assigned(f *os.File) {
-	f.Close()
-	var f2 *os.File
-	f2 = f
-	println(f2)
+func Assigned(s st) {
+	s.Close()
+	var s2 st
+	s2 = s
+	println(s2)
 }
 
-func AssignedWrong(f *os.File) {
-	f.Close()
+func AssignedWrong(s st) {
+	s.Close()
 	var c io.Closer
-	c = f
+	c = s
 	println(c)
 }
 
@@ -60,13 +67,6 @@ func Bang(bc BangCloser) {
 
 func BangWrong(bc BangCloser) {
 	bc.Close()
-}
-
-type st struct{}
-
-func (s st) Bang() {}
-func (s st) Close() error {
-	return nil
 }
 
 type Banger interface {

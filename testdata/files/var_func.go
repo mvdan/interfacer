@@ -2,7 +2,6 @@ package foo
 
 import (
 	"io"
-	"os"
 )
 
 var Basic = func(c io.Closer) {
@@ -13,13 +12,19 @@ var BasicWrong = func(rc io.ReadCloser) {
 	rc.Close()
 }
 
-type MyFunc func(rc *os.File, err error) bool
+type st struct {}
 
-var MyFuncImpl = func(f *os.File, err error) bool {
-	f.Close()
+func (s st) Close() error {
+	return nil
+}
+
+type MyFunc func(s st, err error) bool
+
+var MyFuncImpl = func(s st, err error) bool {
+	s.Close()
 	return false
 }
 
-var MyFuncWrong = func(f *os.File, err error) {
-	f.Close()
+var MyFuncWrong = func(s st, err error) {
+	s.Close()
 }
