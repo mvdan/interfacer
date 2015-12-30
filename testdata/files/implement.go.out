@@ -1,3 +1,2 @@
 foo
-implement.go:12:21: w can be io.Writer
-implement.go:23:18: f can be io.Closer
+implement.go:14:18: f can be io.Closer

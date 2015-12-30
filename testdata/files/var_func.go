@@ -2,7 +2,7 @@ package foo
 
 import (
 	"io"
-	"net/http"
+	"os"
 )
 
 var Basic = func(c io.Closer) {
@@ -13,6 +13,13 @@ var BasicWrong = func(rc io.ReadCloser) {
 	rc.Close()
 }
 
-var serveHTTP = func(w http.ResponseWriter, r *http.Request) {
-	w.Write([]byte{})
+type MyFunc func(rc *os.File, err error) bool
+
+var MyFuncImpl = func(f *os.File, err error) bool {
+	f.Close()
+	return false
+}
+
+var MyFuncWrong = func(f *os.File, err error) {
+	f.Close()
 }

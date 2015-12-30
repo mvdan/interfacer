@@ -1,9 +1,9 @@
 package foo
 
-import (
-	"os"
-)
+type st struct {
+	err error
+}
 
-func Foo(se os.SyscallError) {
-	println(se.Err.Error())
+func Foo(s st) {
+	println(s.err.Error())
 }
