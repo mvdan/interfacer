@@ -323,6 +323,7 @@ func (v *visitor) funcEnded(sign *types.Signature) {
 		}
 	}
 	v.warns = nil
+	v.vars = make(map[types.Object]*variable)
 }
 
 func (v *visitor) funcWarns(sign *types.Signature) []string {
