@@ -38,3 +38,5 @@ func WalkFuncImpl(path string, info os.FileInfo, err error) error {
 func WalkFuncImplWrong(path string, info os.FileInfo, err error) {
 	info.Name()
 }
+
+type MyWalkFunc func(path string, info os.FileInfo, err error) error

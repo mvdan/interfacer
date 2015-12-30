@@ -16,6 +16,8 @@ type st struct{}
 
 func (s st) Foo(f string) {}
 
+func (s st) nonExported() {}
+
 func Bar(s st) {
 	s.Foo("")
 }
