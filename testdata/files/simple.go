@@ -1,26 +1,31 @@
 package foo
 
-import (
-	"io"
-)
-
 func Empty() {
 }
 
-func Basic(c io.Closer) {
+type Closer interface {
+	Close()
+}
+
+type ReadCloser interface {
+	Closer
+	Read()
+}
+
+func Basic(c Closer) {
 	c.Close()
 }
 
-func BasicWrong(rc io.ReadCloser) {
+func BasicWrong(rc ReadCloser) {
 	rc.Close()
 }
 
 type st struct{}
 
-func (s *st) Basic(c io.Closer) {
+func (s *st) Basic(c Closer) {
 	c.Close()
 }
 
-func (s *st) BasicWrong(rc io.ReadCloser) {
+func (s *st) BasicWrong(rc ReadCloser) {
 	rc.Close()
 }

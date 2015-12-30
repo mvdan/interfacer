@@ -1,9 +1,21 @@
 package skip
 
-import (
-	"io"
-)
+func Empty() {
+}
 
-func BasicWrong(rc io.ReadCloser) {
+type Closer interface {
+	Close()
+}
+
+type ReadCloser interface {
+	Closer
+	Read()
+}
+
+func Basic(c Closer) {
+	c.Close()
+}
+
+func BasicWrong(rc ReadCloser) {
 	rc.Close()
 }

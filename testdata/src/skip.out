@@ -1,2 +1,2 @@
 skip
-skip/simple.go:7:17: rc can be io.Closer
+skip/simple.go:19:17: rc can be Closer

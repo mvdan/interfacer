@@ -1,0 +1,3 @@
+foo
+import.go:14:17: rc can be io.Closer
+import.go:24:25: rc can be io.Closer
