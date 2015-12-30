@@ -1,28 +1,37 @@
 package foo
 
-import (
-	"io"
-)
+type Reader interface {
+	Read(p []byte) (n int, err error)
+}
+
+type Seeker interface {
+	Seek(int64, int) (int64, error)
+}
+
+type ReadSeeker interface {
+	Reader
+	Seeker
+}
 
 const offset = 1
 
-func Const(s io.Seeker) {
+func Const(s Seeker) {
 	var whence int = 0
 	s.Seek(offset, whence)
 }
 
-func ConstWrong(rs io.ReadSeeker) {
+func ConstWrong(rs ReadSeeker) {
 	var whence int = 0
 	rs.Seek(offset, whence)
 }
 
-func LocalConst(s io.Seeker) {
+func LocalConst(s Seeker) {
 	const offset2 = 2
 	var whence int = 0
 	s.Seek(offset2, whence)
 }
 
-func LocalConstWrong(rs io.ReadSeeker) {
+func LocalConstWrong(rs ReadSeeker) {
 	const offset2 = 2
 	var whence int = 0
 	rs.Seek(offset2, whence)

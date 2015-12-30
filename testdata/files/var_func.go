@@ -1,14 +1,19 @@
 package foo
 
-import (
-	"io"
-)
+type Closer interface {
+	Close()
+}
 
-var Basic = func(c io.Closer) {
+type ReadCloser interface {
+	Closer
+	Read()
+}
+
+var Basic = func(c Closer) {
 	c.Close()
 }
 
-var BasicWrong = func(rc io.ReadCloser) {
+var BasicWrong = func(rc ReadCloser) {
 	rc.Close()
 }
 

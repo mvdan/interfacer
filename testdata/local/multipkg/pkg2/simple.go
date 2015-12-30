@@ -1,9 +1,14 @@
 package pkg2
 
-import (
-	"io"
-)
+type Closer interface {
+	Close()
+}
 
-func BasicWrong(rc io.ReadCloser) {
+type ReadCloser interface {
+	Closer
+	Read()
+}
+
+func BasicWrong(rc ReadCloser) {
 	rc.Close()
 }

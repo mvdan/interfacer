@@ -1,57 +1,75 @@
 package foo
 
-import (
-	"io"
-)
+type Closer interface {
+	Close() error
+}
 
-func Args(rc io.ReadCloser) {
+type Reader interface {
+	Read(p []byte) (n int, err error)
+}
+
+type ReadCloser interface {
+	Reader
+	Closer
+}
+
+type Seeker interface {
+	Seek(int64, int) (int64, error)
+}
+
+type ReadSeeker interface {
+	Reader
+	Seeker
+}
+
+func Args(rc ReadCloser) {
 	b := make([]byte, 10)
 	rc.Read(b)
 	rc.Close()
 }
 
-func ArgsWrong(rc io.ReadCloser) {
+func ArgsWrong(rc ReadCloser) {
 	b := make([]byte, 10)
 	rc.Read(b)
 }
 
-func ArgsLit(rs io.ReadSeeker) {
+func ArgsLit(rs ReadSeeker) {
 	b := make([]byte, 10)
 	rs.Read(b)
 	rs.Seek(20, 0)
 }
 
-func ArgsLitWrong(rs io.ReadSeeker) {
+func ArgsLitWrong(rs ReadSeeker) {
 	rs.Seek(20, 0)
 }
 
-func ArgsLit2(rs io.ReadSeeker) {
+func ArgsLit2(rs ReadSeeker) {
 	rs.Read([]byte{})
 	rs.Seek(20, 0)
 }
 
-func ArgsLit2Wrong(rs io.ReadSeeker) {
+func ArgsLit2Wrong(rs ReadSeeker) {
 	rs.Read([]byte{})
 }
 
-func ArgsNil(rs io.ReadSeeker) {
+func ArgsNil(rs ReadSeeker) {
 	rs.Read(nil)
 	rs.Seek(20, 0)
 }
 
-func ArgsNilWrong(rs io.ReadSeeker) {
+func ArgsNilWrong(rs ReadSeeker) {
 	rs.Read(nil)
 }
 
 type st struct{}
 
-func (s st) Args(rc io.ReadCloser) {
+func (s st) Args(rc ReadCloser) {
 	var b []byte
 	rc.Read(b)
 	rc.Close()
 }
 
-func (s st) ArgsWrong(rc io.ReadCloser) {
+func (s st) ArgsWrong(rc ReadCloser) {
 	b := make([]byte, 10)
 	rc.Read(b)
 }

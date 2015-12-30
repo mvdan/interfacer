@@ -1,2 +1,2 @@
 foo
-results.go:14:19: rc can be io.Closer
+results.go:18:19: rc can be io.Closer

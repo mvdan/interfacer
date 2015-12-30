@@ -1,3 +1,3 @@
 foo
-var_func.go:11:23: rc can be io.Closer
-var_func.go:28:24: s can be io.Closer
+var_func.go:16:23: rc can be Closer
+var_func.go:33:24: s can be io.Closer

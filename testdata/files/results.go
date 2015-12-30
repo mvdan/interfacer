@@ -1,28 +1,32 @@
 package foo
 
-import (
-	"io"
-)
+type Closer interface {
+	Close() error
+}
 
-func Results(rc io.ReadCloser) {
-	b := make([]byte, 10)
-	_, _ = rc.Read(b)
+type ReadCloser interface {
+	Closer
+	Read() (int, error)
+}
+
+func Results(rc ReadCloser) {
+	_, _ = rc.Read()
 	err := rc.Close()
 	println(err)
 }
 
-func ResultsWrong(rc io.ReadCloser) {
+func ResultsWrong(rc ReadCloser) {
 	err := rc.Close()
 	println(err)
 }
 
 type argBad struct{}
 
-func (a argBad) Read(p []byte) (string, error) {
+func (a argBad) Read() (string, error) {
 	return "", nil
 }
 
-func (a argBad) Write(p []byte) error {
+func (a argBad) Write() error {
 	return nil
 }
 
@@ -31,13 +35,11 @@ func (a argBad) Close() int {
 }
 
 func ResultsMismatchNumber(a argBad) {
-	var b []byte
-	_ = a.Write(b)
+	_ = a.Write()
 }
 
 func ResultsMismatchType(a argBad) {
-	b := make([]byte, 10)
-	s, _ := a.Read(b)
+	s, _ := a.Read()
 	println(s)
 }
 
