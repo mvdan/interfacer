@@ -1,5 +1,5 @@
 foo
-nested_func.go:20:17: rc can be io.Closer
-nested_func.go:26:18: rc can be io.Closer
-nested_func.go:31:21: rc can be io.Reader
-nested_func.go:32:12: rc can be io.Closer
+nested_func.go:29:17: rc can be io.Closer
+nested_func.go:35:18: rc can be io.Closer
+nested_func.go:40:21: rc can be io.Reader
+nested_func.go:41:12: rc can be io.Closer

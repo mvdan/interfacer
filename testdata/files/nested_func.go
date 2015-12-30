@@ -1,35 +1,44 @@
 package foo
 
-import (
-	"io"
-)
+type Closer interface {
+	Close() error
+}
 
-func FooGo(rc io.ReadCloser) {
+type Reader interface {
+	Read(p []byte) (n int, err error)
+}
+
+type ReadCloser interface {
+	Reader
+	Closer
+}
+
+func FooGo(rc ReadCloser) {
 	rc.Read(nil)
 	go func() {
 		rc.Close()
 	}()
 }
 
-func FooArg(rc io.ReadCloser) {
+func FooArg(rc ReadCloser) {
 	rc.Read(nil)
 	f := func(err error) {}
 	f(rc.Close())
 }
 
-func FooGoWrong(rc io.ReadCloser) {
+func FooGoWrong(rc ReadCloser) {
 	go func() {
 		rc.Close()
 	}()
 }
 
-func FooArgWrong(rc io.ReadCloser) {
+func FooArgWrong(rc ReadCloser) {
 	f := func(err error) {}
 	f(rc.Close())
 }
 
-func FooNestedWrong(rc io.ReadCloser) {
-	f := func(rc io.ReadCloser) {
+func FooNestedWrong(rc ReadCloser) {
+	f := func(rc ReadCloser) {
 		rc.Close()
 	}
 	f(nil)

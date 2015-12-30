@@ -1,8 +1,17 @@
 package foo
 
-import (
-	"io"
-)
+type Closer interface {
+	Close() error
+}
+
+type Reader interface {
+	Read(p []byte) (n int, err error)
+}
+
+type ReadCloser interface {
+	Reader
+	Closer
+}
 
 type st struct{}
 
@@ -12,7 +21,7 @@ func (s st) Close() error {
 }
 func (s st) Other() {}
 
-func FooCloser(c io.Closer) {
+func FooCloser(c Closer) {
 	c.Close()
 }
 
@@ -30,7 +39,7 @@ func BarWrong(s st) {
 	FooCloser(s)
 }
 
-func Extra(n int, cs ...io.Closer) {}
+func Extra(n int, cs ...Closer) {}
 
 func ArgExtraWrong(s1 st) {
 	var s2 st
@@ -48,13 +57,13 @@ func Assigned(s st) {
 
 func AssignedWrong(s st) {
 	s.Close()
-	var c io.Closer
+	var c Closer
 	c = s
 	println(c)
 }
 
 type BangCloser interface {
-	io.Closer
+	Closer
 	Bang()
 }
 
@@ -83,12 +92,12 @@ func BangLighter(s st) {
 func BangLighterWrong(s st) {
 	s.Bang()
 	s.Close()
-	var c io.Closer
+	var c Closer
 	c = s
 	c.Close()
 }
 
-func CompareNilWrong(rc io.ReadCloser) {
+func CompareNilWrong(rc ReadCloser) {
 	if rc != nil {
 		rc.Close()
 	}
