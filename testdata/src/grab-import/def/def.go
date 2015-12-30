@@ -8,3 +8,5 @@ type ReadCloser interface {
 type FooFunc func(ReadCloser, int) int
 
 var SomeVar int = 3
+
+func SomeFunc() {}

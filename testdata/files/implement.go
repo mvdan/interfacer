@@ -1,31 +1,21 @@
 package foo
 
-import (
-	"os"
-)
-
-type MyWalkFunc func(string, os.FileInfo, error) error
-
-type Namer interface {
-	Name() string
+type Closer interface {
+	Close()
 }
 
-func WalkFuncImpl(path string, info os.FileInfo, err error) error {
-	info.Name()
-	return nil
+type ReadCloser interface {
+	Closer
+	Read()
 }
 
-func WalkFuncImplWrong(path string, info os.FileInfo, err error) {
-	info.Name()
-}
+type MyFunc func(rc ReadCloser, err error) bool
 
-type MyFunc func(rc *os.File, err error) bool
-
-func MyFuncImpl(f *os.File, err error) bool {
-	f.Close()
+func MyFuncImpl(rc ReadCloser, err error) bool {
+	rc.Close()
 	return false
 }
 
-func MyFuncWrong(f *os.File, err error) {
-	f.Close()
+func MyFuncWrong(rc ReadCloser, err error) {
+	rc.Close()
 }

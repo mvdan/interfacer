@@ -1,3 +1,2 @@
 foo
-implement.go:18:37: info can be Namer
-implement.go:29:18: f can be io.Closer
+implement.go:19:18: rc can be Closer
