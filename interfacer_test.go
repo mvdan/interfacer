@@ -145,12 +145,6 @@ func runFileTests(t *testing.T, paths ...string) {
 	}()
 	if len(paths) == 0 {
 		paths = inputPaths(t, "*")
-		for _, p := range inputPaths(t, "*") {
-			if strings.HasSuffix(p, ".out") || strings.HasSuffix(p, ".err") {
-				continue
-			}
-			paths = append(paths, p)
-		}
 	}
 	for _, p := range paths {
 		doTest(t, p)
