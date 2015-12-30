@@ -52,14 +52,14 @@ func Assigned(s st) {
 	s.Close()
 	var s2 st
 	s2 = s
-	println(s2)
+	_ = s2
 }
 
 func AssignedWrong(s st) {
 	s.Close()
 	var c Closer
 	c = s
-	println(c)
+	_ = c
 }
 
 type BangCloser interface {
