@@ -17,11 +17,11 @@ import (
 	"golang.org/x/tools/go/types"
 )
 
-func toDiscard(vr *variable) bool {
-	if vr.discard {
+func toDiscard(vu *varUsage) bool {
+	if vu.discard {
 		return true
 	}
-	for to := range vr.assigned {
+	for to := range vu.assigned {
 		if toDiscard(to) {
 			return true
 		}
@@ -29,13 +29,13 @@ func toDiscard(vr *variable) bool {
 	return false
 }
 
-func (v *visitor) interfaceMatching(obj types.Object, vr *variable) (string, string) {
-	if toDiscard(vr) {
+func (v *visitor) interfaceMatching(vr *types.Var, vu *varUsage) (string, string) {
+	if toDiscard(vu) {
 		return "", ""
 	}
-	allFuncs := typeFuncMap(obj.Type())
-	called := make(map[string]string, len(vr.calls))
-	for fname := range vr.calls {
+	allFuncs := typeFuncMap(vr.Type())
+	called := make(map[string]string, len(vu.calls))
+	for fname := range vu.calls {
 		called[fname] = allFuncs[fname]
 	}
 	s := funcMapString(called)
@@ -43,7 +43,7 @@ func (v *visitor) interfaceMatching(obj types.Object, vr *variable) (string, str
 	if name == "" {
 		return "", ""
 	}
-	for t := range vr.usedAs {
+	for t := range vu.usedAs {
 		iface, ok := t.(*types.Interface)
 		if !ok {
 			return "", ""
@@ -126,7 +126,7 @@ func CheckArgs(args []string, w io.Writer, verbose bool) error {
 			PackageInfo: info,
 			w:           w,
 			fset:        prog.Fset,
-			vars:        make(map[types.Object]*variable),
+			vars:        make(map[*types.Var]*varUsage),
 		}
 		for _, f := range info.Files {
 			ast.Walk(v, f)
@@ -135,12 +135,12 @@ func CheckArgs(args []string, w io.Writer, verbose bool) error {
 	return nil
 }
 
-type variable struct {
+type varUsage struct {
 	calls   map[string]struct{}
 	usedAs  map[types.Type]struct{}
 	discard bool
 
-	assigned map[*variable]struct{}
+	assigned map[*varUsage]struct{}
 }
 
 type visitor struct {
@@ -153,7 +153,7 @@ type visitor struct {
 	warns [][]string
 	level int
 
-	vars map[types.Object]*variable
+	vars map[*types.Var]*varUsage
 
 	skipNext bool
 }
@@ -177,31 +177,42 @@ func paramType(sign *types.Signature, i int) types.Type {
 	}
 }
 
-func (v *visitor) variable(id *ast.Ident) *variable {
-	obj := v.ObjectOf(id)
-	if vr, e := v.vars[obj]; e {
-		return vr
+func (v *visitor) varUsage(id *ast.Ident) *varUsage {
+	vr, ok := v.ObjectOf(id).(*types.Var)
+	if !ok {
+		return nil
 	}
-	vr := &variable{
+	if vu, e := v.vars[vr]; e {
+		return vu
+	}
+	vu := &varUsage{
 		calls:    make(map[string]struct{}),
 		usedAs:   make(map[types.Type]struct{}),
-		assigned: make(map[*variable]struct{}),
+		assigned: make(map[*varUsage]struct{}),
 	}
-	v.vars[obj] = vr
-	return vr
+	v.vars[vr] = vu
+	return vu
 }
 
 func (v *visitor) addUsed(id *ast.Ident, as types.Type) {
 	if as == nil {
 		return
 	}
-	vr := v.variable(id)
-	vr.usedAs[as.Underlying()] = struct{}{}
+	vu := v.varUsage(id)
+	if vu == nil {
+		// not a variable
+		return
+	}
+	vu.usedAs[as.Underlying()] = struct{}{}
 }
 
 func (v *visitor) addAssign(to, from *ast.Ident) {
-	pto := v.variable(to)
-	pfrom := v.variable(from)
+	pto := v.varUsage(to)
+	pfrom := v.varUsage(from)
+	if pto == nil || pfrom == nil {
+		// either isn't a variable
+		return
+	}
 	pfrom.assigned[pto] = struct{}{}
 }
 
@@ -210,8 +221,12 @@ func (v *visitor) discard(e ast.Expr) {
 	if !ok {
 		return
 	}
-	vr := v.variable(id)
-	vr.discard = true
+	vu := v.varUsage(id)
+	if vu == nil {
+		// not a variable
+		return
+	}
+	vu.discard = true
 }
 
 func (v *visitor) implementsIface(sign *types.Signature) bool {
@@ -306,8 +321,12 @@ func (v *visitor) onCall(ce *ast.CallExpr) {
 	if !ok {
 		return
 	}
-	vr := v.variable(left)
-	vr.calls[sel.Sel.Name] = struct{}{}
+	vu := v.varUsage(left)
+	if vu == nil {
+		// not a variable
+		return
+	}
+	vu.calls[sel.Sel.Name] = struct{}{}
 }
 
 func (v *visitor) funcEnded(sign *types.Signature) {
@@ -323,31 +342,31 @@ func (v *visitor) funcEnded(sign *types.Signature) {
 		}
 	}
 	v.warns = nil
-	v.vars = make(map[types.Object]*variable)
+	v.vars = make(map[*types.Var]*varUsage)
 }
 
 func (v *visitor) funcWarns(sign *types.Signature) []string {
 	var warns []string
 	params := sign.Params()
 	for i := 0; i < params.Len(); i++ {
-		obj := params.At(i)
-		vr := v.vars[obj]
-		if vr == nil {
+		vr := params.At(i)
+		vu := v.vars[vr]
+		if vu == nil {
 			continue
 		}
-		if warn := v.paramWarn(obj, vr); warn != "" {
+		if warn := v.paramWarn(vr, vu); warn != "" {
 			warns = append(warns, warn)
 		}
 	}
 	return warns
 }
 
-func (v *visitor) paramWarn(obj types.Object, vr *variable) string {
-	ifname, iftype := v.interfaceMatching(obj, vr)
+func (v *visitor) paramWarn(vr *types.Var, vu *varUsage) string {
+	ifname, iftype := v.interfaceMatching(vr, vu)
 	if ifname == "" {
 		return ""
 	}
-	t := obj.Type()
+	t := vr.Type()
 	if _, haveIface := t.Underlying().(*types.Interface); haveIface {
 		if ifname == t.String() {
 			return ""
@@ -357,7 +376,7 @@ func (v *visitor) paramWarn(obj types.Object, vr *variable) string {
 			return ""
 		}
 	}
-	pos := v.fset.Position(obj.Pos())
+	pos := v.fset.Position(vr.Pos())
 	fname := pos.Filename
 	if fname[0] == '/' {
 		fname = filepath.Join(v.Pkg.Path(), filepath.Base(fname))
@@ -367,5 +386,5 @@ func (v *visitor) paramWarn(obj types.Object, vr *variable) string {
 		ifname = ifname[len(pname)+1:]
 	}
 	return fmt.Sprintf("%s:%d:%d: %s can be %s",
-		fname, pos.Line, pos.Column, obj.Name(), ifname)
+		fname, pos.Line, pos.Column, vr.Name(), ifname)
 }

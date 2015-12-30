@@ -27,3 +27,9 @@ func LocalConstWrong(rs io.ReadSeeker) {
 	var whence int = 0
 	rs.Seek(offset2, whence)
 }
+
+func AssignFromConst() {
+	var i int
+	i = offset
+	println(i)
+}
