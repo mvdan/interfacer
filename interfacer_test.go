@@ -93,8 +93,13 @@ func doTestWant(t *testing.T, name, exp string, wantErr bool, args ...string) {
 		return
 	}
 	var b bytes.Buffer
-	if len(args) == 0 {
+	switch len(args) {
+	case 0:
 		args = []string{name}
+	case 1:
+		if args[0] == "" {
+			args = nil
+		}
 	}
 	err := CheckArgs(args, &b, true)
 	exp = endNewline(exp)
@@ -170,6 +175,7 @@ func runLocalTests(t *testing.T, paths ...string) {
 	for _, p := range paths {
 		doTest(t, p)
 	}
+	doTestWant(t, "no-args", ".", false, "")
 }
 
 func runNonlocalTests(t *testing.T) {
