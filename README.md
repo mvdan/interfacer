@@ -75,3 +75,9 @@ this new type also satisfies all the uses of this parameter in
 assignments and calls.
 
 If any parameter is still standing, we found a match.
+
+### Known issues
+
+* No vendor support until Go 1.6 lands. This is because `go/loader` has
+  no support for it in Go 1.5, in turn because `go/build` in 1.5 does
+  not have the necessary parts yet. See #10.
