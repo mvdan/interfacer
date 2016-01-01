@@ -1,0 +1,2 @@
+foo
+compare.go:16:17: rc can be io.Closer

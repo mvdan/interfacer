@@ -96,9 +96,3 @@ func BangLighterWrong(s st) {
 	c = s
 	c.Close()
 }
-
-func CompareNilWrong(rc ReadCloser) {
-	if rc != nil {
-		rc.Close()
-	}
-}
