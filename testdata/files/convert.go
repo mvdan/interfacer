@@ -18,5 +18,3 @@ func ImplicitComparisonConvert(m mint) {
 		m.Close()
 	}
 }
-
-// complex type lit

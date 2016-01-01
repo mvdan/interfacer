@@ -264,6 +264,8 @@ func (v *visitor) Visit(node ast.Node) ast.Visitor {
 		v.onBinary(x)
 	case *ast.AssignStmt:
 		v.onAssign(x)
+	case *ast.KeyValueExpr:
+		v.onKeyValue(x)
 	case *ast.CallExpr:
 		v.onCall(x)
 	case nil:
@@ -302,6 +304,14 @@ func (v *visitor) onAssign(as *ast.AssignStmt) {
 			v.addAssign(lid, id)
 		}
 	}
+}
+
+func (v *visitor) onKeyValue(kv *ast.KeyValueExpr) {
+	id, ok := kv.Value.(*ast.Ident)
+	if !ok {
+		return
+	}
+	v.addUsed(id, v.TypeOf(kv.Key))
 }
 
 func (v *visitor) onCall(ce *ast.CallExpr) {
