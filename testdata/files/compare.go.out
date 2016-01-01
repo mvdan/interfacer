@@ -1,4 +1,6 @@
 foo
 compare.go:16:17: rc can be io.Closer
 compare.go:22:19: rc can be io.Closer
-compare.go:34:20: m can be io.Closer
+compare.go:28:23: rc can be io.Closer
+compare.go:40:20: m can be io.Closer
+compare.go:46:23: m can be io.Closer

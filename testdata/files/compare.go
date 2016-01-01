@@ -25,6 +25,12 @@ func CompareIface(rc ReadCloser) {
 	}
 }
 
+func CompareIfaceDiff(rc ReadCloser) {
+	if rc != Reader(nil) {
+		rc.Close()
+	}
+}
+
 type mint int
 
 func (m mint) Close() error {
@@ -33,6 +39,13 @@ func (m mint) Close() error {
 
 func CompareStruct(m mint) {
 	if m != mint(3) {
+		m.Close()
+	}
+}
+
+func CompareStructVar(m mint) {
+	m2 := mint(2)
+	if m == m2 {
 		m.Close()
 	}
 }
