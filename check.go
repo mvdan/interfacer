@@ -51,10 +51,6 @@ func (v *visitor) interfaceMatching(vr *types.Var, vu *varUsage) (string, string
 			if !assignable(s, as, called, asMethods) {
 				return "", ""
 			}
-		case *types.Basic:
-			if x.Kind() != types.UntypedNil {
-				return "", ""
-			}
 		default:
 			return "", ""
 		}
@@ -265,12 +261,8 @@ func (v *visitor) Visit(node ast.Node) ast.Visitor {
 	case *ast.IncDecStmt:
 		v.discard(x.X)
 	case *ast.BinaryExpr:
-		if id, ok := x.X.(*ast.Ident); ok {
-			v.addUsed(id, v.TypeOf(x.Y))
-		}
-		if id, ok := x.Y.(*ast.Ident); ok {
-			v.addUsed(id, v.TypeOf(x.X))
-		}
+		v.onBinarySide(x.X, x.Y)
+		v.onBinarySide(x.Y, x.X)
 	case *ast.AssignStmt:
 		v.onAssign(x)
 	case *ast.CallExpr:
@@ -288,6 +280,21 @@ func (v *visitor) Visit(node ast.Node) ast.Visitor {
 		}
 	}
 	return v
+}
+
+func (v *visitor) onBinarySide(x, y ast.Expr) {
+	if _, ok := x.(*ast.Ident); !ok {
+		return
+	}
+	switch u := v.TypeOf(y).(type) {
+	case *types.Basic:
+		if u.Kind() == types.UntypedNil {
+			break
+		}
+		v.discard(x)
+	case *types.Named:
+		v.discard(x)
+	}
 }
 
 func (v *visitor) onAssign(as *ast.AssignStmt) {

@@ -25,14 +25,14 @@ func CompareIface(rc ReadCloser) {
 	}
 }
 
-type st int
+type mint int
 
-func (s st) Close() error {
+func (m mint) Close() error {
 	return nil
 }
 
-func CompareStruct(s st) {
-	if s != st(3) {
-		s.Close()
+func CompareStruct(m mint) {
+	if m != mint(3) {
+		m.Close()
 	}
 }
