@@ -266,6 +266,8 @@ func (v *visitor) Visit(node ast.Node) ast.Visitor {
 		v.onAssign(x)
 	case *ast.KeyValueExpr:
 		v.onKeyValue(x)
+	case *ast.CompositeLit:
+		v.onComposite(x)
 	case *ast.CallExpr:
 		v.onCall(x)
 	case nil:
@@ -307,11 +309,20 @@ func (v *visitor) onAssign(as *ast.AssignStmt) {
 }
 
 func (v *visitor) onKeyValue(kv *ast.KeyValueExpr) {
-	id, ok := kv.Value.(*ast.Ident)
-	if !ok {
-		return
+	if id, ok := kv.Key.(*ast.Ident); ok {
+		v.addUsed(id, v.TypeOf(kv.Value))
 	}
-	v.addUsed(id, v.TypeOf(kv.Key))
+	if id, ok := kv.Value.(*ast.Ident); ok {
+		v.addUsed(id, v.TypeOf(kv.Key))
+	}
+}
+
+func (v *visitor) onComposite(cl *ast.CompositeLit) {
+	for _, e := range cl.Elts {
+		if kv, ok := e.(*ast.KeyValueExpr); ok {
+			v.onKeyValue(kv)
+		}
+	}
 }
 
 func (v *visitor) onCall(ce *ast.CallExpr) {

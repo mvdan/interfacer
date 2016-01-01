@@ -17,3 +17,17 @@ func StructVal(m mint) {
 		m: m,
 	}
 }
+
+func MapKey(m mint) {
+	m.Close()
+	_ = map[mint]string{
+		m: "foo",
+	}
+}
+
+func MapValue(m mint) {
+	m.Close()
+	_ = map[string]mint{
+		"foo": m,
+	}
+}
