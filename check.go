@@ -293,6 +293,9 @@ func (v *visitor) onBinarySide(x, y ast.Expr) {
 		}
 		v.discard(x)
 	case *types.Named:
+		if _, ok := y.(*ast.BasicLit); !ok {
+			break
+		}
 		v.discard(x)
 	}
 }
