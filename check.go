@@ -261,8 +261,7 @@ func (v *visitor) Visit(node ast.Node) ast.Visitor {
 	case *ast.IncDecStmt:
 		v.discard(x.X)
 	case *ast.BinaryExpr:
-		v.onBinarySide(x.X, x.Y)
-		v.onBinarySide(x.Y, x.X)
+		v.onBinary(x)
 	case *ast.AssignStmt:
 		v.onAssign(x)
 	case *ast.CallExpr:
@@ -282,22 +281,13 @@ func (v *visitor) Visit(node ast.Node) ast.Visitor {
 	return v
 }
 
-func (v *visitor) onBinarySide(x, y ast.Expr) {
-	if _, ok := x.(*ast.Ident); !ok {
+func (v *visitor) onBinary(be *ast.BinaryExpr) {
+	if be.Op == token.EQL || be.Op == token.NEQ {
+		// these work fine with interfaces
 		return
 	}
-	switch u := v.TypeOf(y).(type) {
-	case *types.Basic:
-		if u.Kind() == types.UntypedNil {
-			break
-		}
-		v.discard(x)
-	case *types.Named:
-		if _, ok := y.(*ast.BasicLit); !ok {
-			break
-		}
-		v.discard(x)
-	}
+	v.discard(be.X)
+	v.discard(be.Y)
 }
 
 func (v *visitor) onAssign(as *ast.AssignStmt) {
