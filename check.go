@@ -305,8 +305,15 @@ func (v *visitor) onAssign(as *ast.AssignStmt) {
 }
 
 func (v *visitor) onCall(ce *ast.CallExpr) {
-	sign, ok := v.Types[ce.Fun].Type.(*types.Signature)
-	if !ok {
+	var sign *types.Signature
+	switch x := v.Types[ce.Fun].Type.(type) {
+	case *types.Signature:
+		sign = x
+	case *types.Basic:
+		v.discard(ce.Args[0])
+		return
+	case *types.Named:
+		v.discard(ce.Args[0])
 		return
 	}
 	switch y := ce.Fun.(type) {

@@ -1,0 +1,2 @@
+foo
+convert.go:16:32: m can be io.Closer
