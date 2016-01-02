@@ -15,7 +15,9 @@ type ReadCloser interface {
 
 type st struct{}
 
-func (s st) Bang() {}
+func (s st) Read(p []byte) (int, error) {
+	return 0, nil
+}
 func (s st) Close() error {
 	return nil
 }
@@ -39,60 +41,42 @@ func BarWrong(s st) {
 	FooCloser(s)
 }
 
-func Extra(n int, cs ...Closer) {}
+func extra(n int, cs ...Closer) {}
 
 func ArgExtraWrong(s1 st) {
 	var s2 st
 	s1.Close()
 	s2.Close()
-	Extra(3, s1, s2)
+	extra(3, s1, s2)
 }
 
-func Assigned(s st) {
+func AssignedStruct(s st) {
 	s.Close()
 	var s2 st
 	s2 = s
 	_ = s2
 }
 
-func AssignedWrong(s st) {
+func AssignedIface(s st) {
 	s.Close()
 	var c Closer
 	c = s
 	_ = c
 }
 
-type BangCloser interface {
-	Closer
-	Bang()
-}
-
-func Bang(bc BangCloser) {
-	var bc2 BangCloser
-	bc.Close()
-	bc2 = bc
-	bc2.Bang()
-}
-
-func BangWrong(bc BangCloser) {
-	bc.Close()
-}
-
-type Banger interface {
-	Bang()
-}
-
-func BangLighter(s st) {
+func AssignedIfaceDiff(s st) {
 	s.Close()
-	var b Banger
-	b = s
-	b.Bang()
+	var r Reader
+	r = s
+	_ = r
 }
 
-func BangLighterWrong(s st) {
-	s.Bang()
+func doRead(r Reader) {
+	b := make([]byte, 10)
+	r.Read(b)
+}
+
+func ArgIfaceDiff(s st) {
 	s.Close()
-	var c Closer
-	c = s
-	c.Close()
+	doRead(s)
 }

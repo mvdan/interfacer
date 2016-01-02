@@ -174,19 +174,3 @@ func FromScope(scope *types.Scope, all bool) (map[string]string, map[string]stri
 	}
 	return ifaces, funcs
 }
-
-func assignable(s, t string, called, want map[string]string) bool {
-	if s == t {
-		return true
-	}
-	if len(t) >= len(s) {
-		return false
-	}
-	for fname, ftype := range want {
-		s, e := called[fname]
-		if !e || s != ftype {
-			return false
-		}
-	}
-	return true
-}
