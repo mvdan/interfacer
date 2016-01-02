@@ -44,14 +44,13 @@ func (v *visitor) interfaceMatching(vr *types.Var, vu *varUsage) (string, string
 		return "", ""
 	}
 	for t := range vu.usedAs {
-		switch x := t.(type) {
-		case *types.Interface:
-			asMethods := methoderFuncMap(x, false)
-			as := funcMapString(asMethods)
-			if !assignable(s, as, called, asMethods) {
-				return "", ""
-			}
-		default:
+		iface, ok := t.(*types.Interface)
+		if !ok {
+			return "", ""
+		}
+		asMethods := methoderFuncMap(iface, false)
+		as := funcMapString(asMethods)
+		if !assignable(s, as, called, asMethods) {
 			return "", ""
 		}
 	}
@@ -230,6 +229,19 @@ func (v *visitor) discard(e ast.Expr) {
 	vu.discard = true
 }
 
+func (v *visitor) comparedWith(e ast.Expr, with ast.Expr) {
+	t := v.TypeOf(with)
+	switch x := t.(type) {
+	case *types.Named:
+		return
+	case *types.Basic:
+		if x.Kind() == types.UntypedNil {
+			return
+		}
+	}
+	v.discard(e)
+}
+
 func (v *visitor) implementsIface(sign *types.Signature) bool {
 	s := signString(sign)
 	return v.funcOf(s) != ""
@@ -286,12 +298,15 @@ func (v *visitor) Visit(node ast.Node) ast.Visitor {
 }
 
 func (v *visitor) onBinary(be *ast.BinaryExpr) {
-	if be.Op == token.EQL || be.Op == token.NEQ {
-		// these work fine with interfaces
+	switch be.Op {
+	case token.EQL, token.NEQ:
+	default:
+		v.discard(be.X)
+		v.discard(be.Y)
 		return
 	}
-	v.discard(be.X)
-	v.discard(be.Y)
+	v.comparedWith(be.X, be.Y)
+	v.comparedWith(be.Y, be.X)
 }
 
 func (v *visitor) onAssign(as *ast.AssignStmt) {
