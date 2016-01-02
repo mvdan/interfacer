@@ -43,11 +43,7 @@ func (v *visitor) interfaceMatching(vr *types.Var, vu *varUsage) (string, string
 	if name == "" {
 		return "", ""
 	}
-	for t := range vu.usedAs {
-		iface, ok := t.(*types.Interface)
-		if !ok {
-			return "", ""
-		}
+	for iface := range vu.usedAs {
 		asMethods := methoderFuncMap(iface, false)
 		as := funcMapString(asMethods)
 		if !assignable(s, as, called, asMethods) {
@@ -137,7 +133,7 @@ func CheckArgs(args []string, w io.Writer, verbose bool) error {
 
 type varUsage struct {
 	calls   map[string]struct{}
-	usedAs  map[types.Type]struct{}
+	usedAs  map[*types.Interface]struct{}
 	discard bool
 
 	assigned map[*varUsage]struct{}
@@ -187,7 +183,7 @@ func (v *visitor) varUsage(id *ast.Ident) *varUsage {
 	}
 	vu := &varUsage{
 		calls:    make(map[string]struct{}),
-		usedAs:   make(map[types.Type]struct{}),
+		usedAs:   make(map[*types.Interface]struct{}),
 		assigned: make(map[*varUsage]struct{}),
 	}
 	v.vars[vr] = vu
@@ -203,7 +199,11 @@ func (v *visitor) addUsed(id *ast.Ident, as types.Type) {
 		// not a variable
 		return
 	}
-	vu.usedAs[as.Underlying()] = struct{}{}
+	iface, ok := as.Underlying().(*types.Interface)
+	if !ok {
+		vu.discard = true
+	}
+	vu.usedAs[iface] = struct{}{}
 }
 
 func (v *visitor) addAssign(to, from *ast.Ident) {
