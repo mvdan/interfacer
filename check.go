@@ -329,14 +329,11 @@ func (v *visitor) onComposite(cl *ast.CompositeLit) {
 }
 
 func (v *visitor) onCall(ce *ast.CallExpr) {
-	switch x := v.Types[ce.Fun].Type.(type) {
-	case *types.Signature:
-		v.onMethodCall(ce, x)
-	case *types.Basic:
-		v.discard(ce.Args[0])
-	case *types.Named:
-		v.discard(ce.Args[0])
-	case *types.Slice:
+	if sign, ok := v.TypeOf(ce.Fun).(*types.Signature); ok {
+		v.onMethodCall(ce, sign)
+		return
+	}
+	if len(ce.Args) == 1 {
 		v.discard(ce.Args[0])
 	}
 }

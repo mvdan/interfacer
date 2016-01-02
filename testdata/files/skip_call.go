@@ -33,3 +33,9 @@ func ConvertSlice(m mstr) {
 	m.Close()
 	_ = []byte(m)
 }
+
+type myFunc func() error
+
+func ConvertNoArg(f myFunc) {
+	_ = f()
+}
