@@ -12,9 +12,3 @@ func ConvertStruct(m mint) {
 	m.Close()
 	_ = mint2(m)
 }
-
-func ImplicitComparisonConvert(m mint) {
-	if m == 0 {
-		m.Close()
-	}
-}

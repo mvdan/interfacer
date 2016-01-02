@@ -49,3 +49,9 @@ func CompareStructVar(m mint) {
 		m.Close()
 	}
 }
+
+func CompareLit(m mint) {
+	if m != 3 {
+		m.Close()
+	}
+}

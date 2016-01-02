@@ -230,16 +230,9 @@ func (v *visitor) discard(e ast.Expr) {
 }
 
 func (v *visitor) comparedWith(e ast.Expr, with ast.Expr) {
-	t := v.TypeOf(with)
-	switch x := t.(type) {
-	case *types.Named:
-		return
-	case *types.Basic:
-		if x.Kind() == types.UntypedNil {
-			return
-		}
+	if _, ok := with.(*ast.BasicLit); ok {
+		v.discard(e)
 	}
-	v.discard(e)
 }
 
 func (v *visitor) implementsIface(sign *types.Signature) bool {
