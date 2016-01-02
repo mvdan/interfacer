@@ -36,3 +36,9 @@ func Index(m marr) {
 	m.String()
 	_ = m[1]
 }
+
+func BinaryNonIface(m mint) {
+	if m > 3 {
+		m.String()
+	}
+}

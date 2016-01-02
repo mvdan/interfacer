@@ -49,9 +49,3 @@ func CompareStructVar(m mint) {
 		m.Close()
 	}
 }
-
-func CompareStructGreater(m mint) {
-	if m > mint(3) {
-		m.Close()
-	}
-}
