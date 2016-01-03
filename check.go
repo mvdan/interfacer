@@ -72,13 +72,9 @@ func orderedPkgs(prog *loader.Program) ([]*types.Package, error) {
 
 // relPathErr makes converts errors by go/types and go/loader that use
 // absolute paths into errors with relative paths
-func relPathErr(err error) error {
+func relPathErr(err error, wd string) error {
 	errStr := fmt.Sprintf("%v", err)
 	if !strings.HasPrefix(errStr, "/") {
-		return err
-	}
-	wd, err := os.Getwd()
-	if err != nil {
 		return err
 	}
 	if strings.HasPrefix(errStr, wd) {
@@ -88,6 +84,10 @@ func relPathErr(err error) error {
 }
 
 func CheckArgs(args []string, w io.Writer, verbose bool) error {
+	wd, err := os.Getwd()
+	if err != nil {
+		return err
+	}
 	paths, err := recurse(args)
 	if err != nil {
 		return err
@@ -102,7 +102,7 @@ func CheckArgs(args []string, w io.Writer, verbose bool) error {
 	}
 	pkgs, err := orderedPkgs(prog)
 	if err != nil {
-		return relPathErr(err)
+		return relPathErr(err, wd)
 	}
 	c.typesGet(pkgs)
 	for _, pkg := range pkgs {
@@ -113,6 +113,7 @@ func CheckArgs(args []string, w io.Writer, verbose bool) error {
 		v := &visitor{
 			cache:       c,
 			PackageInfo: info,
+			wd:          wd,
 			w:           w,
 			fset:        prog.Fset,
 			vars:        make(map[*types.Var]*varUsage),
@@ -135,6 +136,7 @@ type visitor struct {
 	*cache
 	*loader.PackageInfo
 
+	wd    string
 	w     io.Writer
 	fset  *token.FileSet
 	signs []*types.Signature
@@ -417,8 +419,9 @@ func (v *visitor) paramWarn(vr *types.Var, vu *varUsage) string {
 	}
 	pos := v.fset.Position(vr.Pos())
 	fname := pos.Filename
-	if fname[0] == '/' {
-		fname = filepath.Join(v.Pkg.Path(), filepath.Base(fname))
+	// go/loader seems to like absolute paths
+	if rel, err := filepath.Rel(v.wd, fname); err == nil {
+		fname = rel
 	}
 	pname := v.Pkg.Name()
 	if strings.HasPrefix(ifname, "./") {

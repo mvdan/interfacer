@@ -20,9 +20,6 @@ var (
 )
 
 func basePath(p string) string {
-	if !strings.HasPrefix(p, "./") && !strings.HasSuffix(p, ".go") {
-		p = filepath.Join("src", p)
-	}
 	if strings.HasSuffix(p, "/...") {
 		p = p[:len(p)-4]
 	}
@@ -176,16 +173,20 @@ func runLocalTests(t *testing.T, paths ...string) {
 }
 
 func runNonlocalTests(t *testing.T) {
-	paths := inputPaths(t, "src/*")
+	defer chdirUndo(t, "src")()
+	paths := inputPaths(t, "*")
 	for _, p := range paths {
-		doTest(t, p[4:]+"/...")
+		doTest(t, p+"/...")
 	}
 	// local recursive
-	doTest(t, "./src/nested/...")
+	doTest(t, "./nested/...")
 	// non-recursive
 	doTest(t, "single")
 	// make sure we don't miss a package's imports
 	doTestWant(t, "grab-import", "grab-import", false)
+	defer chdirUndo(t, "nested/pkg")()
+	// relative paths
+	doTestWant(t, "rel-path", "nested/pkg\nsimple.go:12:17: rc can be nested/pkg.Closer", false, "./...")
 }
 
 func TestAll(t *testing.T) {
