@@ -9,6 +9,10 @@ type ReadCloser interface {
 	Read()
 }
 
+func Basic(s string) {
+	_ = s
+}
+
 func BasicWrong(rc ReadCloser) {
 	rc.Close()
 }

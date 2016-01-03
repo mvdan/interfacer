@@ -34,6 +34,9 @@ func (v *visitor) interfaceMatching(vr *types.Var, vu *varUsage) (string, string
 		return "", ""
 	}
 	allFuncs := typeFuncMap(vr.Type())
+	if allFuncs == nil {
+		return "", ""
+	}
 	called := make(map[string]string, len(vu.calls))
 	for fname := range vu.calls {
 		called[fname] = allFuncs[fname]

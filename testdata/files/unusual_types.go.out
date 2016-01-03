@@ -1,2 +1,2 @@
 foo
-unusual_types.go:12:17: rc can be Closer
+unusual_types.go:16:17: rc can be Closer
