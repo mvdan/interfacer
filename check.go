@@ -423,10 +423,7 @@ func (v *visitor) paramWarn(vr *types.Var, vu *varUsage) string {
 	if rel, err := filepath.Rel(v.wd, fname); err == nil {
 		fname = rel
 	}
-	pname := v.Pkg.Name()
-	if strings.HasPrefix(ifname, "./") {
-		ifname = ifname[2:]
-	}
+	pname := v.Pkg.Path()
 	if strings.HasPrefix(ifname, pname+".") {
 		ifname = ifname[len(pname)+1:]
 	}

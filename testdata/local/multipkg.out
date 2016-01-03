@@ -1,4 +1,4 @@
 ./multipkg
-multipkg/simple.go:12:17: rc can be multipkg/pkg2.Closer
+multipkg/simple.go:12:17: rc can be ./multipkg/pkg2.Closer
 ./multipkg/pkg2
-multipkg/pkg2/simple.go:12:17: rc can be multipkg/pkg2.Closer
+multipkg/pkg2/simple.go:12:17: rc can be Closer

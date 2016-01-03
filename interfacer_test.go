@@ -186,7 +186,7 @@ func runNonlocalTests(t *testing.T) {
 	doTestWant(t, "grab-import", "grab-import", false)
 	defer chdirUndo(t, "nested/pkg")()
 	// relative paths
-	doTestWant(t, "rel-path", "nested/pkg\nsimple.go:12:17: rc can be nested/pkg.Closer", false, "./...")
+	doTestWant(t, "rel-path", "nested/pkg\nsimple.go:12:17: rc can be Closer", false, "./...")
 }
 
 func TestAll(t *testing.T) {
