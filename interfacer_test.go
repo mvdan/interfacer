@@ -139,15 +139,19 @@ func inputPaths(t *testing.T, glob string) []string {
 	return paths
 }
 
-func runFileTests(t *testing.T, paths ...string) {
-	if err := os.Chdir("files"); err != nil {
+func chdirUndo(t *testing.T, d string) func() {
+	if err := os.Chdir(d); err != nil {
 		t.Fatal(err)
 	}
-	defer func() {
+	return func() {
 		if err := os.Chdir(".."); err != nil {
 			t.Fatal(err)
 		}
-	}()
+	}
+}
+
+func runFileTests(t *testing.T, paths ...string) {
+	defer chdirUndo(t, "files")()
 	if len(paths) == 0 {
 		paths = inputPaths(t, "*")
 	}
@@ -157,14 +161,7 @@ func runFileTests(t *testing.T, paths ...string) {
 }
 
 func runLocalTests(t *testing.T, paths ...string) {
-	if err := os.Chdir("local"); err != nil {
-		t.Fatal(err)
-	}
-	defer func() {
-		if err := os.Chdir(".."); err != nil {
-			t.Fatal(err)
-		}
-	}()
+	defer chdirUndo(t, "local")()
 	if len(paths) == 0 {
 		for _, p := range inputPaths(t, "*") {
 			paths = append(paths, "./"+p+"/...")
@@ -192,14 +189,7 @@ func runNonlocalTests(t *testing.T) {
 }
 
 func TestAll(t *testing.T) {
-	if err := os.Chdir("testdata"); err != nil {
-		t.Fatal(err)
-	}
-	defer func() {
-		if err := os.Chdir(".."); err != nil {
-			t.Fatal(err)
-		}
-	}()
+	defer chdirUndo(t, "testdata")()
 	wd, err := os.Getwd()
 	if err != nil {
 		t.Fatal(err)
