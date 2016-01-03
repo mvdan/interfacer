@@ -53,7 +53,7 @@ func getDirs(d string) ([]string, error) {
 	for _, gopath := range filepath.SplitList(gopaths) {
 		var dirs []string
 		if dirs, err = getDirsGopath(gopath, d); err == nil {
-			return dirs, err
+			return dirs, nil
 		}
 	}
 	return nil, err

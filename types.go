@@ -60,23 +60,23 @@ func (c *cache) typesGet(pkgs []*types.Package) {
 			continue
 		}
 		c.grabbed[path] = struct{}{}
-		c.grabExported(pkg.Scope(), path)
+		c.grabExported(pkg)
 		c.typesGet(pkg.Imports())
 	}
 }
 
-func (c *cache) grabExported(scope *types.Scope, path string) {
-	ifs, funs := FromScope(scope, false)
+func (c *cache) grabExported(pkg *types.Package) {
+	ifs, funs := FromScope(pkg.Scope(), false)
 	for iftype, ifname := range ifs {
 		if _, e := stdIfaces[iftype]; e {
 			continue
 		}
-		c.ifaces[iftype] = path + "." + ifname
+		c.ifaces[iftype] = pkg.Path() + "." + ifname
 	}
 	for ftype, fname := range funs {
 		if _, e := stdFuncs[ftype]; e {
 			continue
 		}
-		c.funcs[ftype] = path + "." + fname
+		c.funcs[ftype] = pkg.Path() + "." + fname
 	}
 }

@@ -123,10 +123,10 @@ func anyInteresting(params *types.Tuple) bool {
 	return false
 }
 
-func FromScope(scope *types.Scope, all bool) (map[string]string, map[string]string) {
-	ifaces := make(map[string]string)
+func FromScope(scope *types.Scope, all bool) (ifaces, funcs map[string]string) {
+	ifaces = make(map[string]string)
+	funcs = make(map[string]string)
 	ifaceFuncs := make(map[string]string)
-	funcs := make(map[string]string)
 	for _, name := range scope.Names() {
 		if !all && !exported.MatchString(name) {
 			continue
