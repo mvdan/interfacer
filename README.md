@@ -67,12 +67,14 @@ This is later used to find an interface type that exactly matches this
 method usage. Since we represent method sets as strings, this is as
 simple as indexing the interfaces map.
 
+As for the types that it is assigned to and passed as, we first look at
+whether each of the types is an interface - if it isn't, the argument
+cannot be an interface. Otherwise, we assume that all the funcs of the
+interface may be called on the argument, as if they were all called
+directly.
+
 If the found interface type name matches the current parameter type
 name, there is nothing to improve and the parameter is skipped.
-
-As a last step, if it does find a matching interface, it checks whether
-this new type also satisfies all the uses of this parameter in
-assignments and calls.
 
 If any parameter is still standing, we found a match.
 
