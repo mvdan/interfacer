@@ -22,7 +22,7 @@ func ProcessInput(f *os.File) error {
 
 ```sh
 $ interfacer ./...
-foo.go:10: f can be io.Reader
+foo.go:10:19: f can be io.Reader
 ```
 
 ### Algorithm
