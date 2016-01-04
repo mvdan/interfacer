@@ -73,10 +73,8 @@ cannot be an interface. Otherwise, we assume that all the funcs of the
 interface may be called on the argument, as if they were all called
 directly.
 
-If the found interface type name matches the current parameter type
-name, there is nothing to improve and the parameter is skipped.
-
-If any parameter is still standing, we found a match.
+If the found interface type doesn't match the current parameter type, we
+found a suggestion to print out.
 
 ### Known issues
 
