@@ -4,8 +4,9 @@
 package interfacer
 
 import (
+	"go/types"
+
 	"golang.org/x/tools/go/loader"
-	"golang.org/x/tools/go/types"
 )
 
 //go:generate sh -c "go list std | go run generate/std/main.go -o std.go"

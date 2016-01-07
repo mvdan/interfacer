@@ -6,12 +6,11 @@ package interfacer
 import (
 	"bytes"
 	"fmt"
+	"go/types"
 	"io"
 	"regexp"
 	"sort"
 	"strings"
-
-	"golang.org/x/tools/go/types"
 )
 
 type ByAlph []string
