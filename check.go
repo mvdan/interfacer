@@ -73,7 +73,7 @@ func orderedPkgs(prog *loader.Program) ([]*types.Package, error) {
 	return pkgs, nil
 }
 
-// relPathErr makes converts errors by go/types and go/loader that use
+// relPathErr converts errors by go/types and go/loader that use
 // absolute paths into errors with relative paths
 func relPathErr(err error, wd string) error {
 	errStr := fmt.Sprintf("%v", err)
