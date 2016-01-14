@@ -147,8 +147,6 @@ type visitor struct {
 	level int
 
 	vars map[*types.Var]*varUsage
-
-	skipNext bool
 }
 
 func paramType(sign *types.Signature, i int) types.Type {
@@ -241,10 +239,6 @@ func (v *visitor) implementsIface(sign *types.Signature) bool {
 }
 
 func (v *visitor) Visit(node ast.Node) ast.Visitor {
-	if v.skipNext {
-		v.skipNext = false
-		return nil
-	}
 	var sign *types.Signature
 	switch x := node.(type) {
 	case *ast.FuncLit:
@@ -258,7 +252,9 @@ func (v *visitor) Visit(node ast.Node) ast.Visitor {
 			return nil
 		}
 	case *ast.SelectorExpr:
-		v.discard(x.X)
+		if _, ok := v.TypeOf(x.Sel).(*types.Signature); !ok {
+			v.discard(x.X)
+		}
 	case *ast.UnaryExpr:
 		v.discard(x.X)
 	case *ast.IndexExpr:
@@ -344,14 +340,6 @@ func (v *visitor) onCall(ce *ast.CallExpr) {
 }
 
 func (v *visitor) onMethodCall(ce *ast.CallExpr, sign *types.Signature) {
-	switch y := ce.Fun.(type) {
-	case *ast.Ident:
-		v.skipNext = true
-	case *ast.SelectorExpr:
-		if _, ok := y.X.(*ast.Ident); ok {
-			v.skipNext = true
-		}
-	}
 	for i, e := range ce.Args {
 		if id, ok := e.(*ast.Ident); ok {
 			v.addUsed(id, paramType(sign, i))
