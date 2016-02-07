@@ -193,13 +193,20 @@ func runNonlocalTests(t *testing.T) {
 	doTestWant(t, "rel-path", "nested/pkg\nsimple.go:12:17: rc can be Closer", false, "./...")
 }
 
-func TestAll(t *testing.T) {
-	defer chdirUndo(t, "testdata")()
+func TestMain(m *testing.M) {
+	flag.Parse()
+	if err := os.Chdir("testdata"); err != nil {
+		panic(err)
+	}
 	wd, err := os.Getwd()
 	if err != nil {
-		t.Fatal(err)
+		panic(err)
 	}
 	build.Default.GOPATH = wd
+	os.Exit(m.Run())
+}
+
+func TestAll(t *testing.T) {
 	switch {
 	case *name == "":
 	case strings.HasSuffix(*name, ".go"):
