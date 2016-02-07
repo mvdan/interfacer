@@ -86,6 +86,9 @@ func relPathErr(err error, wd string) error {
 	return err
 }
 
+// CheckArgs checks the packages specified by their import paths in
+// args, and writes the results in w. Can give verbose output if
+// specified, printing each package as it is checked.
 func CheckArgs(args []string, w io.Writer, verbose bool) error {
 	wd, err := os.Getwd()
 	if err != nil {
