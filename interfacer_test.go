@@ -137,11 +137,15 @@ func inputPaths(t *testing.T, glob string) []string {
 }
 
 func chdirUndo(t *testing.T, d string) func() {
+	wd, err := os.Getwd()
+	if err != nil {
+		t.Fatal(err)
+	}
 	if err := os.Chdir(d); err != nil {
 		t.Fatal(err)
 	}
 	return func() {
-		if err := os.Chdir(".."); err != nil {
+		if err := os.Chdir(wd); err != nil {
 			t.Fatal(err)
 		}
 	}
