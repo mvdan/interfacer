@@ -99,8 +99,12 @@ func CheckArgs(args []string, w io.Writer, verbose bool) error {
 		return err
 	}
 	c := newCache()
-	if _, err := c.FromArgs(paths, false); err != nil {
+	rest, err := c.FromArgs(paths, false)
+	if err != nil {
 		return err
+	}
+	if len(rest) > 0 {
+		return fmt.Errorf("unwanted extra args: %v", rest)
 	}
 	prog, err := c.Load()
 	if err != nil {

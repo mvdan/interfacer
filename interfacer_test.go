@@ -221,4 +221,14 @@ func TestAll(t *testing.T) {
 	doTestWant(t, "./missing-rec/...", "lstat ./missing-rec: no such file or directory", true)
 	// Mixing Go files and dirs
 	doTestWant(t, "wrong-args", "named files must be .go files: bar", true, "foo.go", "bar")
+	testExtraArg(t)
+}
+
+func testExtraArg(t *testing.T) {
+	err := CheckArgs([]string{"single", "--", "foo", "bar"}, ioutil.Discard, false)
+	got := err.Error()
+	want := "unwanted extra args: [foo bar]"
+	if got != want {
+		t.Fatalf("Error mismatch:\nExpected:\n%sGot:\n%s", want, got)
+	}
 }
