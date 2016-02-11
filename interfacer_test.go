@@ -176,9 +176,15 @@ func runLocalTests(t *testing.T, paths ...string) {
 	doTestWant(t, "no-args", ".", false, "")
 }
 
-func runNonlocalTests(t *testing.T) {
+func runNonlocalTests(t *testing.T, paths ...string) {
 	defer chdirUndo(t, "src")()
-	paths := inputPaths(t, "*")
+	if len(paths) > 0 {
+		for _, p := range paths {
+			doTest(t, p)
+		}
+		return
+	}
+	paths = inputPaths(t, "*")
 	for _, p := range paths {
 		doTest(t, p+"/...")
 	}
@@ -216,7 +222,7 @@ func TestAll(t *testing.T) {
 		runLocalTests(t, *name)
 		return
 	default:
-		doTest(t, *name)
+		runNonlocalTests(t, *name)
 		return
 	}
 	runFileTests(t)
