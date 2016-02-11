@@ -406,12 +406,11 @@ func (v *visitor) paramWarn(vr *types.Var, vu *varUsage) string {
 		return ""
 	}
 	t := vr.Type()
-	if _, haveIface := t.Underlying().(*types.Interface); haveIface {
+	if _, ok := t.Underlying().(*types.Interface); ok {
 		if ifname == t.String() {
 			return ""
 		}
-		have := funcMapString(typeFuncMap(t))
-		if have == iftype {
+		if have := funcMapString(typeFuncMap(t)); have == iftype {
 			return ""
 		}
 	}
