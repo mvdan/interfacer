@@ -77,9 +77,6 @@ func orderedPkgs(prog *loader.Program) ([]*types.Package, error) {
 // absolute paths into errors with relative paths
 func relPathErr(err error, wd string) error {
 	errStr := fmt.Sprintf("%v", err)
-	if !strings.HasPrefix(errStr, "/") {
-		return err
-	}
 	if strings.HasPrefix(errStr, wd) {
 		return fmt.Errorf(errStr[len(wd)+1:])
 	}
