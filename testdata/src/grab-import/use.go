@@ -2,7 +2,7 @@ package foo
 
 import (
 	"grab-import/def"
-	"grab-import/def/nested"
+	def2 "grab-import/def/nested"
 )
 
 type st struct{}
@@ -16,7 +16,7 @@ func NonInterestingCall() {
 	def.SomeFunc()
 }
 
-func Foo(f nested.Fooer) {
+func Foo(f def2.Fooer) {
 	f.Foo()
 }
 

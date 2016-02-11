@@ -13,6 +13,7 @@ import (
 	"path/filepath"
 	"regexp"
 	"sort"
+	"strconv"
 	"strings"
 
 	"golang.org/x/tools/go/loader"
@@ -114,10 +115,10 @@ func CheckArgs(args []string, w io.Writer, verbose bool) error {
 	}
 	c.typesGet(pkgs)
 	v := &visitor{
-		cache:   c,
-		wd:      wd,
-		w:       w,
-		fset:    prog.Fset,
+		cache: c,
+		wd:    wd,
+		w:     w,
+		fset:  prog.Fset,
 	}
 	for _, pkg := range pkgs {
 		if verbose {
@@ -126,7 +127,19 @@ func CheckArgs(args []string, w io.Writer, verbose bool) error {
 		info := prog.AllPackages[pkg]
 		v.PackageInfo = info
 		v.vars = make(map[*types.Var]*varUsage)
+		v.impNames = make(map[string]string)
 		for _, f := range info.Files {
+			for _, imp := range f.Imports {
+				if imp.Name == nil {
+					continue
+				}
+				name := imp.Name.Name
+				path, err := strconv.Unquote(imp.Path.Value)
+				if err != nil {
+					return err
+				}
+				v.impNames[path] = name
+			}
 			ast.Walk(v, f)
 		}
 	}
@@ -151,7 +164,8 @@ type visitor struct {
 	warns [][]string
 	level int
 
-	vars map[*types.Var]*varUsage
+	vars     map[*types.Var]*varUsage
+	impNames map[string]string
 }
 
 func paramType(sign *types.Signature, i int) types.Type {
@@ -407,7 +421,7 @@ func (v *visitor) funcWarns(sign *types.Signature) []string {
 	return warns
 }
 
-var fullPathParts = regexp.MustCompile(`^(\*)?(([^/]+/)*([^/]+\.))?([^/]+)$`)
+var fullPathParts = regexp.MustCompile(`^(\*)?(([^/]+/)*([^/]+)\.)?([^/]+)$`)
 
 func (v *visitor) simpleName(fullName string) string {
 	pname := v.Pkg.Path()
@@ -415,10 +429,14 @@ func (v *visitor) simpleName(fullName string) string {
 		return fullName[len(pname)+1:]
 	}
 	ps := fullPathParts.FindStringSubmatch(fullName)
+	fullPkg := strings.TrimSuffix(ps[2], ".")
 	star := ps[1]
 	pkg := ps[4]
+	if name, e := v.impNames[fullPkg]; e {
+		pkg = name
+	}
 	name := ps[5]
-	return star + pkg + name
+	return star + pkg + "." + name
 }
 
 func (v *visitor) paramWarn(vr *types.Var, vu *varUsage) string {
