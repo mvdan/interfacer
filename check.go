@@ -390,9 +390,18 @@ func (v *visitor) funcWarns(sign *types.Signature) []string {
 		if vu == nil {
 			continue
 		}
-		if warn := v.paramWarn(vr, vu); warn != "" {
-			warns = append(warns, warn)
+		warn := v.paramWarn(vr, vu)
+		if warn == "" {
+			continue
 		}
+		pos := v.fset.Position(vr.Pos())
+		fname := pos.Filename
+		// go/loader seems to like absolute paths
+		if rel, err := filepath.Rel(v.wd, fname); err == nil {
+			fname = rel
+		}
+		warns = append(warns, fmt.Sprintf("%s:%d:%d: %s",
+			fname, pos.Line, pos.Column, warn))
 	}
 	return warns
 }
@@ -411,16 +420,9 @@ func (v *visitor) paramWarn(vr *types.Var, vu *varUsage) string {
 			return ""
 		}
 	}
-	pos := v.fset.Position(vr.Pos())
-	fname := pos.Filename
-	// go/loader seems to like absolute paths
-	if rel, err := filepath.Rel(v.wd, fname); err == nil {
-		fname = rel
-	}
 	pname := v.Pkg.Path()
 	if strings.HasPrefix(ifname, pname+".") {
 		ifname = ifname[len(pname)+1:]
 	}
-	return fmt.Sprintf("%s:%d:%d: %s can be %s",
-		fname, pos.Line, pos.Column, vr.Name(), ifname)
+	return fmt.Sprintf("%s can be %s", vr.Name(), ifname)
 }
