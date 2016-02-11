@@ -11,6 +11,7 @@ import (
 	"io"
 	"os"
 	"path/filepath"
+	"regexp"
 	"sort"
 	"strings"
 
@@ -406,12 +407,18 @@ func (v *visitor) funcWarns(sign *types.Signature) []string {
 	return warns
 }
 
-func (v *visitor) stripPkg(fullName string) string {
+var fullPathParts = regexp.MustCompile(`^(\*)?(([^/]+/)*([^/]+\.))?([^/]+)$`)
+
+func (v *visitor) simpleName(fullName string) string {
 	pname := v.Pkg.Path()
 	if strings.HasPrefix(fullName, pname+".") {
 		return fullName[len(pname)+1:]
 	}
-	return fullName
+	ps := fullPathParts.FindStringSubmatch(fullName)
+	star := ps[1]
+	pkg := ps[4]
+	name := ps[5]
+	return star + pkg + name
 }
 
 func (v *visitor) paramWarn(vr *types.Var, vu *varUsage) string {
@@ -428,5 +435,5 @@ func (v *visitor) paramWarn(vr *types.Var, vu *varUsage) string {
 			return ""
 		}
 	}
-	return fmt.Sprintf("%s can be %s", vr.Name(), v.stripPkg(ifname))
+	return fmt.Sprintf("%s can be %s", vr.Name(), v.simpleName(ifname))
 }

@@ -1,4 +1,4 @@
 grab-import
-grab-import/use.go:23:15: s can be grab-import/def/nested.Fooer
+grab-import/use.go:27:15: s can be nested.Fooer
 grab-import/def
 grab-import/def/nested
