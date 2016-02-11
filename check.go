@@ -406,6 +406,14 @@ func (v *visitor) funcWarns(sign *types.Signature) []string {
 	return warns
 }
 
+func (v *visitor) stripPkg(fullName string) string {
+	pname := v.Pkg.Path()
+	if strings.HasPrefix(fullName, pname+".") {
+		return fullName[len(pname)+1:]
+	}
+	return fullName
+}
+
 func (v *visitor) paramWarn(vr *types.Var, vu *varUsage) string {
 	ifname, iftype := v.interfaceMatching(vr, vu)
 	if ifname == "" {
@@ -420,9 +428,5 @@ func (v *visitor) paramWarn(vr *types.Var, vu *varUsage) string {
 			return ""
 		}
 	}
-	pname := v.Pkg.Path()
-	if strings.HasPrefix(ifname, pname+".") {
-		ifname = ifname[len(pname)+1:]
-	}
-	return fmt.Sprintf("%s can be %s", vr.Name(), ifname)
+	return fmt.Sprintf("%s can be %s", vr.Name(), v.stripPkg(ifname))
 }
