@@ -113,19 +113,19 @@ func CheckArgs(args []string, w io.Writer, verbose bool) error {
 		return relPathErr(err, wd)
 	}
 	c.typesGet(pkgs)
+	v := &visitor{
+		cache:   c,
+		wd:      wd,
+		w:       w,
+		fset:    prog.Fset,
+	}
 	for _, pkg := range pkgs {
-		info := prog.AllPackages[pkg]
 		if verbose {
-			fmt.Fprintln(w, info.Pkg.Path())
+			fmt.Fprintln(w, pkg.Path())
 		}
-		v := &visitor{
-			cache:       c,
-			PackageInfo: info,
-			wd:          wd,
-			w:           w,
-			fset:        prog.Fset,
-			vars:        make(map[*types.Var]*varUsage),
-		}
+		info := prog.AllPackages[pkg]
+		v.PackageInfo = info
+		v.vars = make(map[*types.Var]*varUsage)
 		for _, f := range info.Files {
 			ast.Walk(v, f)
 		}
