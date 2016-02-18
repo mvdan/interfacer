@@ -26,24 +26,16 @@ func basePath(p string) string {
 	return p
 }
 
-func want(t *testing.T, p string) (string, bool) {
-	base := basePath(p)
-	outBytes, err := ioutil.ReadFile(base + ".out")
-	if err == nil {
-		return string(outBytes), false
+func want(t *testing.T, p string) string {
+	outPath := basePath(p) + ".out"
+	outBytes, err := ioutil.ReadFile(outPath)
+	if os.IsNotExist(err) {
+		t.Fatalf("Output file not found: %s", outPath)
 	}
-	if !os.IsNotExist(err) {
+	if err != nil {
 		t.Fatal(err)
 	}
-	errBytes, err := ioutil.ReadFile(base + ".err")
-	if err == nil {
-		return string(errBytes), true
-	}
-	if !os.IsNotExist(err) {
-		t.Fatal(err)
-	}
-	t.Fatalf("Output file not found: %s.(out|err)", base)
-	return "", false
+	return string(outBytes)
 }
 
 func doTest(t *testing.T, p string) {
@@ -51,8 +43,8 @@ func doTest(t *testing.T, p string) {
 		doTestWrite(t, p)
 		return
 	}
-	exp, wantErr := want(t, p)
-	doTestWant(t, p, exp, wantErr, p)
+	exp := want(t, p)
+	doTestWant(t, p, exp, false, p)
 }
 
 func doTestWrite(t *testing.T, p string) {
