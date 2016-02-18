@@ -50,22 +50,12 @@ func doTest(t *testing.T, p string) {
 func doTestWrite(t *testing.T, p string) {
 	var b bytes.Buffer
 	err := CheckArgs([]string{p}, &b, true)
-	var outPath, outCont, rmPath string
-	base := basePath(p)
+	outPath := basePath(p) + ".out"
 	if err != nil {
-		outPath = base + ".err"
-		rmPath = base + ".out"
-		outCont = err.Error()
-	} else {
-		outPath = base + ".out"
-		rmPath = base + ".err"
-		outCont = b.String()
+		t.Fatalf("No error was expected in %s, but got: %v", p, err)
 	}
-	outCont = endNewline(outCont)
-	if err := ioutil.WriteFile(outPath, []byte(outCont), 0644); err != nil {
-		t.Fatal(err)
-	}
-	if err := os.Remove(rmPath); err != nil && !os.IsNotExist(err) {
+	got := endNewline(b.String())
+	if err := ioutil.WriteFile(outPath, []byte(got), 0644); err != nil {
 		t.Fatal(err)
 	}
 }
