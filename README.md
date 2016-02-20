@@ -76,8 +76,8 @@ directly.
 If the found interface type doesn't match the current parameter type, we
 found a suggestion to print out.
 
-### Known issues
+### Caveats
 
-* No vendor support until Go 1.6 lands. This is because `go/loader` has
-  no support for it in Go 1.5, in turn because `go/build` in 1.5 does
-  not have the necessary parts yet. See #10.
+* No vendor support on Go 1.5 or earlier. This is because the std
+  package `go/build` adds the necessary parts for `go/loader` to support
+  vendoring in Go 1.6.
