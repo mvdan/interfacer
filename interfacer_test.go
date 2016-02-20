@@ -110,7 +110,7 @@ func inputPaths(t *testing.T, glob string) []string {
 	}
 	var paths []string
 	for _, p := range all {
-		if strings.HasSuffix(p, ".out") || strings.HasSuffix(p, ".err") {
+		if strings.HasSuffix(p, ".out") {
 			continue
 		}
 		paths = append(paths, p)
