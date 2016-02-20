@@ -1,0 +1,2 @@
+deps
+deps/single.go:3:17: rc can be Closer
