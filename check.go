@@ -295,6 +295,7 @@ func (v *visitor) Visit(node ast.Node) ast.Visitor {
 		v.onKeyValue(x)
 	case *ast.CompositeLit:
 		v.onComposite(x)
+		return nil
 	case *ast.CallExpr:
 		v.onCall(x)
 	case nil:
