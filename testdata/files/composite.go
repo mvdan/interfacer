@@ -71,3 +71,11 @@ type holdFooerNested holdFooer
 func WrongNoKeyDeep(fb FooBarer) {
 	_ = holdFooerNested{fb}
 }
+
+func WrongNoKeyArray(fb FooBarer) {
+	_ = [...]Fooer{fb}
+}
+
+func WrongNoKeySlice(fb FooBarer) {
+	_ = []Fooer{fb}
+}

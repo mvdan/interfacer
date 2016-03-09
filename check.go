@@ -353,15 +353,28 @@ func (v *visitor) onKeyValue(kv *ast.KeyValueExpr) {
 	}
 }
 
+func compositeIdentType(t types.Type, i int) types.Type {
+	switch x := t.(type) {
+	case *types.Named:
+		return compositeIdentType(x.Underlying(), i)
+	case *types.Struct:
+		return x.Field(i).Type()
+	case *types.Array:
+		return x.Elem()
+	case *types.Slice:
+		return x.Elem()
+	default:
+		return nil
+	}
+}
+
 func (v *visitor) onComposite(cl *ast.CompositeLit) {
 	for i, e := range cl.Elts {
 		switch x := e.(type) {
 		case *ast.KeyValueExpr:
 			v.onKeyValue(x)
 		case *ast.Ident:
-			t := v.TypeOf(cl.Type).Underlying().(*types.Struct)
-			ft := t.Field(i).Type()
-			v.addUsed(x, ft)
+			v.addUsed(x, compositeIdentType(v.TypeOf(cl), i))
 		}
 	}
 }
