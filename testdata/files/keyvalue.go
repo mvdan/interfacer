@@ -59,6 +59,13 @@ func WrongNoKeyInplace(fb FooBarer) {
 	}{fb}
 }
 
+func WrongNoKeyMultiple(fb FooBarer) {
+	_ = struct {
+		f Fooer
+		s string
+	}{fb, "bar"}
+}
+
 type holdFooerNested holdFooer
 
 func WrongNoKeyDeep(fb FooBarer) {

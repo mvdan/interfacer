@@ -2,4 +2,5 @@ foo
 keyvalue.go:48:12: fb can be Fooer
 keyvalue.go:52:17: fb can be Fooer
 keyvalue.go:56:24: fb can be Fooer
-keyvalue.go:64:21: fb can be Fooer
+keyvalue.go:62:25: fb can be Fooer
+keyvalue.go:71:21: fb can be Fooer
