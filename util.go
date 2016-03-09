@@ -173,3 +173,38 @@ func FromScope(scope *types.Scope, all bool) (ifaces, funcs map[string]string) {
 	}
 	return ifaces, funcs
 }
+
+func mentionsType(fname, tname string) bool {
+	if fname == "" || tname == "" {
+		return false
+	}
+	upper := strings.ToUpper(tname)
+	capit := strings.ToUpper(tname[:1]) + tname[1:]
+	lower := strings.ToLower(tname)
+	uncap := strings.ToLower(tname[:1]) + tname[1:]
+	upperNames := fmt.Sprintf(`(%s|%s)`, upper, capit)
+	allNames := fmt.Sprintf(`(%s|%s|%s)`, upperNames, lower, uncap)
+	exp := fmt.Sprintf(`^%s[A-Z]|%s([A-Z]|$)`, allNames, upperNames)
+	match, err := regexp.MatchString(exp, fname)
+	if err != nil {
+		panic(err)
+	}
+	return match
+}
+
+func typeNamed(t types.Type) *types.Named {
+	for {
+		switch x := t.(type) {
+		case *types.Named:
+			return x
+		case *types.Pointer:
+			t = x.Elem()
+		case *types.Array:
+			t = x.Elem()
+		case *types.Slice:
+			t = x.Elem()
+		default:
+			return nil
+		}
+	}
+}

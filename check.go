@@ -153,6 +153,11 @@ type varUsage struct {
 	assigned map[*varUsage]struct{}
 }
 
+type funcDecl struct {
+	name string
+	sign *types.Signature
+}
+
 type visitor struct {
 	*cache
 	*loader.PackageInfo
@@ -160,7 +165,7 @@ type visitor struct {
 	wd    string
 	w     io.Writer
 	fset  *token.FileSet
-	signs []*types.Signature
+	funcs []*funcDecl
 	warns [][]string
 	level int
 
@@ -259,6 +264,7 @@ func (v *visitor) implementsIface(sign *types.Signature) bool {
 
 func (v *visitor) Visit(node ast.Node) ast.Visitor {
 	var sign *types.Signature
+	var name string
 	switch x := node.(type) {
 	case *ast.FuncLit:
 		sign = v.Types[x].Type.(*types.Signature)
@@ -270,6 +276,7 @@ func (v *visitor) Visit(node ast.Node) ast.Visitor {
 		if v.implementsIface(sign) {
 			return nil
 		}
+		name = x.Name.Name
 	case *ast.SelectorExpr:
 		if _, ok := v.TypeOf(x.Sel).(*types.Signature); !ok {
 			v.discard(x.X)
@@ -291,15 +298,20 @@ func (v *visitor) Visit(node ast.Node) ast.Visitor {
 	case *ast.CallExpr:
 		v.onCall(x)
 	case nil:
-		if top := v.signs[len(v.signs)-1]; top != nil {
+		if top := v.funcs[len(v.funcs)-1]; top != nil {
 			v.funcEnded(top)
 		}
-		v.signs = v.signs[:len(v.signs)-1]
+		v.funcs = v.funcs[:len(v.funcs)-1]
 	}
 	if node != nil {
-		v.signs = append(v.signs, sign)
 		if sign != nil {
+			v.funcs = append(v.funcs, &funcDecl{
+				sign: sign,
+				name: name,
+			})
 			v.level++
+		} else {
+			v.funcs = append(v.funcs, nil)
 		}
 	}
 	return v
@@ -380,9 +392,9 @@ func (v *visitor) onMethodCall(ce *ast.CallExpr, sign *types.Signature) {
 	vu.calls[sel.Sel.Name] = struct{}{}
 }
 
-func (v *visitor) funcEnded(sign *types.Signature) {
+func (v *visitor) funcEnded(fd *funcDecl) {
 	v.level--
-	v.warns = append(v.warns, v.funcWarns(sign))
+	v.warns = append(v.warns, v.funcWarns(fd))
 	if v.level > 0 {
 		return
 	}
@@ -396,16 +408,16 @@ func (v *visitor) funcEnded(sign *types.Signature) {
 	v.vars = make(map[*types.Var]*varUsage)
 }
 
-func (v *visitor) funcWarns(sign *types.Signature) []string {
+func (v *visitor) funcWarns(fd *funcDecl) []string {
 	var warns []string
-	params := sign.Params()
+	params := fd.sign.Params()
 	for i := 0; i < params.Len(); i++ {
 		vr := params.At(i)
 		vu := v.vars[vr]
 		if vu == nil {
 			continue
 		}
-		warn := v.paramWarn(vr, vu)
+		warn := v.paramWarn(fd.name, vr, vu)
 		if warn == "" {
 			continue
 		}
@@ -439,12 +451,19 @@ func (v *visitor) simpleName(fullName string) string {
 	return star + pkg + "." + name
 }
 
-func (v *visitor) paramWarn(vr *types.Var, vu *varUsage) string {
+func (v *visitor) paramWarn(funcName string, vr *types.Var, vu *varUsage) string {
+	t := vr.Type()
+	named := typeNamed(t)
+	if named != nil {
+		name := named.Obj().Name()
+		if mentionsType(funcName, name) {
+			return ""
+		}
+	}
 	ifname, iftype := v.interfaceMatching(vr, vu)
 	if ifname == "" {
 		return ""
 	}
-	t := vr.Type()
 	if _, ok := t.Underlying().(*types.Interface); ok {
 		if ifname == t.String() {
 			return ""
