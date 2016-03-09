@@ -354,8 +354,16 @@ func (v *visitor) onKeyValue(kv *ast.KeyValueExpr) {
 
 func (v *visitor) onComposite(cl *ast.CompositeLit) {
 	for _, e := range cl.Elts {
-		if kv, ok := e.(*ast.KeyValueExpr); ok {
-			v.onKeyValue(kv)
+		switch x := e.(type) {
+		case *ast.KeyValueExpr:
+			v.onKeyValue(x)
+		case *ast.Ident:
+			t := v.TypeOf(cl.Type).Underlying().(*types.Struct)
+			if t.NumFields() != 1 {
+				panic("expected exactly one field")
+			}
+			ft := t.Field(0).Type()
+			v.addUsed(x, ft)
 		}
 	}
 }
