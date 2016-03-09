@@ -79,3 +79,8 @@ func WrongNoKeyArray(fb FooBarer) {
 func WrongNoKeySlice(fb FooBarer) {
 	_ = []Fooer{fb}
 }
+
+func WrongWalkValue(fb FooBarer) {
+	fn := func(f Fooer) Fooer { return f }
+	_ = []Fooer{fn(fb)}
+}

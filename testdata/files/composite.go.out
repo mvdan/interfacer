@@ -6,3 +6,4 @@ composite.go:62:25: fb can be Fooer
 composite.go:71:21: fb can be Fooer
 composite.go:75:22: fb can be Fooer
 composite.go:79:22: fb can be Fooer
+composite.go:83:21: fb can be Fooer

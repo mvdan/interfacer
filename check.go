@@ -291,11 +291,8 @@ func (v *visitor) Visit(node ast.Node) ast.Visitor {
 		v.onBinary(x)
 	case *ast.AssignStmt:
 		v.onAssign(x)
-	case *ast.KeyValueExpr:
-		v.onKeyValue(x)
 	case *ast.CompositeLit:
 		v.onComposite(x)
-		return nil
 	case *ast.CallExpr:
 		v.onCall(x)
 	case nil:
