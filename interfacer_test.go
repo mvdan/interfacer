@@ -14,6 +14,8 @@ import (
 	"testing"
 )
 
+const testdata = "testdata"
+
 var (
 	name  = flag.String("name", "", "name of the test to run")
 	write = flag.Bool("write", false, "write output files")
@@ -183,7 +185,7 @@ func runNonlocalTests(t *testing.T, paths ...string) {
 
 func TestMain(m *testing.M) {
 	flag.Parse()
-	if err := os.Chdir("testdata"); err != nil {
+	if err := os.Chdir(testdata); err != nil {
 		panic(err)
 	}
 	wd, err := os.Getwd()
@@ -194,7 +196,7 @@ func TestMain(m *testing.M) {
 	os.Exit(m.Run())
 }
 
-func TestAll(t *testing.T) {
+func TestCheckWarnings(t *testing.T) {
 	switch {
 	case *name == "":
 	case strings.HasSuffix(*name, ".go"):
@@ -210,6 +212,9 @@ func TestAll(t *testing.T) {
 	runFileTests(t)
 	runLocalTests(t)
 	runNonlocalTests(t)
+}
+
+func TestErrors(t *testing.T) {
 	// non-existent Go file
 	doTestWant(t, "missing.go", "open missing.go: no such file or directory", true)
 	// local non-existent non-recursive
@@ -220,10 +225,9 @@ func TestAll(t *testing.T) {
 	doTestWant(t, "./missing-rec/...", "lstat ./missing-rec: no such file or directory", true)
 	// Mixing Go files and dirs
 	doTestWant(t, "wrong-args", "named files must be .go files: bar", true, "foo.go", "bar")
-	testExtraArg(t)
 }
 
-func testExtraArg(t *testing.T) {
+func TestExtraArg(t *testing.T) {
 	err := CheckArgs([]string{"single", "--", "foo", "bar"}, ioutil.Discard, false)
 	got := err.Error()
 	want := "unwanted extra args: [foo bar]"
