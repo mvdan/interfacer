@@ -377,6 +377,7 @@ func (v *visitor) onCall(ce *ast.CallExpr) {
 		v.onMethodCall(ce, sign)
 		return
 	}
+	// type conversion
 	if len(ce.Args) == 1 {
 		v.discard(ce.Args[0])
 	}
