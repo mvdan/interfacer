@@ -48,3 +48,9 @@ func WrongConvertCloser(m mstr) {
 	_ = Closer(m)
 	m.Close()
 }
+
+type doClose func(c Closer)
+
+func WrongFuncVar(m mstr, dc doClose) {
+	dc(m)
+}

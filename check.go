@@ -378,7 +378,7 @@ func (v *visitor) onComposite(cl *ast.CompositeLit) {
 }
 
 func (v *visitor) onCall(ce *ast.CallExpr) {
-	switch x := v.TypeOf(ce.Fun).(type) {
+	switch x := v.TypeOf(ce.Fun).Underlying().(type) {
 	case *types.Signature:
 		v.onMethodCall(ce, x)
 	default:
