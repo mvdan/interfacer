@@ -163,11 +163,16 @@ type visitor struct {
 	w     io.Writer
 	fset  *token.FileSet
 	funcs []*funcDecl
-	warns [][]string
+	warns [][]warn
 	level int
 
 	vars     map[*types.Var]*varUsage
 	impNames map[string]string
+}
+
+type warn struct {
+	pos  token.Pos
+	text string
 }
 
 func paramType(sign *types.Signature, i int) types.Type {
@@ -414,15 +419,21 @@ func (v *visitor) funcEnded(fd *funcDecl) {
 	for i := len(v.warns) - 1; i >= 0; i-- {
 		warns := v.warns[i]
 		for _, warn := range warns {
-			fmt.Fprintln(v.w, warn)
+			pos := v.fset.Position(warn.pos)
+			fname := pos.Filename
+			// go/loader seems to like absolute paths
+			if rel, err := filepath.Rel(v.wd, fname); err == nil {
+				fname = rel
+			}
+			line := fmt.Sprintf("%s:%d:%d: %s", fname, pos.Line, pos.Column, warn.text)
+			fmt.Fprintln(v.w, line)
 		}
 	}
 	v.warns = nil
 	v.vars = make(map[*types.Var]*varUsage)
 }
 
-func (v *visitor) funcWarns(fd *funcDecl) []string {
-	var warns []string
+func (v *visitor) funcWarns(fd *funcDecl) (warns []warn) {
 	params := fd.sign.Params()
 	for i := 0; i < params.Len(); i++ {
 		param := params.At(i)
@@ -430,20 +441,13 @@ func (v *visitor) funcWarns(fd *funcDecl) []string {
 		if usage == nil {
 			continue
 		}
-		warn := v.paramWarn(fd.name, param, usage)
-		if warn == "" {
+		text := v.paramWarn(fd.name, param, usage)
+		if text == "" {
 			continue
 		}
-		pos := v.fset.Position(param.Pos())
-		fname := pos.Filename
-		// go/loader seems to like absolute paths
-		if rel, err := filepath.Rel(v.wd, fname); err == nil {
-			fname = rel
-		}
-		warns = append(warns, fmt.Sprintf("%s:%d:%d: %s",
-			fname, pos.Line, pos.Column, warn))
+		warns = append(warns, warn{param.Pos(), text})
 	}
-	return warns
+	return
 }
 
 var fullPathParts = regexp.MustCompile(`^(\*)?(([^/]+/)*([^/]+)\.)?([^/]+)$`)
