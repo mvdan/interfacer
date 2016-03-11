@@ -378,13 +378,16 @@ func (v *visitor) onComposite(cl *ast.CompositeLit) {
 }
 
 func (v *visitor) onCall(ce *ast.CallExpr) {
-	if sign, ok := v.TypeOf(ce.Fun).(*types.Signature); ok {
-		v.onMethodCall(ce, sign)
-		return
-	}
-	// type conversion
-	if len(ce.Args) == 1 {
-		v.discard(ce.Args[0])
+	switch x := v.TypeOf(ce.Fun).(type) {
+	case *types.Signature:
+		v.onMethodCall(ce, x)
+	default:
+		// type conversion
+		if len(ce.Args) == 1 {
+			if id, ok := ce.Args[0].(*ast.Ident); ok {
+				v.addUsed(id, x.Underlying())
+			}
+		}
 	}
 }
 

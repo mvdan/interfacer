@@ -39,3 +39,12 @@ type myFunc func() error
 func ConvertNoArg(f myFunc) {
 	_ = f()
 }
+
+type Closer interface {
+	Close() error
+}
+
+func WrongConvertCloser(m mstr) {
+	_ = Closer(m)
+	m.Close()
+}

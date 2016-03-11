@@ -1,1 +1,2 @@
 foo
+skip_call.go:47:25: m can be io.Closer
