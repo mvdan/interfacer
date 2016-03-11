@@ -19,11 +19,11 @@ import (
 	"golang.org/x/tools/go/loader"
 )
 
-func toDiscard(vu *varUsage) bool {
-	if vu.discard {
+func toDiscard(usage *varUsage) bool {
+	if usage.discard {
 		return true
 	}
-	for to := range vu.assigned {
+	for to := range usage.assigned {
 		if toDiscard(to) {
 			return true
 		}
@@ -31,16 +31,16 @@ func toDiscard(vu *varUsage) bool {
 	return false
 }
 
-func (v *visitor) interfaceMatching(vr *types.Var, vu *varUsage) (string, string) {
-	if toDiscard(vu) {
+func (v *visitor) interfaceMatching(param *types.Var, usage *varUsage) (string, string) {
+	if toDiscard(usage) {
 		return "", ""
 	}
-	allFuncs := typeFuncMap(vr.Type())
+	allFuncs := typeFuncMap(param.Type())
 	if allFuncs == nil {
 		return "", ""
 	}
-	called := make(map[string]string, len(vu.calls))
-	for fname := range vu.calls {
+	called := make(map[string]string, len(usage.calls))
+	for fname := range usage.calls {
 		called[fname] = allFuncs[fname]
 	}
 	s := funcMapString(called)
@@ -190,38 +190,38 @@ func paramType(sign *types.Signature, i int) types.Type {
 }
 
 func (v *visitor) varUsage(id *ast.Ident) *varUsage {
-	vr, ok := v.ObjectOf(id).(*types.Var)
+	param, ok := v.ObjectOf(id).(*types.Var)
 	if !ok {
 		return nil
 	}
-	if vu, e := v.vars[vr]; e {
-		return vu
+	if usage, e := v.vars[param]; e {
+		return usage
 	}
-	vu := &varUsage{
+	usage := &varUsage{
 		calls:    make(map[string]struct{}),
 		assigned: make(map[*varUsage]struct{}),
 	}
-	v.vars[vr] = vu
-	return vu
+	v.vars[param] = usage
+	return usage
 }
 
 func (v *visitor) addUsed(id *ast.Ident, as types.Type) {
 	if as == nil {
 		return
 	}
-	vu := v.varUsage(id)
-	if vu == nil {
+	usage := v.varUsage(id)
+	if usage == nil {
 		// not a variable
 		return
 	}
 	iface, ok := as.Underlying().(*types.Interface)
 	if !ok {
-		vu.discard = true
+		usage.discard = true
 		return
 	}
 	for i := 0; i < iface.NumMethods(); i++ {
 		m := iface.Method(i)
-		vu.calls[m.Name()] = struct{}{}
+		usage.calls[m.Name()] = struct{}{}
 	}
 }
 
@@ -240,12 +240,12 @@ func (v *visitor) discard(e ast.Expr) {
 	if !ok {
 		return
 	}
-	vu := v.varUsage(id)
-	if vu == nil {
+	usage := v.varUsage(id)
+	if usage == nil {
 		// not a variable
 		return
 	}
-	vu.discard = true
+	usage.discard = true
 }
 
 func (v *visitor) comparedWith(e ast.Expr, with ast.Expr) {
@@ -397,12 +397,12 @@ func (v *visitor) onMethodCall(ce *ast.CallExpr, sign *types.Signature) {
 	if !ok {
 		return
 	}
-	vu := v.varUsage(left)
-	if vu == nil {
+	usage := v.varUsage(left)
+	if usage == nil {
 		// not a variable
 		return
 	}
-	vu.calls[sel.Sel.Name] = struct{}{}
+	usage.calls[sel.Sel.Name] = struct{}{}
 }
 
 func (v *visitor) funcEnded(fd *funcDecl) {
@@ -425,16 +425,16 @@ func (v *visitor) funcWarns(fd *funcDecl) []string {
 	var warns []string
 	params := fd.sign.Params()
 	for i := 0; i < params.Len(); i++ {
-		vr := params.At(i)
-		vu := v.vars[vr]
-		if vu == nil {
+		param := params.At(i)
+		usage := v.vars[param]
+		if usage == nil {
 			continue
 		}
-		warn := v.paramWarn(fd.name, vr, vu)
+		warn := v.paramWarn(fd.name, param, usage)
 		if warn == "" {
 			continue
 		}
-		pos := v.fset.Position(vr.Pos())
+		pos := v.fset.Position(param.Pos())
 		fname := pos.Filename
 		// go/loader seems to like absolute paths
 		if rel, err := filepath.Rel(v.wd, fname); err == nil {
@@ -464,8 +464,8 @@ func (v *visitor) simpleName(fullName string) string {
 	return star + pkg + "." + name
 }
 
-func (v *visitor) paramWarn(funcName string, vr *types.Var, vu *varUsage) string {
-	t := vr.Type()
+func (v *visitor) paramWarn(funcName string, param *types.Var, usage *varUsage) string {
+	t := param.Type()
 	named := typeNamed(t)
 	if named != nil {
 		name := named.Obj().Name()
@@ -473,7 +473,7 @@ func (v *visitor) paramWarn(funcName string, vr *types.Var, vu *varUsage) string
 			return ""
 		}
 	}
-	ifname, iftype := v.interfaceMatching(vr, vu)
+	ifname, iftype := v.interfaceMatching(param, usage)
 	if ifname == "" {
 		return ""
 	}
@@ -485,5 +485,5 @@ func (v *visitor) paramWarn(funcName string, vr *types.Var, vu *varUsage) string
 			return ""
 		}
 	}
-	return fmt.Sprintf("%s can be %s", vr.Name(), v.simpleName(ifname))
+	return fmt.Sprintf("%s can be %s", param.Name(), v.simpleName(ifname))
 }
