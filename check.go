@@ -315,13 +315,12 @@ func (v *visitor) Visit(node ast.Node) ast.Visitor {
 func (v *visitor) onBinary(be *ast.BinaryExpr) {
 	switch be.Op {
 	case token.EQL, token.NEQ:
+		v.comparedWith(be.X, be.Y)
+		v.comparedWith(be.Y, be.X)
 	default:
 		v.discard(be.X)
 		v.discard(be.Y)
-		return
 	}
-	v.comparedWith(be.X, be.Y)
-	v.comparedWith(be.Y, be.X)
 }
 
 func (v *visitor) onAssign(as *ast.AssignStmt) {
