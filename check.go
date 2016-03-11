@@ -194,7 +194,11 @@ func paramType(sign *types.Signature, i int) types.Type {
 	}
 }
 
-func (v *visitor) varUsage(id *ast.Ident) *varUsage {
+func (v *visitor) varUsage(e ast.Expr) *varUsage {
+	id, ok := e.(*ast.Ident)
+	if !ok {
+		return nil
+	}
 	param, ok := v.ObjectOf(id).(*types.Var)
 	if !ok {
 		return nil
@@ -210,11 +214,11 @@ func (v *visitor) varUsage(id *ast.Ident) *varUsage {
 	return usage
 }
 
-func (v *visitor) addUsed(id *ast.Ident, as types.Type) {
+func (v *visitor) addUsed(e ast.Expr, as types.Type) {
 	if as == nil {
 		return
 	}
-	usage := v.varUsage(id)
+	usage := v.varUsage(e)
 	if usage == nil {
 		// not a variable
 		return
@@ -230,7 +234,7 @@ func (v *visitor) addUsed(id *ast.Ident, as types.Type) {
 	}
 }
 
-func (v *visitor) addAssign(to, from *ast.Ident) {
+func (v *visitor) addAssign(to, from ast.Expr) {
 	pto := v.varUsage(to)
 	pfrom := v.varUsage(from)
 	if pto == nil || pfrom == nil {
@@ -241,11 +245,7 @@ func (v *visitor) addAssign(to, from *ast.Ident) {
 }
 
 func (v *visitor) discard(e ast.Expr) {
-	id, ok := e.(*ast.Ident)
-	if !ok {
-		return
-	}
-	usage := v.varUsage(id)
+	usage := v.varUsage(e)
 	if usage == nil {
 		// not a variable
 		return
@@ -329,26 +329,16 @@ func (v *visitor) onBinary(be *ast.BinaryExpr) {
 }
 
 func (v *visitor) onAssign(as *ast.AssignStmt) {
-	for i, e := range as.Rhs {
-		id, ok := e.(*ast.Ident)
-		if !ok {
-			continue
-		}
+	for i, val := range as.Rhs {
 		left := as.Lhs[i]
-		v.addUsed(id, v.Types[left].Type)
-		if lid, ok := left.(*ast.Ident); ok {
-			v.addAssign(lid, id)
-		}
+		v.addUsed(val, v.Types[left].Type)
+		v.addAssign(left, val)
 	}
 }
 
 func (v *visitor) onKeyValue(kv *ast.KeyValueExpr) {
-	if id, ok := kv.Key.(*ast.Ident); ok {
-		v.addUsed(id, v.TypeOf(kv.Value))
-	}
-	if id, ok := kv.Value.(*ast.Ident); ok {
-		v.addUsed(id, v.TypeOf(kv.Key))
-	}
+	v.addUsed(kv.Key, v.TypeOf(kv.Value))
+	v.addUsed(kv.Value, v.TypeOf(kv.Key))
 }
 
 func compositeIdentType(t types.Type, i int) types.Type {
@@ -384,28 +374,20 @@ func (v *visitor) onCall(ce *ast.CallExpr) {
 	default:
 		// type conversion
 		if len(ce.Args) == 1 {
-			if id, ok := ce.Args[0].(*ast.Ident); ok {
-				v.addUsed(id, x.Underlying())
-			}
+			v.addUsed(ce.Args[0], x.Underlying())
 		}
 	}
 }
 
 func (v *visitor) onMethodCall(ce *ast.CallExpr, sign *types.Signature) {
 	for i, e := range ce.Args {
-		if id, ok := e.(*ast.Ident); ok {
-			v.addUsed(id, paramType(sign, i))
-		}
+		v.addUsed(e, paramType(sign, i))
 	}
 	sel, ok := ce.Fun.(*ast.SelectorExpr)
 	if !ok {
 		return
 	}
-	left, ok := sel.X.(*ast.Ident)
-	if !ok {
-		return
-	}
-	usage := v.varUsage(left)
+	usage := v.varUsage(sel.X)
 	if usage == nil {
 		// not a variable
 		return
