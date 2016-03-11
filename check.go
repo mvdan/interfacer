@@ -58,19 +58,16 @@ func orderedPkgs(prog *loader.Program) ([]*types.Package, error) {
 	// alphabetically.
 	unordered := prog.InitialPackages()
 	paths := make([]string, 0, len(unordered))
-	byPath := make(map[string]*types.Package, len(unordered))
 	for _, info := range unordered {
 		if info.Errors != nil {
 			return nil, info.Errors[0]
 		}
-		path := info.Pkg.Path()
-		paths = append(paths, path)
-		byPath[path] = info.Pkg
+		paths = append(paths, info.Pkg.Path())
 	}
 	sort.Sort(ByAlph(paths))
 	pkgs := make([]*types.Package, 0, len(unordered))
 	for _, path := range paths {
-		pkgs = append(pkgs, byPath[path])
+		pkgs = append(pkgs, prog.Package(path).Pkg)
 	}
 	return pkgs, nil
 }
