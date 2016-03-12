@@ -90,6 +90,11 @@ type Warn struct {
 	Type string
 }
 
+func (w Warn) String() string {
+	return fmt.Sprintf("%s:%d:%d: %s can be %s",
+		w.Pos.Filename, w.Pos.Line, w.Pos.Column, w.Name, w.Type)
+}
+
 // CheckArgs checks the packages specified by their import paths in
 // args. If given an onPath function, it will call it as each package
 // is checked. It will call the onWarn function as warnings are found.
@@ -161,10 +166,7 @@ func CheckArgsOutput(args []string, w io.Writer, verbose bool) error {
 		}
 	}
 	onWarn := func(warn Warn) {
-		p := warn.Pos
-		fname := p.Filename
-		fmt.Fprintf(w, "%s:%d:%d: %s can be %s\n",
-			fname, p.Line, p.Column, warn.Name, warn.Type)
+		fmt.Fprintln(w, warn.String())
 	}
 	if err := CheckArgs(args, progress, onWarn); err != nil {
 		return err
