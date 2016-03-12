@@ -265,20 +265,23 @@ func (v *visitor) implementsIface(sign *types.Signature) bool {
 }
 
 func (v *visitor) Visit(node ast.Node) ast.Visitor {
-	var sign *types.Signature
-	var name string
+	var fd *funcDecl
 	switch x := node.(type) {
 	case *ast.FuncLit:
-		sign = v.Types[x].Type.(*types.Signature)
-		if v.implementsIface(sign) {
+		fd = &funcDecl{
+			sign: v.Types[x].Type.(*types.Signature),
+		}
+		if v.implementsIface(fd.sign) {
 			return nil
 		}
 	case *ast.FuncDecl:
-		sign = v.Defs[x.Name].Type().(*types.Signature)
-		if v.implementsIface(sign) {
+		fd = &funcDecl{
+			sign: v.Defs[x.Name].Type().(*types.Signature),
+			name: x.Name.Name,
+		}
+		if v.implementsIface(fd.sign) {
 			return nil
 		}
-		name = x.Name.Name
 	case *ast.SelectorExpr:
 		if _, ok := v.TypeOf(x.Sel).(*types.Signature); !ok {
 			v.discard(x.X)
@@ -304,15 +307,10 @@ func (v *visitor) Visit(node ast.Node) ast.Visitor {
 		v.funcs = v.funcs[:len(v.funcs)-1]
 	}
 	if node != nil {
-		if sign != nil {
-			v.funcs = append(v.funcs, &funcDecl{
-				sign: sign,
-				name: name,
-			})
+		if fd != nil {
 			v.level++
-		} else {
-			v.funcs = append(v.funcs, nil)
 		}
+		v.funcs = append(v.funcs, fd)
 	}
 	return v
 }
