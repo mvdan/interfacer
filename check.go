@@ -253,7 +253,7 @@ func (v *visitor) discard(e ast.Expr) {
 	usage.discard = true
 }
 
-func (v *visitor) comparedWith(e ast.Expr, with ast.Expr) {
+func (v *visitor) comparedWith(e, with ast.Expr) {
 	if _, ok := with.(*ast.BasicLit); ok {
 		v.discard(e)
 	}
