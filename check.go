@@ -168,10 +168,7 @@ func CheckArgsOutput(args []string, w io.Writer, verbose bool) error {
 	onWarn := func(warn Warn) {
 		fmt.Fprintln(w, warn.String())
 	}
-	if err := CheckArgs(args, progress, onWarn); err != nil {
-		return err
-	}
-	return nil
+	return CheckArgs(args, progress, onWarn)
 }
 
 type varUsage struct {
