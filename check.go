@@ -82,10 +82,19 @@ func relPathErr(err error, wd string) error {
 	return err
 }
 
+type Warn struct {
+	Pos token.Position
+	// TODO: Perhaps use something more useful to packages using
+	// interfacer as a library, e.g. *ast.Var for the variables and
+	// *types.Named for the new interface type
+	Text string
+}
+
 // CheckArgs checks the packages specified by their import paths in
-// args, and writes the results in w. Can give verbose output if
-// specified, printing each package as it is checked.
-func CheckArgs(args []string, w io.Writer, verbose bool) error {
+// args. If given an onPath function, it will call it as each package
+// is checked. It will call the onWarn function as warnings are found.
+// Returns an error, if any.
+func CheckArgs(args []string, onPath func(string), onWarn func(Warn)) error {
 	wd, err := os.Getwd()
 	if err != nil {
 		return err
@@ -112,14 +121,14 @@ func CheckArgs(args []string, w io.Writer, verbose bool) error {
 	}
 	c.typesGet(pkgs)
 	v := &visitor{
-		cache: c,
-		wd:    wd,
-		w:     w,
-		fset:  prog.Fset,
+		cache:  c,
+		wd:     wd,
+		fset:   prog.Fset,
+		onWarn: onWarn,
 	}
 	for _, pkg := range pkgs {
-		if verbose {
-			fmt.Fprintln(w, pkg.Path())
+		if onPath != nil {
+			onPath(pkg.Path())
 		}
 		info := prog.AllPackages[pkg]
 		v.PackageInfo = info
@@ -143,6 +152,25 @@ func CheckArgs(args []string, w io.Writer, verbose bool) error {
 	return nil
 }
 
+// CheckArgsOutput is like CheckArgs, but intended for human-readable
+// text output.
+func CheckArgsOutput(args []string, w io.Writer, verbose bool) error {
+	progress := func(path string) {
+		if verbose {
+			fmt.Fprintln(w, path)
+		}
+	}
+	onWarn := func(warn Warn) {
+		p := warn.Pos
+		fname := p.Filename
+		fmt.Fprintf(w, "%s:%d:%d: %s\n", fname, p.Line, p.Column, warn.Text)
+	}
+	if err := CheckArgs(args, progress, onWarn); err != nil {
+		return err
+	}
+	return nil
+}
+
 type varUsage struct {
 	calls   map[string]struct{}
 	discard bool
@@ -159,20 +187,15 @@ type visitor struct {
 	*cache
 	*loader.PackageInfo
 
-	wd    string
-	w     io.Writer
-	fset  *token.FileSet
-	funcs []*funcDecl
-	warns [][]warn
-	level int
+	wd     string
+	fset   *token.FileSet
+	funcs  []*funcDecl
+	warns  [][]Warn
+	onWarn func(Warn)
+	level  int
 
 	vars     map[*types.Var]*varUsage
 	impNames map[string]string
-}
-
-type warn struct {
-	pos  token.Pos
-	text string
 }
 
 func paramType(sign *types.Signature, i int) types.Type {
@@ -402,21 +425,14 @@ func (v *visitor) funcEnded(fd *funcDecl) {
 	for i := len(v.warns) - 1; i >= 0; i-- {
 		warns := v.warns[i]
 		for _, warn := range warns {
-			pos := v.fset.Position(warn.pos)
-			fname := pos.Filename
-			// go/loader seems to like absolute paths
-			if rel, err := filepath.Rel(v.wd, fname); err == nil {
-				fname = rel
-			}
-			line := fmt.Sprintf("%s:%d:%d: %s", fname, pos.Line, pos.Column, warn.text)
-			fmt.Fprintln(v.w, line)
+			v.onWarn(warn)
 		}
 	}
 	v.warns = nil
 	v.vars = make(map[*types.Var]*varUsage)
 }
 
-func (v *visitor) funcWarns(fd *funcDecl) (warns []warn) {
+func (v *visitor) funcWarns(fd *funcDecl) (warns []Warn) {
 	params := fd.sign.Params()
 	for i := 0; i < params.Len(); i++ {
 		param := params.At(i)
@@ -428,7 +444,12 @@ func (v *visitor) funcWarns(fd *funcDecl) (warns []warn) {
 		if text == "" {
 			continue
 		}
-		warns = append(warns, warn{param.Pos(), text})
+		pos := v.fset.Position(param.Pos())
+		// go/loader seems to like absolute paths
+		if rel, err := filepath.Rel(v.wd, pos.Filename); err == nil {
+			pos.Filename = rel
+		}
+		warns = append(warns, Warn{pos, text})
 	}
 	return
 }

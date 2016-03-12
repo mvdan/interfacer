@@ -17,7 +17,7 @@ var (
 
 func main() {
 	flag.Parse()
-	if err := interfacer.CheckArgs(flag.Args(), os.Stdout, *verbose); err != nil {
+	if err := interfacer.CheckArgsOutput(flag.Args(), os.Stdout, *verbose); err != nil {
 		errExit(err)
 	}
 }

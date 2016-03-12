@@ -51,7 +51,7 @@ func doTest(t *testing.T, p string) {
 
 func doTestWrite(t *testing.T, p string) {
 	var b bytes.Buffer
-	err := CheckArgs([]string{p}, &b, true)
+	err := CheckArgsOutput([]string{p}, &b, true)
 	outPath := basePath(p) + ".out"
 	if err != nil {
 		t.Fatalf("No error was expected in %s, but got: %v", p, err)
@@ -82,7 +82,7 @@ func doTestWant(t *testing.T, name, exp string, wantErr bool, args ...string) {
 			args = nil
 		}
 	}
-	err := CheckArgs(args, &b, true)
+	err := CheckArgsOutput(args, &b, true)
 	exp = endNewline(exp)
 	if wantErr {
 		if err == nil {
@@ -228,7 +228,7 @@ func TestErrors(t *testing.T) {
 }
 
 func TestExtraArg(t *testing.T) {
-	err := CheckArgs([]string{"single", "--", "foo", "bar"}, ioutil.Discard, false)
+	err := CheckArgsOutput([]string{"single", "--", "foo", "bar"}, ioutil.Discard, false)
 	got := err.Error()
 	want := "unwanted extra args: [foo bar]"
 	if got != want {
