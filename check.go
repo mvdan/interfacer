@@ -73,7 +73,7 @@ func orderedPkgs(prog *loader.Program) ([]*types.Package, error) {
 }
 
 // relPathErr converts errors by go/types and go/loader that use
-// absolute paths into errors with relative paths
+// absolute paths into errors with relative paths.
 func relPathErr(err error, wd string) error {
 	errStr := fmt.Sprintf("%v", err)
 	if strings.HasPrefix(errStr, wd) {
@@ -82,6 +82,8 @@ func relPathErr(err error, wd string) error {
 	return err
 }
 
+// Warn is an interfacer warning suggesting a better type for a function
+// parameter.
 type Warn struct {
 	// Position and name of the parameter
 	Pos  token.Position
@@ -160,7 +162,7 @@ func CheckArgs(args []string, onPath func(string), onWarn func(Warn)) error {
 // CheckArgsOutput is like CheckArgs, but intended for human-readable
 // text output.
 func CheckArgsOutput(args []string, w io.Writer, verbose bool) error {
-	progress := func(path string) {
+	onPath := func(path string) {
 		if verbose {
 			fmt.Fprintln(w, path)
 		}
@@ -168,7 +170,7 @@ func CheckArgsOutput(args []string, w io.Writer, verbose bool) error {
 	onWarn := func(warn Warn) {
 		fmt.Fprintln(w, warn.String())
 	}
-	return CheckArgs(args, progress, onWarn)
+	return CheckArgs(args, onPath, onWarn)
 }
 
 type varUsage struct {
