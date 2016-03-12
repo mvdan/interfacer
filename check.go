@@ -83,11 +83,11 @@ func relPathErr(err error, wd string) error {
 }
 
 type Warn struct {
-	Pos token.Position
-	// TODO: Perhaps use something more useful to packages using
-	// interfacer as a library, e.g. *ast.Var for the variables and
-	// *types.Named for the new interface type
-	Text string
+	// Position and name of the parameter
+	Pos  token.Position
+	Name string
+	// New suggested type
+	Type string
 }
 
 // CheckArgs checks the packages specified by their import paths in
@@ -163,7 +163,8 @@ func CheckArgsOutput(args []string, w io.Writer, verbose bool) error {
 	onWarn := func(warn Warn) {
 		p := warn.Pos
 		fname := p.Filename
-		fmt.Fprintf(w, "%s:%d:%d: %s\n", fname, p.Line, p.Column, warn.Text)
+		fmt.Fprintf(w, "%s:%d:%d: %s can be %s\n",
+			fname, p.Line, p.Column, warn.Name, warn.Type)
 	}
 	if err := CheckArgs(args, progress, onWarn); err != nil {
 		return err
@@ -440,8 +441,8 @@ func (v *visitor) funcWarns(fd *funcDecl) (warns []Warn) {
 		if usage == nil {
 			continue
 		}
-		text := v.paramWarn(fd.name, param, usage)
-		if text == "" {
+		newType := v.paramNewType(fd.name, param, usage)
+		if newType == "" {
 			continue
 		}
 		pos := v.fset.Position(param.Pos())
@@ -449,7 +450,7 @@ func (v *visitor) funcWarns(fd *funcDecl) (warns []Warn) {
 		if rel, err := filepath.Rel(v.wd, pos.Filename); err == nil {
 			pos.Filename = rel
 		}
-		warns = append(warns, Warn{pos, text})
+		warns = append(warns, Warn{pos, param.Name(), newType})
 	}
 	return
 }
@@ -472,7 +473,7 @@ func (v *visitor) simpleName(fullName string) string {
 	return star + pkg + "." + name
 }
 
-func (v *visitor) paramWarn(funcName string, param *types.Var, usage *varUsage) string {
+func (v *visitor) paramNewType(funcName string, param *types.Var, usage *varUsage) string {
 	t := param.Type()
 	named := typeNamed(t)
 	if named != nil {
@@ -493,5 +494,5 @@ func (v *visitor) paramWarn(funcName string, param *types.Var, usage *varUsage) 
 			return ""
 		}
 	}
-	return fmt.Sprintf("%s can be %s", param.Name(), v.simpleName(ifname))
+	return v.simpleName(ifname)
 }
