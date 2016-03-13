@@ -116,7 +116,7 @@ type visitor struct {
 	wd     string
 	fset   *token.FileSet
 	funcs  []*funcDecl
-	warns  [][]Warn
+	warns  []Warn
 	onWarn func(Warn)
 	level  int
 
@@ -425,23 +425,27 @@ func (v *visitor) onMethodCall(ce *ast.CallExpr, sign *types.Signature) {
 	usage.calls[sel.Sel.Name] = struct{}{}
 }
 
+type byPos []Warn
+
+func (l byPos) Len() int           { return len(l) }
+func (l byPos) Less(i, j int) bool { return l[i].Pos.Offset < l[j].Pos.Offset }
+func (l byPos) Swap(i, j int)      { l[i], l[j] = l[j], l[i] }
+
 func (v *visitor) funcEnded(fd *funcDecl) {
 	v.level--
-	v.warns = append(v.warns, v.funcWarns(fd))
+	v.funcWarns(fd)
 	if v.level > 0 {
 		return
 	}
-	for i := len(v.warns) - 1; i >= 0; i-- {
-		warns := v.warns[i]
-		for _, warn := range warns {
-			v.onWarn(warn)
-		}
+	sort.Sort(byPos(v.warns))
+	for _, warn := range v.warns {
+		v.onWarn(warn)
 	}
 	v.warns = nil
 	v.vars = make(map[*types.Var]*varUsage)
 }
 
-func (v *visitor) funcWarns(fd *funcDecl) (warns []Warn) {
+func (v *visitor) funcWarns(fd *funcDecl) {
 	params := fd.sign.Params()
 	for i := 0; i < params.Len(); i++ {
 		param := params.At(i)
@@ -458,9 +462,8 @@ func (v *visitor) funcWarns(fd *funcDecl) (warns []Warn) {
 		if rel, err := filepath.Rel(v.wd, pos.Filename); err == nil {
 			pos.Filename = rel
 		}
-		warns = append(warns, Warn{pos, param.Name(), newType})
+		v.warns = append(v.warns, Warn{pos, param.Name(), newType})
 	}
-	return
 }
 
 var fullPathParts = regexp.MustCompile(`^(\*)?(([^/]+/)*([^/]+)\.)?([^/]+)$`)
