@@ -97,6 +97,33 @@ func (w Warn) String() string {
 		w.Pos.Filename, w.Pos.Line, w.Pos.Column, w.Name, w.Type)
 }
 
+type varUsage struct {
+	calls   map[string]struct{}
+	discard bool
+
+	assigned map[*varUsage]struct{}
+}
+
+type funcDecl struct {
+	name string
+	sign *types.Signature
+}
+
+type visitor struct {
+	*cache
+	*loader.PackageInfo
+
+	wd     string
+	fset   *token.FileSet
+	funcs  []*funcDecl
+	warns  [][]Warn
+	onWarn func(Warn)
+	level  int
+
+	vars     map[*types.Var]*varUsage
+	impNames map[string]string
+}
+
 // CheckArgs checks the packages specified by their import paths in
 // args. If given an onPath function, it will call it as each package
 // is checked. It will call the onWarn function as warnings are found.
@@ -138,22 +165,8 @@ func CheckArgs(args []string, onPath func(string), onWarn func(Warn)) error {
 			onPath(pkg.Path())
 		}
 		info := prog.AllPackages[pkg]
-		v.PackageInfo = info
-		v.vars = make(map[*types.Var]*varUsage)
-		v.impNames = make(map[string]string)
-		for _, f := range info.Files {
-			for _, imp := range f.Imports {
-				if imp.Name == nil {
-					continue
-				}
-				name := imp.Name.Name
-				path, err := strconv.Unquote(imp.Path.Value)
-				if err != nil {
-					return err
-				}
-				v.impNames[path] = name
-			}
-			ast.Walk(v, f)
+		if err := v.checkPkg(info); err != nil {
+			return err
 		}
 	}
 	return nil
@@ -173,31 +186,25 @@ func CheckArgsOutput(args []string, w io.Writer, verbose bool) error {
 	return CheckArgs(args, onPath, onWarn)
 }
 
-type varUsage struct {
-	calls   map[string]struct{}
-	discard bool
-
-	assigned map[*varUsage]struct{}
-}
-
-type funcDecl struct {
-	name string
-	sign *types.Signature
-}
-
-type visitor struct {
-	*cache
-	*loader.PackageInfo
-
-	wd     string
-	fset   *token.FileSet
-	funcs  []*funcDecl
-	warns  [][]Warn
-	onWarn func(Warn)
-	level  int
-
-	vars     map[*types.Var]*varUsage
-	impNames map[string]string
+func (v *visitor) checkPkg(info *loader.PackageInfo) error {
+	v.PackageInfo = info
+	v.vars = make(map[*types.Var]*varUsage)
+	v.impNames = make(map[string]string)
+	for _, f := range info.Files {
+		for _, imp := range f.Imports {
+			if imp.Name == nil {
+				continue
+			}
+			name := imp.Name.Name
+			path, err := strconv.Unquote(imp.Path.Value)
+			if err != nil {
+				return err
+			}
+			v.impNames[path] = name
+		}
+		ast.Walk(v, f)
+	}
+	return nil
 }
 
 func paramType(sign *types.Signature, i int) types.Type {
