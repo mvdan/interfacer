@@ -16,9 +16,7 @@ import (
 
 const testdata = "testdata"
 
-var (
-	name = flag.String("name", "", "name of the test to run")
-)
+var name = flag.String("name", "", "name of the test to run")
 
 func basePath(p string) string {
 	if strings.HasSuffix(p, "/...") {

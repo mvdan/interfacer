@@ -11,9 +11,7 @@ import (
 	"strings"
 )
 
-var (
-	skipDir = regexp.MustCompile(`^(testdata|vendor|_.*|\..+)$`)
-)
+var skipDir = regexp.MustCompile(`^(testdata|vendor|_.*|\..+)$`)
 
 func getDirsGopath(gopath, d string) ([]string, error) {
 	local := d == "." || strings.HasPrefix(d, "./")
@@ -48,9 +46,8 @@ func getDirsGopath(gopath, d string) ([]string, error) {
 }
 
 func getDirs(d string) ([]string, error) {
-	gopaths := build.Default.GOPATH
 	var err error
-	for _, gopath := range filepath.SplitList(gopaths) {
+	for _, gopath := range filepath.SplitList(build.Default.GOPATH) {
 		var dirs []string
 		if dirs, err = getDirsGopath(gopath, d); err == nil {
 			return dirs, nil
