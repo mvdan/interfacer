@@ -51,7 +51,7 @@ func (v *visitor) interfaceMatching(param *types.Var, usage *varUsage) (string, 
 	return name, s
 }
 
-func orderedPkgs(prog *loader.Program) ([]*types.Package, error) {
+func progPackages(prog *loader.Program) ([]*types.Package, error) {
 	// InitialPackages() is not in the order that we passed to it
 	// via Import() calls.
 	// For now, make it deterministic by sorting import paths
@@ -122,7 +122,7 @@ func CheckArgs(args []string, onPath func(string), onWarn func(Warn)) error {
 	if err != nil {
 		return err
 	}
-	pkgs, err := orderedPkgs(prog)
+	pkgs, err := progPackages(prog)
 	if err != nil {
 		return relPathErr(err, wd)
 	}
