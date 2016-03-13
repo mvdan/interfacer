@@ -23,13 +23,13 @@ func (s st) Close() error {
 	return nil
 }
 
-type MyFunc func(s st, err error) bool
+type MyFunc func(s st) bool
 
-var MyFuncImpl = func(s st, err error) bool {
+var MyFuncImpl = func(s st) bool {
 	s.Close()
 	return false
 }
 
-var MyFuncWrong = func(s st, err error) {
+var MyFuncWrong = func(s st) {
 	s.Close()
 }
