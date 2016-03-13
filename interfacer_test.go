@@ -17,8 +17,7 @@ import (
 const testdata = "testdata"
 
 var (
-	name  = flag.String("name", "", "name of the test to run")
-	write = flag.Bool("write", false, "write output files")
+	name = flag.String("name", "", "name of the test to run")
 )
 
 func basePath(p string) string {
@@ -41,25 +40,8 @@ func want(t *testing.T, p string) string {
 }
 
 func doTest(t *testing.T, p string) {
-	if *write {
-		doTestWrite(t, p)
-		return
-	}
 	exp := want(t, p)
 	doTestWant(t, p, exp, false, p)
-}
-
-func doTestWrite(t *testing.T, p string) {
-	var b bytes.Buffer
-	err := CheckArgsOutput([]string{p}, &b, true)
-	outPath := basePath(p) + ".out"
-	if err != nil {
-		t.Fatalf("No error was expected in %s, but got: %v", p, err)
-	}
-	got := endNewline(b.String())
-	if err := ioutil.WriteFile(outPath, []byte(got), 0644); err != nil {
-		t.Fatal(err)
-	}
 }
 
 func endNewline(s string) string {
@@ -70,9 +52,6 @@ func endNewline(s string) string {
 }
 
 func doTestWant(t *testing.T, name, exp string, wantErr bool, args ...string) {
-	if *write {
-		return
-	}
 	var b bytes.Buffer
 	switch len(args) {
 	case 0:
