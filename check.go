@@ -462,14 +462,12 @@ func (v *visitor) simpleName(fullName string) string {
 	if strings.HasPrefix(fullName, pname+".") {
 		return fullName[len(pname)+1:]
 	}
-	ps := fullPathParts.FindStringSubmatch(fullName)
-	fullPkg := strings.TrimSuffix(ps[2], ".")
-	star := ps[1]
-	pkg := ps[4]
+	m := fullPathParts.FindStringSubmatch(fullName)
+	fullPkg := strings.TrimSuffix(m[2], ".")
+	star, pkg, name := m[1], m[4], m[5]
 	if name, e := v.impNames[fullPkg]; e {
 		pkg = name
 	}
-	name := ps[5]
 	return star + pkg + "." + name
 }
 
