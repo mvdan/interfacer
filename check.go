@@ -105,8 +105,9 @@ type varUsage struct {
 }
 
 type funcDecl struct {
-	name string
-	sign *types.Signature
+	name    string
+	sign    *types.Signature
+	astType *ast.FuncType
 }
 
 type visitor struct {
@@ -305,15 +306,17 @@ func (v *visitor) Visit(node ast.Node) ast.Visitor {
 	switch x := node.(type) {
 	case *ast.FuncLit:
 		fd = &funcDecl{
-			sign: v.Types[x].Type.(*types.Signature),
+			sign:    v.Types[x].Type.(*types.Signature),
+			astType: x.Type,
 		}
 		if v.implementsIface(fd.sign) {
 			return nil
 		}
 	case *ast.FuncDecl:
 		fd = &funcDecl{
-			sign: v.Defs[x.Name].Type().(*types.Signature),
-			name: x.Name.Name,
+			name:    x.Name.Name,
+			sign:    v.Defs[x.Name].Type().(*types.Signature),
+			astType: x.Type,
 		}
 		if v.implementsIface(fd.sign) {
 			return nil
@@ -434,24 +437,46 @@ func (l byPos) Less(i, j int) bool {
 }
 func (l byPos) Swap(i, j int) { l[i], l[j] = l[j], l[i] }
 
+func (fd *funcDecl) paramGroups() [][]*types.Var {
+	astList := fd.astType.Params.List
+	groups := make([][]*types.Var, len(astList))
+	signIndex := 0
+	for i, field := range astList {
+		group := make([]*types.Var, len(field.Names))
+		for j := range field.Names {
+			group[j] = fd.sign.Params().At(signIndex)
+			signIndex++
+		}
+		groups[i] = group
+	}
+	return groups
+}
+
 func (v *visitor) funcEnded(fd *funcDecl) {
-	params := fd.sign.Params()
-	for i := 0; i < params.Len(); i++ {
-		param := params.At(i)
-		usage := v.vars[param]
-		if usage == nil {
-			continue
+groupIter:
+	for _, group := range fd.paramGroups() {
+		var groupWarns []Warn
+		for _, param := range group {
+			usage := v.vars[param]
+			if usage == nil {
+				continue groupIter
+			}
+			newType := v.paramNewType(fd.name, param, usage)
+			if newType == "" {
+				continue groupIter
+			}
+			pos := v.fset.Position(param.Pos())
+			// go/loader seems to like absolute paths
+			if rel, err := filepath.Rel(v.wd, pos.Filename); err == nil {
+				pos.Filename = rel
+			}
+			groupWarns = append(groupWarns, Warn{
+				Pos:  pos,
+				Name: param.Name(),
+				Type: newType,
+			})
 		}
-		newType := v.paramNewType(fd.name, param, usage)
-		if newType == "" {
-			continue
-		}
-		pos := v.fset.Position(param.Pos())
-		// go/loader seems to like absolute paths
-		if rel, err := filepath.Rel(v.wd, pos.Filename); err == nil {
-			pos.Filename = rel
-		}
-		v.warns = append(v.warns, Warn{pos, param.Name(), newType})
+		v.warns = append(v.warns, groupWarns...)
 	}
 }
 
