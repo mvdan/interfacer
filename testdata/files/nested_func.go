@@ -26,19 +26,19 @@ func FooArg(rc ReadCloser) {
 	f(rc.Close())
 }
 
-func FooGoWrong(rc ReadCloser) {
+func FooGoWrong(rc ReadCloser) { // WARN rc can be io.Closer
 	go func() {
 		rc.Close()
 	}()
 }
 
-func FooArgWrong(rc ReadCloser) {
+func FooArgWrong(rc ReadCloser) { // WARN rc can be io.Closer
 	f := func(err error) {}
 	f(rc.Close())
 }
 
-func FooNestedWrong(rc ReadCloser) {
-	f := func(rc ReadCloser) {
+func FooNestedWrong(rc ReadCloser) { // WARN rc can be io.Reader
+	f := func(rc ReadCloser) { // WARN rc can be io.Closer
 		rc.Close()
 	}
 	f(nil)

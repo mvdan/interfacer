@@ -12,7 +12,7 @@ func Basic(c io.Closer) {
 	c.Close()
 }
 
-func BasicWrong(rc io.ReadCloser) {
+func BasicWrong(rc io.ReadCloser) { // WARN rc can be io.Closer
 	rc.Close()
 }
 
@@ -22,7 +22,7 @@ func (s *st) Basic(c io.Closer) {
 	c.Close()
 }
 
-func (s *st) BasicWrong(rc io.ReadCloser) {
+func (s *st) BasicWrong(rc io.ReadCloser) { // WARN rc can be io.Closer
 	rc.Close()
 }
 
@@ -35,7 +35,7 @@ func WalkFuncImpl(path string, info os.FileInfo, err error) error {
 	return nil
 }
 
-func WalkFuncImplWrong(path string, info os.FileInfo, err error) {
+func WalkFuncImplWrong(path string, info os.FileInfo, err error) { // WARN info can be Namer
 	info.Name()
 }
 

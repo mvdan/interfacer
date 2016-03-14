@@ -1,3 +1,0 @@
-nested
-nested/pkg
-nested/pkg/simple.go:12:17: rc can be Closer

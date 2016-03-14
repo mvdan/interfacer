@@ -1,3 +1,0 @@
-foo
-const.go:23:17: rs can be io.Seeker
-const.go:34:22: rs can be io.Seeker

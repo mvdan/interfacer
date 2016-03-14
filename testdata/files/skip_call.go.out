@@ -1,3 +1,0 @@
-foo
-skip_call.go:47:25: m can be io.Closer
-skip_call.go:54:19: m can be io.Closer

@@ -1,4 +1,0 @@
-foo
-import.go:15:17: rc can be io.Closer
-import.go:25:25: rc can be io.Closer
-import.go:38:37: info can be Namer

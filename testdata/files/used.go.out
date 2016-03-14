@@ -1,6 +1,0 @@
-foo
-used.go:39:15: s can be io.Closer
-used.go:46:20: s1 can be io.Closer
-used.go:60:20: s can be io.Closer
-used.go:67:24: s can be io.ReadCloser
-used.go:79:19: s can be io.ReadCloser

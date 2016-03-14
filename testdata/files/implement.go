@@ -16,6 +16,6 @@ func MyFuncImpl(rc ReadCloser, err error) bool {
 	return false
 }
 
-func MyFuncWrong(rc ReadCloser, err error) {
+func MyFuncWrong(rc ReadCloser, err error) { // WARN rc can be Closer
 	rc.Close()
 }

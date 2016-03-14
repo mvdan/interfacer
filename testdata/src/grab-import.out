@@ -1,4 +1,0 @@
-grab-import
-grab-import/use.go:27:15: s can be def2.Fooer
-grab-import/def
-grab-import/def/nested

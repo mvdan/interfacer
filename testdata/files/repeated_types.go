@@ -29,7 +29,7 @@ type impl struct{}
 
 func (im impl) FooBar(s *st) {}
 
-func FooWrong(im impl) {
+func FooWrong(im impl) { // WARN im can be MyIface
 	im.FooBar(nil)
 }
 

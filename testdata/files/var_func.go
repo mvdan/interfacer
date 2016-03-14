@@ -13,7 +13,7 @@ var Basic = func(c Closer) {
 	c.Close()
 }
 
-var BasicWrong = func(rc ReadCloser) {
+var BasicWrong = func(rc ReadCloser) { // WARN rc can be Closer
 	rc.Close()
 }
 
@@ -30,6 +30,6 @@ var MyFuncImpl = func(s st) bool {
 	return false
 }
 
-var MyFuncWrong = func(s st) {
+var MyFuncWrong = func(s st) { // WARN s can be io.Closer
 	s.Close()
 }

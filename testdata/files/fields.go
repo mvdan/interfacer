@@ -18,7 +18,7 @@ func Foo(s *st) {
 	s.field = 3
 }
 
-func FooWrong(s *st) {
+func FooWrong(s *st) { // WARN s can be io.Closer
 	s.Close()
 }
 
@@ -35,7 +35,7 @@ func Foo2(s *st2) {
 	s.st1.field = 3
 }
 
-func Foo2Wrong(s *st2) {
+func Foo2Wrong(s *st2) { // WARN s can be io.Closer
 	s.Close()
 }
 
@@ -45,7 +45,7 @@ func FooPassed(s *st) {
 	s2.field = 2
 }
 
-func FooPassedWrong(s *st) {
+func FooPassedWrong(s *st) { // WARN s can be io.Closer
 	s.Close()
 	s2 := s
 	s2.Close()

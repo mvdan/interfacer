@@ -1,4 +1,0 @@
-foo
-fields.go:21:15: s can be io.Closer
-fields.go:38:16: s can be io.Closer
-fields.go:48:21: s can be io.Closer

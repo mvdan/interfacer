@@ -1,9 +1,0 @@
-foo
-composite.go:48:12: fb can be Fooer
-composite.go:52:17: fb can be Fooer
-composite.go:56:24: fb can be Fooer
-composite.go:62:25: fb can be Fooer
-composite.go:71:21: fb can be Fooer
-composite.go:75:22: fb can be Fooer
-composite.go:79:22: fb can be Fooer
-composite.go:83:21: fb can be Fooer

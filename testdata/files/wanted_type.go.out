@@ -1,4 +1,0 @@
-foo
-wanted_type.go:16:14: f can be Closer
-wanted_type.go:32:20: b can be Closer
-wanted_type.go:36:22: b can be Closer

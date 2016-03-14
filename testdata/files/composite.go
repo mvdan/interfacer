@@ -45,21 +45,21 @@ func CorrectNoKey(fb FooBarer) {
 	_ = holdFooBarer{fb}
 }
 
-func Wrong(fb FooBarer) {
+func Wrong(fb FooBarer) { // WARN fb can be Fooer
 	_ = holdFooer{f: fb}
 }
 
-func WrongNoKey(fb FooBarer) {
+func WrongNoKey(fb FooBarer) { // WARN fb can be Fooer
 	_ = holdFooer{fb}
 }
 
-func WrongNoKeyInplace(fb FooBarer) {
+func WrongNoKeyInplace(fb FooBarer) { // WARN fb can be Fooer
 	_ = struct {
 		f Fooer
 	}{fb}
 }
 
-func WrongNoKeyMultiple(fb FooBarer) {
+func WrongNoKeyMultiple(fb FooBarer) { // WARN fb can be Fooer
 	_ = struct {
 		f Fooer
 		s string
@@ -68,19 +68,19 @@ func WrongNoKeyMultiple(fb FooBarer) {
 
 type holdFooerNested holdFooer
 
-func WrongNoKeyDeep(fb FooBarer) {
+func WrongNoKeyDeep(fb FooBarer) { // WARN fb can be Fooer
 	_ = holdFooerNested{fb}
 }
 
-func WrongNoKeyArray(fb FooBarer) {
+func WrongNoKeyArray(fb FooBarer) { // WARN fb can be Fooer
 	_ = [...]Fooer{fb}
 }
 
-func WrongNoKeySlice(fb FooBarer) {
+func WrongNoKeySlice(fb FooBarer) { // WARN fb can be Fooer
 	_ = []Fooer{fb}
 }
 
-func WrongWalkValue(fb FooBarer) {
+func WrongWalkValue(fb FooBarer) { // WARN fb can be Fooer
 	fn := func(f Fooer) Fooer { return f }
 	_ = []Fooer{fn(fb)}
 }

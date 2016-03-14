@@ -16,10 +16,10 @@ func Basic(c Closer) {
 	c.Close()
 }
 
-func BasicWrong(rc ReadCloser) {
+func BasicWrong(rc ReadCloser) { // WARN rc can be Closer
 	rc.Close()
 }
 
-func StructWrong(s st) {
+func StructWrong(s st) { // WARN s can be Closer
 	s.Close()
 }

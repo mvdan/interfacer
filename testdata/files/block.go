@@ -18,7 +18,7 @@ func ForIf(rc ReadCloser) {
 	rc.Read()
 }
 
-func IfWrong(rc ReadCloser) {
+func IfWrong(rc ReadCloser) { // WARN rc can be Closer
 	if 3 > 2 {
 		rc.Close()
 	}

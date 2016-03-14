@@ -13,7 +13,7 @@ type Foo struct{}
 
 func (f Foo) Close() {}
 
-func DoClose(f Foo) {
+func DoClose(f Foo) { // WARN f can be Closer
 	f.Close()
 }
 
@@ -29,10 +29,10 @@ func doCloseBar(b bar) {
 	b.Close()
 }
 
-func barwrongClose(b bar) {
+func barwrongClose(b bar) { // WARN b can be Closer
 	b.Close()
 }
 
-func doCloseBarwrong(b bar) {
+func doCloseBarwrong(b bar) { // WARN b can be Closer
 	b.Close()
 }

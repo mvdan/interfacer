@@ -6,40 +6,124 @@ package interfacer
 import (
 	"bytes"
 	"flag"
+	"fmt"
 	"go/build"
+	"go/parser"
+	"go/token"
 	"io/ioutil"
 	"os"
 	"path/filepath"
+	"regexp"
 	"strings"
 	"testing"
 )
 
 const testdata = "testdata"
 
-var name = flag.String("name", "", "name of the test to run")
+var (
+	name     = flag.String("name", "", "name of the test to run")
+	warnsRe  = regexp.MustCompile(`^WARN (.*)\n?$`)
+	singleRe = regexp.MustCompile(`([^ ]*) can be ([^ ]*)`)
+)
 
-func basePath(p string) string {
-	if strings.HasSuffix(p, "/...") {
-		p = p[:len(p)-4]
+func goFiles(p string) ([]string, error) {
+	if strings.HasSuffix(p, ".go") {
+		return []string{p}, nil
 	}
-	return p
+	dirs, err := recurse(p)
+	if err != nil {
+		return nil, err
+	}
+	var paths []string
+	for _, dir := range dirs {
+		files, err := ioutil.ReadDir(dir)
+		if err != nil {
+			return nil, err
+		}
+		for _, file := range files {
+			if file.IsDir() {
+				continue
+			}
+			paths = append(paths, filepath.Join(dir, file.Name()))
+		}
+	}
+	return paths, nil
 }
 
-func want(t *testing.T, p string) string {
-	outPath := basePath(p) + ".out"
-	outBytes, err := ioutil.ReadFile(outPath)
-	if os.IsNotExist(err) {
-		t.Fatalf("Output file not found: %s", outPath)
-	}
+func want(t *testing.T, p string) []Warn {
+	paths, err := goFiles(p)
 	if err != nil {
 		t.Fatal(err)
 	}
-	return string(outBytes)
+	fset := token.NewFileSet()
+	var warns []Warn
+	for _, path := range paths {
+		src, err := os.Open(path)
+		if err != nil {
+			t.Fatal(err)
+		}
+		defer src.Close()
+		f, err := parser.ParseFile(fset, path, src, parser.ParseComments)
+		if err != nil {
+			t.Fatal(err)
+		}
+		for _, group := range f.Comments {
+			m := warnsRe.FindStringSubmatch(group.Text())
+			if m == nil {
+				continue
+			}
+			for _, m := range singleRe.FindAllStringSubmatch(m[1], -1) {
+				warns = append(warns, Warn{
+					Pos: token.Position{
+						Filename: path,
+					},
+					Name: m[1],
+					Type: m[2],
+				})
+			}
+		}
+	}
+	return warns
 }
 
 func doTest(t *testing.T, p string) {
 	exp := want(t, p)
-	doTestWant(t, p, exp, false, p)
+	doTestWant(t, p, exp, p)
+}
+
+func warnsEqual(got, want []Warn) bool {
+	if len(got) != len(want) {
+		return false
+	}
+	for i, w1 := range got {
+		w2 := want[i]
+		if w1.Name != w2.Name {
+			return false
+		}
+		if w1.Type != w2.Type {
+			return false
+		}
+	}
+	return true
+}
+
+func warnsJoin(warns []Warn) string {
+	var b bytes.Buffer
+	for _, warn := range warns {
+		fmt.Fprintln(&b, warn.String())
+	}
+	return b.String()
+}
+
+func doTestWant(t *testing.T, name string, exp []Warn, args ...string) {
+	got, err := CheckArgsList(args)
+	if err != nil {
+		t.Fatalf("Did not want error in %s:\n%v", name, err)
+	}
+	if !warnsEqual(exp, got) {
+		t.Fatalf("Output mismatch in %s:\nExpected:\n%sGot:\n%s",
+			name, warnsJoin(exp), warnsJoin(got))
+	}
 }
 
 func endNewline(s string) string {
@@ -49,7 +133,7 @@ func endNewline(s string) string {
 	return s + "\n"
 }
 
-func doTestWant(t *testing.T, name, exp string, wantErr bool, args ...string) {
+func doTestWantStr(t *testing.T, name, exp string, wantErr bool, args ...string) {
 	var b bytes.Buffer
 	switch len(args) {
 	case 0:
@@ -89,9 +173,6 @@ func inputPaths(t *testing.T, glob string) []string {
 	}
 	var paths []string
 	for _, p := range all {
-		if strings.HasSuffix(p, ".out") {
-			continue
-		}
 		paths = append(paths, p)
 	}
 	return paths
@@ -134,7 +215,7 @@ func runLocalTests(t *testing.T, paths ...string) {
 	for _, p := range paths {
 		doTest(t, p)
 	}
-	doTestWant(t, "no-args", ".", false, "")
+	doTestWantStr(t, "no-args", ".", false, "")
 }
 
 func runNonlocalTests(t *testing.T, paths ...string) {
@@ -154,10 +235,10 @@ func runNonlocalTests(t *testing.T, paths ...string) {
 	// non-recursive
 	doTest(t, "single")
 	// make sure we don't miss a package's imports
-	doTestWant(t, "grab-import", "grab-import\ngrab-import/use.go:27:15: s can be def2.Fooer", false)
+	doTestWantStr(t, "grab-import", "grab-import\ngrab-import/use.go:27:15: s can be def2.Fooer", false)
 	defer chdirUndo(t, "nested/pkg")()
 	// relative paths
-	doTestWant(t, "rel-path", "nested/pkg\nsimple.go:12:17: rc can be Closer", false, "./...")
+	doTestWantStr(t, "rel-path", "nested/pkg\nsimple.go:12:17: rc can be Closer", false, "./...")
 }
 
 func TestMain(m *testing.M) {
@@ -193,15 +274,15 @@ func TestCheckWarnings(t *testing.T) {
 
 func TestErrors(t *testing.T) {
 	// non-existent Go file
-	doTestWant(t, "missing.go", "open missing.go: no such file or directory", true)
+	doTestWantStr(t, "missing.go", "open missing.go: no such file or directory", true)
 	// local non-existent non-recursive
-	doTestWant(t, "./missing", "no initial packages were loaded", true)
+	doTestWantStr(t, "./missing", "no initial packages were loaded", true)
 	// non-local non-existent non-recursive
-	doTestWant(t, "missing", "no initial packages were loaded", true)
+	doTestWantStr(t, "missing", "no initial packages were loaded", true)
 	// local non-existent recursive
-	doTestWant(t, "./missing-rec/...", "lstat ./missing-rec: no such file or directory", true)
+	doTestWantStr(t, "./missing-rec/...", "lstat ./missing-rec: no such file or directory", true)
 	// Mixing Go files and dirs
-	doTestWant(t, "wrong-args", "named files must be .go files: bar", true, "foo.go", "bar")
+	doTestWantStr(t, "wrong-args", "named files must be .go files: bar", true, "foo.go", "bar")
 }
 
 func TestExtraArg(t *testing.T) {

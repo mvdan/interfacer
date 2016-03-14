@@ -15,7 +15,7 @@ func (s st) Bar(fc FooCloser) int {
 	return 2
 }
 
-func Foo(s st) {
+func Foo(s st) { // WARN s can be Barer
 	_ = s.Bar(nil)
 }
 

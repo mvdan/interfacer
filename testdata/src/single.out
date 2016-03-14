@@ -1,4 +1,0 @@
-single
-single/simple.go:19:17: rc can be Closer
-single/simple.go:23:18: s can be Closer
-single/struct.go:11:25: rc can be Closer

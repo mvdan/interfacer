@@ -13,7 +13,7 @@ func Basic(s string) {
 	_ = s
 }
 
-func BasicWrong(rc ReadCloser) {
+func BasicWrong(rc ReadCloser) { // WARN rc can be Closer
 	rc.Close()
 }
 

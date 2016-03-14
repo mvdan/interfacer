@@ -36,14 +36,14 @@ func Bar(s st) {
 	FooSt(s)
 }
 
-func BarWrong(s st) {
+func BarWrong(s st) { // WARN s can be io.Closer
 	s.Close()
 	FooCloser(s)
 }
 
 func extra(n int, cs ...Closer) {}
 
-func ArgExtraWrong(s1 st) {
+func ArgExtraWrong(s1 st) { // WARN s1 can be io.Closer
 	var s2 st
 	s1.Close()
 	s2.Close()
@@ -57,14 +57,14 @@ func AssignedStruct(s st) {
 	_ = s2
 }
 
-func AssignedIface(s st) {
+func AssignedIface(s st) { // WARN s can be io.Closer
 	s.Close()
 	var c Closer
 	c = s
 	_ = c
 }
 
-func AssignedIfaceDiff(s st) {
+func AssignedIfaceDiff(s st) { // WARN s can be io.ReadCloser
 	s.Close()
 	var r Reader
 	r = s
@@ -76,7 +76,7 @@ func doRead(r Reader) {
 	r.Read(b)
 }
 
-func ArgIfaceDiff(s st) {
+func ArgIfaceDiff(s st) { // WARN s can be io.ReadCloser
 	s.Close()
 	doRead(s)
 }

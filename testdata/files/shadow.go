@@ -5,7 +5,7 @@ type FooCloser interface {
 	Close() error
 }
 
-func ShadowArg(fc FooCloser) {
+func ShadowArg(fc FooCloser) { // WARN fc can be io.Closer
 	fc.Close()
 	for {
 		fc := 3
