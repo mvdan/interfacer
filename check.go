@@ -164,10 +164,7 @@ func CheckArgs(args []string, onPath func(string), onWarn func(Warn)) error {
 		if onPath != nil {
 			onPath(pkg.Path())
 		}
-		info := prog.AllPackages[pkg]
-		if err := v.checkPkg(info); err != nil {
-			return err
-		}
+		v.checkPkg(prog.AllPackages[pkg])
 	}
 	return nil
 }
@@ -186,7 +183,7 @@ func CheckArgsOutput(args []string, w io.Writer, verbose bool) error {
 	return CheckArgs(args, onPath, onWarn)
 }
 
-func (v *visitor) checkPkg(info *loader.PackageInfo) error {
+func (v *visitor) checkPkg(info *loader.PackageInfo) {
 	v.PackageInfo = info
 	v.vars = make(map[*types.Var]*varUsage)
 	v.impNames = make(map[string]string)
@@ -196,15 +193,11 @@ func (v *visitor) checkPkg(info *loader.PackageInfo) error {
 				continue
 			}
 			name := imp.Name.Name
-			path, err := strconv.Unquote(imp.Path.Value)
-			if err != nil {
-				return err
-			}
+			path, _ := strconv.Unquote(imp.Path.Value)
 			v.impNames[path] = name
 		}
 		ast.Walk(v, f)
 	}
-	return nil
 }
 
 func paramType(sign *types.Signature, i int) types.Type {
