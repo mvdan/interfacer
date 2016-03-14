@@ -169,6 +169,19 @@ func CheckArgs(args []string, onPath func(string), onWarn func(Warn)) error {
 	return nil
 }
 
+// CheckArgsList is like CheckArgs, but returning a list of all the
+// warnings instead.
+func CheckArgsList(args []string) ([]Warn, error) {
+	var warns []Warn
+	onWarn := func(warn Warn) {
+		warns = append(warns, warn)
+	}
+	if err := CheckArgs(args, nil, onWarn); err != nil {
+		return nil, err
+	}
+	return warns, nil
+}
+
 // CheckArgsOutput is like CheckArgs, but intended for human-readable
 // text output.
 func CheckArgsOutput(args []string, w io.Writer, verbose bool) error {
