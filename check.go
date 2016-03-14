@@ -133,7 +133,7 @@ func CheckArgs(args []string, onPath func(string), onWarn func(Warn)) error {
 	if err != nil {
 		return err
 	}
-	paths, err := recurse(args)
+	paths, err := recurse(args...)
 	if err != nil {
 		return err
 	}

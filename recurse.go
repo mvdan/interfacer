@@ -56,7 +56,7 @@ func getDirs(d string) ([]string, error) {
 	return nil, err
 }
 
-func recurse(args []string) ([]string, error) {
+func recurse(args ...string) ([]string, error) {
 	if len(args) == 0 {
 		return []string{"."}, nil
 	}
