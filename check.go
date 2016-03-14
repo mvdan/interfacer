@@ -367,11 +367,6 @@ func (v *visitor) onAssign(as *ast.AssignStmt) {
 	}
 }
 
-func (v *visitor) onKeyValue(kv *ast.KeyValueExpr) {
-	v.addUsed(kv.Key, v.TypeOf(kv.Value))
-	v.addUsed(kv.Value, v.TypeOf(kv.Key))
-}
-
 func compositeIdentType(t types.Type, i int) types.Type {
 	switch x := t.(type) {
 	case *types.Named:
@@ -391,7 +386,8 @@ func (v *visitor) onComposite(cl *ast.CompositeLit) {
 	for i, e := range cl.Elts {
 		switch x := e.(type) {
 		case *ast.KeyValueExpr:
-			v.onKeyValue(x)
+			v.addUsed(x.Key, v.TypeOf(x.Value))
+			v.addUsed(x.Value, v.TypeOf(x.Key))
 		case *ast.Ident:
 			v.addUsed(x, compositeIdentType(v.TypeOf(cl), i))
 		}
