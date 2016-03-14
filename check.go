@@ -113,22 +113,20 @@ type visitor struct {
 	*cache
 	*loader.PackageInfo
 
-	wd     string
-	fset   *token.FileSet
-	funcs  []*funcDecl
-	warns  []Warn
-	onWarn func(Warn)
-	level  int
+	wd    string
+	fset  *token.FileSet
+	funcs []*funcDecl
+	warns []Warn
 
 	vars     map[*types.Var]*varUsage
 	impNames map[string]string
 }
 
 // CheckArgs checks the packages specified by their import paths in
-// args. If given an onPath function, it will call it as each package
-// is checked. It will call the onWarn function as warnings are found.
-// Returns an error, if any.
-func CheckArgs(args []string, onPath func(string), onWarn func(Warn)) error {
+// args. It will call the onWarns function as each package is processed,
+// passing its import path and the warnings found. Returns an error, if
+// any.
+func CheckArgs(args []string, onWarns func(string, []Warn)) error {
 	wd, err := os.Getwd()
 	if err != nil {
 		return err
@@ -155,16 +153,13 @@ func CheckArgs(args []string, onPath func(string), onWarn func(Warn)) error {
 	}
 	c.typesGet(pkgs)
 	v := &visitor{
-		cache:  c,
-		wd:     wd,
-		fset:   prog.Fset,
-		onWarn: onWarn,
+		cache: c,
+		wd:    wd,
+		fset:  prog.Fset,
 	}
 	for _, pkg := range pkgs {
-		if onPath != nil {
-			onPath(pkg.Path())
-		}
-		v.checkPkg(prog.AllPackages[pkg])
+		warns := v.checkPkg(prog.AllPackages[pkg])
+		onWarns(pkg.Path(), warns)
 	}
 	return nil
 }
@@ -172,32 +167,33 @@ func CheckArgs(args []string, onPath func(string), onWarn func(Warn)) error {
 // CheckArgsList is like CheckArgs, but returning a list of all the
 // warnings instead.
 func CheckArgsList(args []string) ([]Warn, error) {
-	var warns []Warn
-	onWarn := func(warn Warn) {
-		warns = append(warns, warn)
+	var all []Warn
+	onWarns := func(path string, warns []Warn) {
+		all = append(all, warns...)
 	}
-	if err := CheckArgs(args, nil, onWarn); err != nil {
+	if err := CheckArgs(args, onWarns); err != nil {
 		return nil, err
 	}
-	return warns, nil
+	return all, nil
 }
 
 // CheckArgsOutput is like CheckArgs, but intended for human-readable
 // text output.
 func CheckArgsOutput(args []string, w io.Writer, verbose bool) error {
-	onPath := func(path string) {
+	onWarns := func(path string, warns []Warn) {
 		if verbose {
 			fmt.Fprintln(w, path)
 		}
+		for _, warn := range warns {
+			fmt.Fprintln(w, warn.String())
+		}
 	}
-	onWarn := func(warn Warn) {
-		fmt.Fprintln(w, warn.String())
-	}
-	return CheckArgs(args, onPath, onWarn)
+	return CheckArgs(args, onWarns)
 }
 
-func (v *visitor) checkPkg(info *loader.PackageInfo) {
+func (v *visitor) checkPkg(info *loader.PackageInfo) []Warn {
 	v.PackageInfo = info
+	v.warns = nil
 	v.vars = make(map[*types.Var]*varUsage)
 	v.impNames = make(map[string]string)
 	for _, f := range info.Files {
@@ -211,6 +207,8 @@ func (v *visitor) checkPkg(info *loader.PackageInfo) {
 		}
 		ast.Walk(v, f)
 	}
+	sort.Sort(byPos(v.warns))
+	return v.warns
 }
 
 func paramType(sign *types.Signature, i int) types.Type {
@@ -345,9 +343,6 @@ func (v *visitor) Visit(node ast.Node) ast.Visitor {
 		v.funcs = v.funcs[:len(v.funcs)-1]
 	}
 	if node != nil {
-		if fd != nil {
-			v.level++
-		}
 		v.funcs = append(v.funcs, fd)
 	}
 	return v
@@ -433,25 +428,17 @@ func (v *visitor) onMethodCall(ce *ast.CallExpr, sign *types.Signature) {
 
 type byPos []Warn
 
-func (l byPos) Len() int           { return len(l) }
-func (l byPos) Less(i, j int) bool { return l[i].Pos.Offset < l[j].Pos.Offset }
-func (l byPos) Swap(i, j int)      { l[i], l[j] = l[j], l[i] }
+func (l byPos) Len() int { return len(l) }
+func (l byPos) Less(i, j int) bool {
+	p1, p2 := l[i].Pos, l[j].Pos
+	if p1.Filename == p2.Filename {
+		return p1.Offset < p2.Offset
+	}
+	return p1.Filename < p2.Filename
+}
+func (l byPos) Swap(i, j int) { l[i], l[j] = l[j], l[i] }
 
 func (v *visitor) funcEnded(fd *funcDecl) {
-	v.level--
-	v.funcWarns(fd)
-	if v.level > 0 {
-		return
-	}
-	sort.Sort(byPos(v.warns))
-	for _, warn := range v.warns {
-		v.onWarn(warn)
-	}
-	v.warns = nil
-	v.vars = make(map[*types.Var]*varUsage)
-}
-
-func (v *visitor) funcWarns(fd *funcDecl) {
 	params := fd.sign.Params()
 	for i := 0; i < params.Len(); i++ {
 		param := params.At(i)
