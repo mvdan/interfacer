@@ -50,7 +50,7 @@ func goFiles(p string) ([]string, error) {
 	return paths, nil
 }
 
-func want(t *testing.T, p string) []Warn {
+func wantedWarnings(t *testing.T, p string) []Warn {
 	paths, err := goFiles(p)
 	if err != nil {
 		t.Fatal(err)
@@ -87,8 +87,8 @@ func want(t *testing.T, p string) []Warn {
 }
 
 func doTest(t *testing.T, p string) {
-	exp := want(t, p)
-	doTestWant(t, p, exp, p)
+	warns := wantedWarnings(t, p)
+	doTestWarns(t, p, warns, p)
 }
 
 func warnsEqual(got, want []Warn) bool {
@@ -115,7 +115,7 @@ func warnsJoin(warns []Warn) string {
 	return b.String()
 }
 
-func doTestWant(t *testing.T, name string, exp []Warn, args ...string) {
+func doTestWarns(t *testing.T, name string, exp []Warn, args ...string) {
 	got, err := CheckArgsList(args)
 	if err != nil {
 		t.Fatalf("Did not want error in %s:\n%v", name, err)
@@ -133,7 +133,7 @@ func endNewline(s string) string {
 	return s + "\n"
 }
 
-func doTestWantStr(t *testing.T, name, exp string, wantErr bool, args ...string) {
+func doTestString(t *testing.T, name, exp string, args ...string) {
 	var b bytes.Buffer
 	switch len(args) {
 	case 0:
@@ -144,22 +144,11 @@ func doTestWantStr(t *testing.T, name, exp string, wantErr bool, args ...string)
 		}
 	}
 	err := CheckArgsOutput(args, &b, true)
-	exp = endNewline(exp)
-	if wantErr {
-		if err == nil {
-			t.Fatalf("Wanted error in %s, but none found.", name)
-		}
-		got := endNewline(err.Error())
-		if exp != got {
-			t.Fatalf("Error mismatch in %s:\nExpected:\n%sGot:\n%s",
-				name, exp, got)
-		}
-		return
-	}
 	if err != nil {
 		t.Fatalf("Did not want error in %s:\n%v", name, err)
 	}
-	got := endNewline(b.String())
+	exp = endNewline(exp)
+	got := b.String()
 	if exp != got {
 		t.Fatalf("Output mismatch in %s:\nExpected:\n%sGot:\n%s",
 			name, exp, got)
@@ -215,7 +204,7 @@ func runLocalTests(t *testing.T, paths ...string) {
 	for _, p := range paths {
 		doTest(t, p)
 	}
-	doTestWantStr(t, "no-args", ".", false, "")
+	doTestString(t, "no-args", ".", "")
 }
 
 func runNonlocalTests(t *testing.T, paths ...string) {
@@ -235,10 +224,10 @@ func runNonlocalTests(t *testing.T, paths ...string) {
 	// non-recursive
 	doTest(t, "single")
 	// make sure we don't miss a package's imports
-	doTestWantStr(t, "grab-import", "grab-import\ngrab-import/use.go:27:15: s can be def2.Fooer", false)
+	doTestString(t, "grab-import", "grab-import\ngrab-import/use.go:27:15: s can be def2.Fooer")
 	defer chdirUndo(t, "nested/pkg")()
 	// relative paths
-	doTestWantStr(t, "rel-path", "nested/pkg\nsimple.go:12:17: rc can be Closer", false, "./...")
+	doTestString(t, "rel-path", "nested/pkg\nsimple.go:12:17: rc can be Closer", "./...")
 }
 
 func TestMain(m *testing.M) {
@@ -272,17 +261,37 @@ func TestCheckWarnings(t *testing.T) {
 	runNonlocalTests(t)
 }
 
+func doTestError(t *testing.T, name, exp string, args ...string) {
+	switch len(args) {
+	case 0:
+		args = []string{name}
+	case 1:
+		if args[0] == "" {
+			args = nil
+		}
+	}
+	err := CheckArgsOutput(args, ioutil.Discard, false)
+	if err == nil {
+		t.Fatalf("Wanted error in %s, but none found.", name)
+	}
+	got := err.Error()
+	if exp != got {
+		t.Fatalf("Error mismatch in %s:\nExpected:\n%sGot:\n%s",
+			name, exp, got)
+	}
+}
+
 func TestErrors(t *testing.T) {
 	// non-existent Go file
-	doTestWantStr(t, "missing.go", "open missing.go: no such file or directory", true)
+	doTestError(t, "missing.go", "open missing.go: no such file or directory")
 	// local non-existent non-recursive
-	doTestWantStr(t, "./missing", "no initial packages were loaded", true)
+	doTestError(t, "./missing", "no initial packages were loaded")
 	// non-local non-existent non-recursive
-	doTestWantStr(t, "missing", "no initial packages were loaded", true)
+	doTestError(t, "missing", "no initial packages were loaded")
 	// local non-existent recursive
-	doTestWantStr(t, "./missing-rec/...", "lstat ./missing-rec: no such file or directory", true)
+	doTestError(t, "./missing-rec/...", "lstat ./missing-rec: no such file or directory")
 	// Mixing Go files and dirs
-	doTestWantStr(t, "wrong-args", "named files must be .go files: bar", true, "foo.go", "bar")
+	doTestError(t, "wrong-args", "named files must be .go files: bar", "foo.go", "bar")
 }
 
 func TestExtraArg(t *testing.T) {
