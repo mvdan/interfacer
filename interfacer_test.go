@@ -26,19 +26,19 @@ var (
 	singleRe = regexp.MustCompile(`([^ ]*) can be ([^ ]*)`)
 )
 
-func goFiles(p string) ([]string, error) {
+func goFiles(t *testing.T, p string) []string {
 	if strings.HasSuffix(p, ".go") {
-		return []string{p}, nil
+		return []string{p}
 	}
 	dirs, err := recurse(p)
 	if err != nil {
-		return nil, err
+		t.Fatal(err)
 	}
 	var paths []string
 	for _, dir := range dirs {
 		files, err := ioutil.ReadDir(dir)
 		if err != nil {
-			return nil, err
+			t.Fatal(err)
 		}
 		for _, file := range files {
 			if file.IsDir() {
@@ -47,17 +47,13 @@ func goFiles(p string) ([]string, error) {
 			paths = append(paths, filepath.Join(dir, file.Name()))
 		}
 	}
-	return paths, nil
+	return paths
 }
 
 func wantedWarnings(t *testing.T, p string) []Warn {
-	paths, err := goFiles(p)
-	if err != nil {
-		t.Fatal(err)
-	}
 	fset := token.NewFileSet()
 	var warns []Warn
-	for _, path := range paths {
+	for _, path := range goFiles(t, p) {
 		src, err := os.Open(path)
 		if err != nil {
 			t.Fatal(err)
