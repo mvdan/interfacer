@@ -7,12 +7,14 @@ import (
 	"bytes"
 	"flag"
 	"fmt"
+	"go/ast"
 	"go/build"
 	"go/parser"
 	"go/token"
 	"io/ioutil"
 	"os"
 	"path/filepath"
+	"reflect"
 	"regexp"
 	"strings"
 	"testing"
@@ -50,6 +52,33 @@ func goFiles(t *testing.T, p string) []string {
 	return paths
 }
 
+type identVisitor struct {
+	fset   *token.FileSet
+	idents map[string]token.Position
+}
+
+func identKey(pos token.Position, name string) string {
+	return fmt.Sprintf("%d %s", pos.Line, name)
+}
+
+func (v *identVisitor) Visit(n ast.Node) ast.Visitor {
+	switch x := n.(type) {
+	case *ast.Ident:
+		pos := v.fset.Position(x.Pos())
+		v.idents[identKey(pos, x.Name)] = pos
+	}
+	return v
+}
+
+func identPositions(fset *token.FileSet, f *ast.File) map[string]token.Position {
+	v := &identVisitor{
+		fset:   fset,
+		idents: make(map[string]token.Position),
+	}
+	ast.Walk(v, f)
+	return v.idents
+}
+
 func wantedWarnings(t *testing.T, p string) []Warn {
 	fset := token.NewFileSet()
 	var warns []Warn
@@ -63,18 +92,19 @@ func wantedWarnings(t *testing.T, p string) []Warn {
 		if err != nil {
 			t.Fatal(err)
 		}
+		identPos := identPositions(fset, f)
 		for _, group := range f.Comments {
-			m := warnsRe.FindStringSubmatch(group.Text())
-			if m == nil {
+			cm := warnsRe.FindStringSubmatch(group.Text())
+			if cm == nil {
 				continue
 			}
-			for _, m := range singleRe.FindAllStringSubmatch(m[1], -1) {
+			for _, m := range singleRe.FindAllStringSubmatch(cm[1], -1) {
+				vname, tname := m[1], m[2]
+				comPos := fset.Position(group.Pos())
 				warns = append(warns, Warn{
-					Pos: token.Position{
-						Filename: path,
-					},
-					Name: m[1],
-					Type: m[2],
+					Pos:  identPos[identKey(comPos, vname)],
+					Name: vname,
+					Type: tname,
 				})
 			}
 		}
@@ -85,22 +115,6 @@ func wantedWarnings(t *testing.T, p string) []Warn {
 func doTest(t *testing.T, p string) {
 	warns := wantedWarnings(t, p)
 	doTestWarns(t, p, warns, p)
-}
-
-func warnsEqual(got, want []Warn) bool {
-	if len(got) != len(want) {
-		return false
-	}
-	for i, w1 := range got {
-		w2 := want[i]
-		if w1.Name != w2.Name {
-			return false
-		}
-		if w1.Type != w2.Type {
-			return false
-		}
-	}
-	return true
 }
 
 func warnsJoin(warns []Warn) string {
@@ -116,7 +130,7 @@ func doTestWarns(t *testing.T, name string, exp []Warn, args ...string) {
 	if err != nil {
 		t.Fatalf("Did not want error in %s:\n%v", name, err)
 	}
-	if !warnsEqual(exp, got) {
+	if !reflect.DeepEqual(exp, got) {
 		t.Fatalf("Output mismatch in %s:\nExpected:\n%sGot:\n%s",
 			name, warnsJoin(exp), warnsJoin(got))
 	}
