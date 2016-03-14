@@ -160,11 +160,7 @@ func inputPaths(t *testing.T, glob string) []string {
 	if err != nil {
 		t.Fatal(err)
 	}
-	var paths []string
-	for _, p := range all {
-		paths = append(paths, p)
-	}
-	return paths
+	return all
 }
 
 func chdirUndo(t *testing.T, d string) func() {
