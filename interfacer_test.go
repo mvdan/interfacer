@@ -25,7 +25,7 @@ const testdata = "testdata"
 var (
 	name     = flag.String("name", "", "name of the test to run")
 	warnsRe  = regexp.MustCompile(`^WARN (.*)\n?$`)
-	singleRe = regexp.MustCompile(`([^ ]*) can be ([^ ]*)`)
+	singleRe = regexp.MustCompile(`([^ ]*) can be ([^ ]*)(,|$)`)
 )
 
 func goFiles(t *testing.T, p string) []string {
