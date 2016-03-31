@@ -27,7 +27,8 @@ foo.go:10:19: f can be io.Reader
 ### Basic idea
 
 This package relies on `go/types` for the heavy lifting: name
-resolution, constant folding and type inference.
+resolution, constant folding and type inference. It also uses
+`go/loader` to resolve the packages specified by import paths.
 
 It inspects the parameters of your functions to see if they fit an
 interface type that is less specific than the current type.
@@ -46,13 +47,12 @@ If a suggestion is technically correct but doesn't make sense, you can
 still suppress the warning by mentioning the type in the function name:
 
 ```go
-func ProcessFile(f *os.File) error {
-	// ...
+func ProcessInputFile(f *os.File) error {
+	// use as an io.Reader
 }
 ```
 
 ### Caveats
 
-* No vendor support on Go 1.5 or earlier. This is because the std
-  package `go/build` adds the necessary parts for `go/loader` to support
-  vendoring in Go 1.6.
+* Vendor support only on 1.6 or later. The necessary parts were not
+  added to `go/build` until 1.6.
