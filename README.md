@@ -11,12 +11,11 @@ the usage of types that are more specific than necessary.
 
 ```go
 func ProcessInput(f *os.File) error {
-        b := make([]byte, 64)
-        if _, err := f.Read(b); err != nil {
+        b, err := ioutil.ReadAll(f)
+        if err != nil {
                 return err
         }
-        // process b
-        return nil
+        return processBytes(b)
 }
 ```
 
