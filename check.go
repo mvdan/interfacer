@@ -17,6 +17,8 @@ import (
 	"strings"
 
 	"golang.org/x/tools/go/loader"
+
+	"github.com/mvdan/interfacer/internal/util"
 )
 
 func toDiscard(usage *varUsage) bool {
@@ -64,7 +66,7 @@ func progPackages(prog *loader.Program) ([]*types.Package, error) {
 		}
 		paths = append(paths, info.Pkg.Path())
 	}
-	sort.Sort(ByAlph(paths))
+	sort.Sort(util.ByAlph(paths))
 	pkgs := make([]*types.Package, 0, len(unordered))
 	for _, path := range paths {
 		pkgs = append(pkgs, prog.Package(path).Pkg)
@@ -507,7 +509,7 @@ func willAddAllocation(t types.Type) bool {
 
 func (v *visitor) paramNewType(funcName string, param *types.Var, usage *varUsage) string {
 	t := param.Type()
-	if !exported(funcName) && willAddAllocation(t) {
+	if !util.Exported(funcName) && willAddAllocation(t) {
 		return ""
 	}
 	named := typeNamed(t)

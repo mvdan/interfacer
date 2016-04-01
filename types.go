@@ -11,24 +11,13 @@ import (
 	"regexp"
 	"sort"
 	"strings"
-	"unicode"
-	"unicode/utf8"
+
+	"github.com/mvdan/interfacer/internal/util"
 )
-
-type ByAlph []string
-
-func (l ByAlph) Len() int           { return len(l) }
-func (l ByAlph) Less(i, j int) bool { return l[i] < l[j] }
-func (l ByAlph) Swap(i, j int)      { l[i], l[j] = l[j], l[i] }
 
 type methoder interface {
 	NumMethods() int
 	Method(int) *types.Func
-}
-
-func exported(name string) bool {
-	ch, _ := utf8.DecodeRuneInString(name)
-	return unicode.IsUpper(ch)
 }
 
 func methoderFuncMap(m methoder, skip bool) map[string]string {
@@ -36,7 +25,7 @@ func methoderFuncMap(m methoder, skip bool) map[string]string {
 	for i := 0; i < m.NumMethods(); i++ {
 		f := m.Method(i)
 		fname := f.Name()
-		if !exported(fname) {
+		if !util.Exported(fname) {
 			if skip {
 				continue
 			}
@@ -69,7 +58,7 @@ func funcMapString(iface map[string]string) string {
 	for fname := range iface {
 		fnames = append(fnames, fname)
 	}
-	sort.Sort(ByAlph(fnames))
+	sort.Sort(util.ByAlph(fnames))
 	var b bytes.Buffer
 	for i, fname := range fnames {
 		if i > 0 {
@@ -135,7 +124,7 @@ func FromScope(scope *types.Scope, all bool) (ifaces, funcs map[string]string) {
 	funcs = make(map[string]string)
 	ifaceFuncs := make(map[string]string)
 	for _, name := range scope.Names() {
-		if !all && !exported(name) {
+		if !all && !util.Exported(name) {
 			continue
 		}
 		tn, ok := scope.Lookup(name).(*types.TypeName)
