@@ -101,14 +101,12 @@ func interesting(t types.Type) bool {
 	switch x := t.(type) {
 	case *types.Interface:
 		return x.NumMethods() > 1
-	case *types.Struct:
-		return true
 	case *types.Named:
 		switch u := x.Underlying().(type) {
 		case *types.Interface:
 			return interesting(u)
 		default:
-			return true
+			return x.NumMethods() >= 1
 		}
 	case *types.Pointer:
 		return interesting(x.Elem())
