@@ -15,6 +15,8 @@ import (
 	"sort"
 	"strconv"
 	"strings"
+	"unicode"
+	"unicode/utf8"
 
 	"golang.org/x/tools/go/loader"
 )
@@ -496,8 +498,25 @@ func (v *visitor) simpleName(fullName string) string {
 	return star + pkg + "." + name
 }
 
+func isExported(name string) bool {
+	ch, _ := utf8.DecodeRuneInString(name)
+	return unicode.IsUpper(ch)
+}
+
+func willAddAllocation(t types.Type) bool {
+	switch t.Underlying().(type) {
+	case *types.Pointer, *types.Interface:
+		return false
+	default:
+		return true
+	}
+}
+
 func (v *visitor) paramNewType(funcName string, param *types.Var, usage *varUsage) string {
 	t := param.Type()
+	if !isExported(funcName) && willAddAllocation(t) {
+		return ""
+	}
 	named := typeNamed(t)
 	if named != nil {
 		name := named.Obj().Name()

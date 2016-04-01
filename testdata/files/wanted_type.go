@@ -23,16 +23,16 @@ func DoCloseFoo(f Foo) {
 
 type bar struct{}
 
-func (f bar) Close() {}
+func (f *bar) Close() {}
 
-func doCloseBar(b bar) {
+func doCloseBar(b *bar) {
 	b.Close()
 }
 
-func barwrongClose(b bar) { // WARN b can be Closer
+func barwrongClose(b *bar) { // WARN b can be Closer
 	b.Close()
 }
 
-func doCloseBarwrong(b bar) { // WARN b can be Closer
+func doCloseBarwrong(b *bar) { // WARN b can be Closer
 	b.Close()
 }

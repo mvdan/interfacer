@@ -19,17 +19,17 @@ var BasicWrong = func(rc ReadCloser) { // WARN rc can be Closer
 
 type st struct{}
 
-func (s st) Close() error {
+func (s *st) Close() error {
 	return nil
 }
 
-type MyFunc func(s st) bool
+type MyFunc func(s *st) bool
 
-var MyFuncImpl = func(s st) bool {
+var MyFuncImpl = func(s *st) bool {
 	s.Close()
 	return false
 }
 
-var MyFuncWrong = func(s st) { // WARN s can be io.Closer
+var MyFuncWrong = func(s *st) { // WARN s can be io.Closer
 	s.Close()
 }

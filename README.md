@@ -38,8 +38,15 @@ also trigger a warning - if `f` were an `io.ReadCloser`, the same
 message would appear.
 
 It suggests interface types defined both in `std` and in your packages.
+
+### False positives
+
 To avoid false positives, it never does any suggestions on functions
 that may be implementing an interface method or a named function type.
+
+It also skips parameters passed by value (excluding pointers and
+interfaces) on unexported functions, since that would introduce extra
+allocations where they are usually not worth the tradeoff.
 
 ### Suppressing warnings
 
