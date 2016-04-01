@@ -109,14 +109,20 @@ func generate(w io.Writer, pkgs []string) error {
 	funcs := make(map[string]string)
 	imp := importer.Default()
 	grabTypes := func(path string, scope *types.Scope, all bool) {
-		ifs, funs := interfacer.FromScope(scope, all)
+		ifs, funs := interfacer.FromScope(scope)
 		for iface, name := range ifs {
+			if !all && !util.Exported(name) {
+				continue
+			}
 			if _, e := ifaces[iface]; e {
 				continue
 			}
 			ifaces[iface] = fullName(path, name)
 		}
 		for fun, name := range funs {
+			if !all && !util.Exported(name) {
+				continue
+			}
 			if _, e := funcs[fun]; e {
 				continue
 			}

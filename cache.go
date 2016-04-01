@@ -7,6 +7,8 @@ import (
 	"go/types"
 
 	"golang.org/x/tools/go/loader"
+
+	"github.com/mvdan/interfacer/internal/util"
 )
 
 //go:generate sh -c "go list std | go run generate/std/main.go -o std.go"
@@ -67,14 +69,20 @@ func (c *cache) typesGet(pkgs []*types.Package) {
 }
 
 func (c *cache) grabExported(pkg *types.Package) {
-	ifs, funs := FromScope(pkg.Scope(), false)
+	ifs, funs := FromScope(pkg.Scope())
 	for iftype, ifname := range ifs {
+		if !util.Exported(ifname) {
+			continue
+		}
 		if _, e := stdIfaces[iftype]; e {
 			continue
 		}
 		c.ifaces[iftype] = pkg.Path() + "." + ifname
 	}
 	for ftype, fname := range funs {
+		if !util.Exported(fname) {
+			continue
+		}
 		if _, e := stdFuncs[ftype]; e {
 			continue
 		}
