@@ -282,6 +282,7 @@ var stdFuncs = map[string]string{
 	"(*net/rpc.Request, interface{}) error":                                                       "net/rpc.ClientCodec.WriteRequest",
 	"(*net/rpc.Request) error":                                                                    "net/rpc.ServerCodec.ReadRequestHeader",
 	"(*net/rpc.Response, interface{}) error":                                                      "net/rpc.ServerCodec.WriteResponse",
+	"(string, string, go/types.ImportMode) (*go/types.Package, error)":                            "go/types.ImporterFrom.ImportFrom",
 	"(*go/types.Package) string":                                                                  "go/types.Qualifier",
 	"(go/types.Type) int64":                                                                       "go/types.Sizes.Alignof",
 	"(*net/url.URL) []*net/http.Cookie":                                                           "net/http.CookieJar.Cookies",
