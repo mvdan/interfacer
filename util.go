@@ -11,6 +11,8 @@ import (
 	"regexp"
 	"sort"
 	"strings"
+	"unicode"
+	"unicode/utf8"
 )
 
 type ByAlph []string
@@ -19,11 +21,14 @@ func (l ByAlph) Len() int           { return len(l) }
 func (l ByAlph) Less(i, j int) bool { return l[i] < l[j] }
 func (l ByAlph) Swap(i, j int)      { l[i], l[j] = l[j], l[i] }
 
-var exported = regexp.MustCompile(`^[A-Z]`)
-
 type methoder interface {
 	NumMethods() int
 	Method(int) *types.Func
+}
+
+func exported(name string) bool {
+	ch, _ := utf8.DecodeRuneInString(name)
+	return unicode.IsUpper(ch)
 }
 
 func methoderFuncMap(m methoder, skip bool) map[string]string {
@@ -31,7 +36,7 @@ func methoderFuncMap(m methoder, skip bool) map[string]string {
 	for i := 0; i < m.NumMethods(); i++ {
 		f := m.Method(i)
 		fname := f.Name()
-		if !exported.MatchString(fname) {
+		if !exported(fname) {
 			if skip {
 				continue
 			}
@@ -130,7 +135,7 @@ func FromScope(scope *types.Scope, all bool) (ifaces, funcs map[string]string) {
 	funcs = make(map[string]string)
 	ifaceFuncs := make(map[string]string)
 	for _, name := range scope.Names() {
-		if !all && !exported.MatchString(name) {
+		if !all && !exported(name) {
 			continue
 		}
 		tn, ok := scope.Lookup(name).(*types.TypeName)
