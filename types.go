@@ -8,7 +8,6 @@ import (
 	"fmt"
 	"go/types"
 	"io"
-	"regexp"
 	"sort"
 	"strings"
 
@@ -176,14 +175,15 @@ func mentionsType(fname, tname string) bool {
 	capit := strings.ToUpper(tname[:1]) + tname[1:]
 	lower := strings.ToLower(tname)
 	uncap := strings.ToLower(tname[:1]) + tname[1:]
-	upperNames := fmt.Sprintf(`(%s|%s)`, upper, capit)
-	allNames := fmt.Sprintf(`(%s|%s|%s)`, upperNames, lower, uncap)
-	exp := fmt.Sprintf(`^%s[A-Z]|%s([A-Z]|$)`, allNames, upperNames)
-	match, err := regexp.MatchString(exp, fname)
-	if err != nil {
-		panic(err)
+	switch {
+	case strings.Contains(fname, upper):
+	case strings.Contains(fname, capit):
+	case strings.HasPrefix(fname, lower):
+	case strings.HasPrefix(fname, uncap):
+	default:
+		return false
 	}
-	return match
+	return true
 }
 
 func typeNamed(t types.Type) *types.Named {

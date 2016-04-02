@@ -9,30 +9,30 @@ type ReadCloser interface {
 	Read()
 }
 
-type Foo struct{}
+type Conn struct{}
 
-func (f Foo) Close() {}
+func (c Conn) Close() {}
 
-func DoClose(f Foo) { // WARN f can be Closer
-	f.Close()
+func DoClose(c Conn) { // WARN c can be Closer
+	c.Close()
 }
 
-func DoCloseFoo(f Foo) {
-	f.Close()
+func DoCloseConn(c Conn) {
+	c.Close()
+}
+
+func DoCloseConnection(c Conn) {
+	c.Close()
 }
 
 type bar struct{}
 
 func (f *bar) Close() {}
 
-func doCloseBar(b *bar) {
+func barClose(b *bar) {
 	b.Close()
 }
 
-func barwrongClose(b *bar) { // WARN b can be Closer
-	b.Close()
-}
-
-func doCloseBarwrong(b *bar) { // WARN b can be Closer
+func DoCloseFoobar(b *bar) { // WARN b can be Closer
 	b.Close()
 }
