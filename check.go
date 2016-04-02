@@ -154,13 +154,13 @@ func CheckArgs(args []string, onWarns func(string, []Warn)) error {
 	if err != nil {
 		return relPathErr(err, wd)
 	}
-	c.typesGet(pkgs)
 	v := &visitor{
 		cache: c,
 		wd:    wd,
 		fset:  prog.Fset,
 	}
 	for _, pkg := range pkgs {
+		c.grabNames(pkg)
 		warns := v.checkPkg(prog.AllPackages[pkg])
 		onWarns(pkg.Path(), warns)
 	}
@@ -482,20 +482,16 @@ groupIter:
 	}
 }
 
-var fullPathParts = regexp.MustCompile(`^(\*)?(([^/]+/)*([^/]+)\.)?([^/]+)$`)
+var fullPathParts = regexp.MustCompile(`^(\*)?(([^/]+/)*([^/]+\.))?([^/]+)$`)
 
 func (v *visitor) simpleName(fullName string) string {
-	pname := v.Pkg.Path()
-	if strings.HasPrefix(fullName, pname+".") {
-		return fullName[len(pname)+1:]
-	}
 	m := fullPathParts.FindStringSubmatch(fullName)
 	fullPkg := strings.TrimSuffix(m[2], ".")
 	star, pkg, name := m[1], m[4], m[5]
 	if name, e := v.impNames[fullPkg]; e {
-		pkg = name
+		pkg = name + "."
 	}
-	return star + pkg + "." + name
+	return star + pkg + name
 }
 
 func willAddAllocation(t types.Type) bool {

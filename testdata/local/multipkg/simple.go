@@ -9,6 +9,6 @@ type ReadCloser interface {
 	Read()
 }
 
-func BasicWrong(rc ReadCloser) { // WARN rc can be pkg2.Closer
+func BasicWrong(rc ReadCloser) { // WARN rc can be Closer
 	rc.Close()
 }

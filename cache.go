@@ -17,17 +17,23 @@ import (
 type cache struct {
 	loader.Config
 
+	cur pkgCache
+
+	grabbed map[string]pkgCache
+}
+
+type pkgCache struct {
+	exp, unexp typeSet
+}
+
+type typeSet struct {
 	ifaces map[string]string
 	funcs  map[string]string
-
-	grabbed map[string]struct{}
 }
 
 func newCache() *cache {
 	c := &cache{
-		ifaces:  make(map[string]string),
-		funcs:   make(map[string]string),
-		grabbed: make(map[string]struct{}),
+		grabbed: make(map[string]pkgCache),
 	}
 	c.AllowErrors = true
 	c.TypeChecker.Error = func(e error) {}
@@ -43,49 +49,79 @@ func (c *cache) funcOf(t string) string {
 	if s := stdFuncs[t]; s != "" {
 		return s
 	}
-	return c.funcs[t]
+	if s := c.cur.exp.funcs[t]; s != "" {
+		return s
+	}
+	return c.cur.unexp.funcs[t]
 }
 
 func (c *cache) ifaceOf(t string) string {
 	if s := stdIfaces[t]; s != "" {
 		return s
 	}
-	return c.ifaces[t]
-}
-
-func (c *cache) typesGet(pkgs []*types.Package) {
-	for _, pkg := range pkgs {
-		path := pkg.Path()
-		if _, e := stdPkgs[path]; e {
-			continue
-		}
-		if _, e := c.grabbed[path]; e {
-			continue
-		}
-		c.grabbed[path] = struct{}{}
-		c.grabExported(pkg)
-		c.typesGet(pkg.Imports())
+	if s := c.cur.exp.ifaces[t]; s != "" {
+		return s
 	}
+	return c.cur.unexp.ifaces[t]
 }
 
-func (c *cache) grabExported(pkg *types.Package) {
+func (c *cache) grabNames(pkg *types.Package) {
+	c.fillCache(pkg)
+	c.cur = c.grabbed[pkg.Path()]
+}
+
+func (c *cache) fillCache(pkg *types.Package) {
+	path := pkg.Path()
+	if _, e := stdPkgs[path]; e {
+		return
+	}
+	if _, e := c.grabbed[path]; e {
+		return
+	}
+	for _, imp := range pkg.Imports() {
+		c.fillCache(imp)
+	}
+	cur := pkgCache{
+		exp: typeSet{
+			ifaces: make(map[string]string),
+			funcs:  make(map[string]string),
+		},
+		unexp: typeSet{
+			ifaces: make(map[string]string),
+			funcs:  make(map[string]string),
+		},
+	}
+	addTypes := func(impPath string, ifs, funs map[string]string, top bool) {
+		fullName := func(name string) string {
+			if !top {
+				return impPath + "." + name
+			}
+			return name
+		}
+		for iftype, name := range ifs {
+			if _, e := stdIfaces[iftype]; e {
+				continue
+			}
+			if util.Exported(name) {
+				cur.exp.ifaces[iftype] = fullName(name)
+			}
+		}
+		for ftype, name := range funs {
+			if _, e := stdFuncs[ftype]; e {
+				continue
+			}
+			if !util.Exported(name) {
+				cur.unexp.funcs[ftype] = fullName(name)
+			} else {
+				cur.exp.funcs[ftype] = fullName(name)
+			}
+		}
+	}
+	for _, imp := range pkg.Imports() {
+		pc := c.grabbed[imp.Path()]
+		addTypes(imp.Path(), pc.exp.ifaces, pc.exp.funcs, false)
+	}
 	ifs, funs := FromScope(pkg.Scope())
-	for iftype, ifname := range ifs {
-		if !util.Exported(ifname) {
-			continue
-		}
-		if _, e := stdIfaces[iftype]; e {
-			continue
-		}
-		c.ifaces[iftype] = pkg.Path() + "." + ifname
-	}
-	for ftype, fname := range funs {
-		if !util.Exported(fname) {
-			continue
-		}
-		if _, e := stdFuncs[ftype]; e {
-			continue
-		}
-		c.funcs[ftype] = pkg.Path() + "." + fname
-	}
+	addTypes(path, ifs, funs, true)
+	c.grabbed[path] = cur
 }
