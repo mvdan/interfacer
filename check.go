@@ -327,6 +327,8 @@ func (v *visitor) Visit(node ast.Node) ast.Visitor {
 		if _, ok := v.TypeOf(x.Sel).(*types.Signature); !ok {
 			v.discard(x.X)
 		}
+	case *ast.StarExpr:
+		v.discard(x.X)
 	case *ast.UnaryExpr:
 		v.discard(x.X)
 	case *ast.IndexExpr:
