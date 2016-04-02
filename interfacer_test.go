@@ -200,16 +200,20 @@ func runFileTests(t *testing.T, paths ...string) {
 
 func runLocalTests(t *testing.T, paths ...string) {
 	defer chdirUndo(t, "local")()
-	if len(paths) == 0 {
-		for _, p := range inputPaths(t, "*") {
-			paths = append(paths, "./"+p+"/...")
+	if len(paths) > 0 {
+		for _, p := range paths {
+			doTest(t, p)
 		}
-		// non-recursive
-		paths = append(paths, "./single")
+		return
+	}
+	for _, p := range inputPaths(t, "*") {
+		paths = append(paths, "./"+p+"/...")
 	}
 	for _, p := range paths {
 		doTest(t, p)
 	}
+	// non-recursive
+	doTest(t, "./single")
 	doTestString(t, "no-args", ".", "")
 }
 
@@ -288,6 +292,9 @@ func doTestError(t *testing.T, name, exp string, args ...string) {
 }
 
 func TestErrors(t *testing.T) {
+	if *name != "" {
+		t.Skip()
+	}
 	// non-existent Go file
 	doTestError(t, "missing.go", "open missing.go: no such file or directory")
 	// local non-existent non-recursive
@@ -301,6 +308,9 @@ func TestErrors(t *testing.T) {
 }
 
 func TestExtraArg(t *testing.T) {
+	if *name != "" {
+		t.Skip()
+	}
 	err := CheckArgsOutput([]string{"single", "--", "foo", "bar"}, ioutil.Discard, false)
 	got := err.Error()
 	want := "unwanted extra args: [foo bar]"
