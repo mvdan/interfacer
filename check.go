@@ -238,11 +238,11 @@ func (v *visitor) varUsage(e ast.Expr) *varUsage {
 		// not a variable
 		return nil
 	}
-	if !interesting(param.Type()) {
-		return nil
-	}
 	if usage, e := v.vars[param]; e {
 		return usage
+	}
+	if !interesting(param.Type()) {
+		return nil
 	}
 	usage := &varUsage{
 		calls:    make(map[string]struct{}),
