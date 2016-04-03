@@ -26,6 +26,16 @@ func CorrectUse() {
 	receiver(Correct)
 }
 
+var holder func(ReadCloser)
+
+func Correct2(rc ReadCloser) {
+	rc.Close()
+}
+
+func CorrectAssign() {
+	holder = Correct2
+}
+
 func WrongLit() {
 	f := func(rc ReadCloser) { // WARN rc can be Closer
 		rc.Close()
@@ -38,4 +48,13 @@ func CorrectLit() {
 		rc.Close()
 	}
 	receiver(f)
+}
+
+func CorrectLitAssign() {
+	f := func(rc ReadCloser) {
+		rc.Close()
+	}
+	var f2 func(ReadCloser)
+	f2 = f
+	f2(nil)
 }
