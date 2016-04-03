@@ -16,6 +16,11 @@ func Basic(c Closer) {
 	c.Close()
 }
 
+func BasicInteresting(rc ReadCloser) {
+	rc.Read()
+	rc.Close()
+}
+
 func BasicWrong(rc ReadCloser) { // WARN rc can be Closer
 	rc.Close()
 }
