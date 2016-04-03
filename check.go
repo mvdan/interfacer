@@ -282,19 +282,16 @@ func (v *visitor) addAssign(to, from ast.Expr) {
 	pto := v.varUsage(to)
 	pfrom := v.varUsage(from)
 	if pto == nil || pfrom == nil {
-		// either isn't a variable
+		// either isn't interesting
 		return
 	}
 	pfrom.assigned[pto] = struct{}{}
 }
 
 func (v *visitor) discard(e ast.Expr) {
-	usage := v.varUsage(e)
-	if usage == nil {
-		// not a variable
-		return
+	if usage := v.varUsage(e); usage != nil {
+		usage.discard = true
 	}
-	usage.discard = true
 }
 
 func (v *visitor) comparedWith(e, with ast.Expr) {
@@ -421,12 +418,9 @@ func (v *visitor) onMethodCall(ce *ast.CallExpr, sign *types.Signature) {
 	if !ok {
 		return
 	}
-	usage := v.varUsage(sel.X)
-	if usage == nil {
-		// not a variable
-		return
+	if usage := v.varUsage(sel.X); usage != nil {
+		usage.calls[sel.Sel.Name] = struct{}{}
 	}
-	usage.calls[sel.Sel.Name] = struct{}{}
 }
 
 type byPos []Warn
