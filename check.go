@@ -206,9 +206,7 @@ func (v *visitor) checkPkg(info *loader.PackageInfo) []Warn {
 		}
 		ast.Walk(v, f)
 	}
-	warns := v.packageWarns()
-	sort.Sort(byPos(warns))
-	return warns
+	return v.packageWarns()
 }
 
 func paramType(sign *types.Signature, i int) types.Type {
@@ -421,18 +419,6 @@ func (v *visitor) onMethodCall(ce *ast.CallExpr, sign *types.Signature) {
 		usage.calls[sel.Sel.Name] = struct{}{}
 	}
 }
-
-type byPos []Warn
-
-func (l byPos) Len() int { return len(l) }
-func (l byPos) Less(i, j int) bool {
-	p1, p2 := l[i].Pos, l[j].Pos
-	if p1.Filename == p2.Filename {
-		return p1.Offset < p2.Offset
-	}
-	return p1.Filename < p2.Filename
-}
-func (l byPos) Swap(i, j int) { l[i], l[j] = l[j], l[i] }
 
 func (fd *funcDecl) paramGroups() [][]*types.Var {
 	astList := fd.astType.Params.List
