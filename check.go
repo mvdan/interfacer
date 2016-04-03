@@ -118,6 +118,8 @@ type visitor struct {
 	fset  *token.FileSet
 	funcs []*funcDecl
 
+	discardFuncs map[*types.Signature]struct{}
+
 	vars     map[*types.Var]*varUsage
 	impNames map[string]string
 }
@@ -193,6 +195,7 @@ func CheckArgsOutput(args []string, w io.Writer, verbose bool) error {
 
 func (v *visitor) checkPkg(info *loader.PackageInfo) []Warn {
 	v.PackageInfo = info
+	v.discardFuncs = make(map[*types.Signature]struct{})
 	v.vars = make(map[*types.Var]*varUsage)
 	v.impNames = make(map[string]string)
 	for _, f := range info.Files {
@@ -258,19 +261,20 @@ func (v *visitor) addUsed(e ast.Expr, as types.Type) {
 	if as == nil {
 		return
 	}
-	usage := v.varUsage(e)
-	if usage == nil {
-		// not a variable
-		return
-	}
-	iface, ok := as.Underlying().(*types.Interface)
-	if !ok {
-		usage.discard = true
-		return
-	}
-	for i := 0; i < iface.NumMethods(); i++ {
-		m := iface.Method(i)
-		usage.calls[m.Name()] = struct{}{}
+	if usage := v.varUsage(e); usage != nil {
+		// using variable
+		iface, ok := as.Underlying().(*types.Interface)
+		if !ok {
+			usage.discard = true
+			return
+		}
+		for i := 0; i < iface.NumMethods(); i++ {
+			m := iface.Method(i)
+			usage.calls[m.Name()] = struct{}{}
+		}
+	} else if t, ok := v.TypeOf(e).(*types.Signature); ok {
+		// using func
+		v.discardFuncs[t] = struct{}{}
 	}
 }
 
@@ -455,6 +459,9 @@ func (fd *funcDecl) paramGroups() [][]*types.Var {
 func (v *visitor) packageWarns() []Warn {
 	var warns []Warn
 	for _, fd := range v.funcs {
+		if _, e := v.discardFuncs[fd.sign]; e {
+			continue
+		}
 		for _, group := range fd.paramGroups() {
 			warns = append(warns, v.groupWarns(fd, group)...)
 		}
