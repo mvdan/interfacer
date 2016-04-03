@@ -237,6 +237,10 @@ func (v *visitor) varUsage(e ast.Expr) *varUsage {
 	}
 	param, ok := v.ObjectOf(id).(*types.Var)
 	if !ok {
+		// not a variable
+		return nil
+	}
+	if !interesting(param.Type()) {
 		return nil
 	}
 	if usage, e := v.vars[param]; e {
