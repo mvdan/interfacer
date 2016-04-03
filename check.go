@@ -366,7 +366,9 @@ func (v *visitor) onBinary(be *ast.BinaryExpr) {
 func (v *visitor) onAssign(as *ast.AssignStmt) {
 	for i, val := range as.Rhs {
 		left := as.Lhs[i]
-		v.addUsed(val, v.Types[left].Type)
+		if as.Tok == token.ASSIGN {
+			v.addUsed(val, v.TypeOf(left))
+		}
 		v.addAssign(left, val)
 	}
 }
