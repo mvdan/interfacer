@@ -119,7 +119,6 @@ type visitor struct {
 	wd    string
 	fset  *token.FileSet
 	funcs []*funcDecl
-	warns []Warn
 
 	vars     map[*types.Var]*varUsage
 	impNames map[string]string
@@ -196,7 +195,6 @@ func CheckArgsOutput(args []string, w io.Writer, verbose bool) error {
 
 func (v *visitor) checkPkg(info *loader.PackageInfo) []Warn {
 	v.PackageInfo = info
-	v.warns = nil
 	v.vars = make(map[*types.Var]*varUsage)
 	v.impNames = make(map[string]string)
 	for _, f := range info.Files {
@@ -210,8 +208,9 @@ func (v *visitor) checkPkg(info *loader.PackageInfo) []Warn {
 		}
 		ast.Walk(v, f)
 	}
-	sort.Sort(byPos(v.warns))
-	return v.warns
+	warns := v.packageWarns()
+	sort.Sort(byPos(warns))
+	return warns
 }
 
 func paramType(sign *types.Signature, i int) types.Type {
@@ -343,13 +342,8 @@ func (v *visitor) Visit(node ast.Node) ast.Visitor {
 		v.onComposite(x)
 	case *ast.CallExpr:
 		v.onCall(x)
-	case nil:
-		if top := v.funcs[len(v.funcs)-1]; top != nil {
-			v.funcEnded(top)
-		}
-		v.funcs = v.funcs[:len(v.funcs)-1]
 	}
-	if node != nil {
+	if fd != nil {
 		v.funcs = append(v.funcs, fd)
 	}
 	return v
@@ -456,32 +450,36 @@ func (fd *funcDecl) paramGroups() [][]*types.Var {
 	return groups
 }
 
-func (v *visitor) funcEnded(fd *funcDecl) {
-groupIter:
-	for _, group := range fd.paramGroups() {
-		var groupWarns []Warn
-		for _, param := range group {
-			usage := v.vars[param]
-			if usage == nil {
-				continue groupIter
+func (v *visitor) packageWarns() []Warn {
+	var warns []Warn
+	for _, fd := range v.funcs {
+	groupIter:
+		for _, group := range fd.paramGroups() {
+			var groupWarns []Warn
+			for _, param := range group {
+				usage := v.vars[param]
+				if usage == nil {
+					continue groupIter
+				}
+				newType := v.paramNewType(fd.name, param, usage)
+				if newType == "" {
+					continue groupIter
+				}
+				pos := v.fset.Position(param.Pos())
+				// go/loader seems to like absolute paths
+				if rel, err := filepath.Rel(v.wd, pos.Filename); err == nil {
+					pos.Filename = rel
+				}
+				groupWarns = append(groupWarns, Warn{
+					Pos:  pos,
+					Name: param.Name(),
+					Type: newType,
+				})
 			}
-			newType := v.paramNewType(fd.name, param, usage)
-			if newType == "" {
-				continue groupIter
-			}
-			pos := v.fset.Position(param.Pos())
-			// go/loader seems to like absolute paths
-			if rel, err := filepath.Rel(v.wd, pos.Filename); err == nil {
-				pos.Filename = rel
-			}
-			groupWarns = append(groupWarns, Warn{
-				Pos:  pos,
-				Name: param.Name(),
-				Type: newType,
-			})
+			warns = append(warns, groupWarns...)
 		}
-		v.warns = append(v.warns, groupWarns...)
 	}
+	return warns
 }
 
 var fullPathParts = regexp.MustCompile(`^(\*)?(([^/]+/)*([^/]+\.))?([^/]+)$`)
