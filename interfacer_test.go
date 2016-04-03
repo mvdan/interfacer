@@ -102,9 +102,9 @@ func wantedWarnings(t *testing.T, p string) []Warn {
 				vname, tname := m[1], m[2]
 				comPos := fset.Position(group.Pos())
 				warns = append(warns, Warn{
-					Pos:  identPos[identKey(comPos, vname)],
-					Name: vname,
-					Type: tname,
+					Pos:     identPos[identKey(comPos, vname)],
+					Name:    vname,
+					NewType: tname,
 				})
 			}
 		}

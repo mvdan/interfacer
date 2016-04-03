@@ -87,16 +87,14 @@ func relPathErr(err error, wd string) error {
 // Warn is an interfacer warning suggesting a better type for a function
 // parameter.
 type Warn struct {
-	// Position and name of the parameter
-	Pos  token.Position
-	Name string
-	// New suggested type
-	Type string
+	Pos     token.Position
+	Name    string
+	NewType string
 }
 
 func (w Warn) String() string {
 	return fmt.Sprintf("%s:%d:%d: %s can be %s",
-		w.Pos.Filename, w.Pos.Line, w.Pos.Column, w.Name, w.Type)
+		w.Pos.Filename, w.Pos.Line, w.Pos.Column, w.Name, w.NewType)
 }
 
 type varUsage struct {
@@ -477,9 +475,9 @@ func (v *visitor) groupWarns(fd *funcDecl, group []*types.Var) []Warn {
 			pos.Filename = rel
 		}
 		warns = append(warns, Warn{
-			Pos:  pos,
-			Name: param.Name(),
-			Type: newType,
+			Pos:     pos,
+			Name:    param.Name(),
+			NewType: newType,
 		})
 	}
 	return warns
