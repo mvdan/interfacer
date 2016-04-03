@@ -38,9 +38,6 @@ func (v *visitor) interfaceMatching(param *types.Var, usage *varUsage) (string, 
 		return "", ""
 	}
 	allFuncs := typeFuncMap(param.Type())
-	if allFuncs == nil {
-		return "", ""
-	}
 	called := make(map[string]string, len(usage.calls))
 	for fname := range usage.calls {
 		called[fname] = allFuncs[fname]
@@ -516,8 +513,7 @@ func (v *visitor) paramNewType(funcName string, param *types.Var, usage *varUsag
 	if !util.Exported(funcName) && willAddAllocation(t) {
 		return ""
 	}
-	named := typeNamed(t)
-	if named != nil {
+	if named := typeNamed(t); named != nil {
 		name := named.Obj().Name()
 		if mentionsType(funcName, name) {
 			return ""
@@ -528,9 +524,6 @@ func (v *visitor) paramNewType(funcName string, param *types.Var, usage *varUsag
 		return ""
 	}
 	if _, ok := t.Underlying().(*types.Interface); ok {
-		if ifname == t.String() {
-			return ""
-		}
 		if have := funcMapString(typeFuncMap(t)); have == iftype {
 			return ""
 		}

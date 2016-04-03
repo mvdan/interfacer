@@ -193,10 +193,6 @@ func typeNamed(t types.Type) *types.Named {
 			return x
 		case *types.Pointer:
 			t = x.Elem()
-		case *types.Array:
-			t = x.Elem()
-		case *types.Slice:
-			t = x.Elem()
 		default:
 			return nil
 		}
