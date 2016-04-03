@@ -453,31 +453,34 @@ func (fd *funcDecl) paramGroups() [][]*types.Var {
 func (v *visitor) packageWarns() []Warn {
 	var warns []Warn
 	for _, fd := range v.funcs {
-	groupIter:
 		for _, group := range fd.paramGroups() {
-			var groupWarns []Warn
-			for _, param := range group {
-				usage := v.vars[param]
-				if usage == nil {
-					continue groupIter
-				}
-				newType := v.paramNewType(fd.name, param, usage)
-				if newType == "" {
-					continue groupIter
-				}
-				pos := v.fset.Position(param.Pos())
-				// go/loader seems to like absolute paths
-				if rel, err := filepath.Rel(v.wd, pos.Filename); err == nil {
-					pos.Filename = rel
-				}
-				groupWarns = append(groupWarns, Warn{
-					Pos:  pos,
-					Name: param.Name(),
-					Type: newType,
-				})
-			}
-			warns = append(warns, groupWarns...)
+			warns = append(warns, v.groupWarns(fd, group)...)
 		}
+	}
+	return warns
+}
+
+func (v *visitor) groupWarns(fd *funcDecl, group []*types.Var) []Warn {
+	var warns []Warn
+	for _, param := range group {
+		usage := v.vars[param]
+		if usage == nil {
+			return nil
+		}
+		newType := v.paramNewType(fd.name, param, usage)
+		if newType == "" {
+			return nil
+		}
+		pos := v.fset.Position(param.Pos())
+		// go/loader seems to like absolute paths
+		if rel, err := filepath.Rel(v.wd, pos.Filename); err == nil {
+			pos.Filename = rel
+		}
+		warns = append(warns, Warn{
+			Pos:  pos,
+			Name: param.Name(),
+			Type: newType,
+		})
 	}
 	return warns
 }
