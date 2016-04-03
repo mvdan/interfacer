@@ -171,19 +171,9 @@ func mentionsType(fname, tname string) bool {
 	if fname == "" || tname == "" {
 		return false
 	}
-	upper := strings.ToUpper(tname)
 	capit := strings.ToUpper(tname[:1]) + tname[1:]
 	lower := strings.ToLower(tname)
-	uncap := strings.ToLower(tname[:1]) + tname[1:]
-	switch {
-	case strings.Contains(fname, upper):
-	case strings.Contains(fname, capit):
-	case strings.HasPrefix(fname, lower):
-	case strings.HasPrefix(fname, uncap):
-	default:
-		return false
-	}
-	return true
+	return strings.Contains(fname, capit) || strings.HasPrefix(fname, lower)
 }
 
 func typeNamed(t types.Type) *types.Named {
