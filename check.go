@@ -334,6 +334,8 @@ func (v *visitor) Visit(node ast.Node) ast.Visitor {
 		v.discard(x.X)
 	case *ast.BinaryExpr:
 		v.onBinary(x)
+	case *ast.DeclStmt:
+		v.onDecl(x)
 	case *ast.AssignStmt:
 		v.onAssign(x)
 	case *ast.CompositeLit:
@@ -355,6 +357,19 @@ func (v *visitor) onBinary(be *ast.BinaryExpr) {
 	default:
 		v.discard(be.X)
 		v.discard(be.Y)
+	}
+}
+
+func (v *visitor) onDecl(ds *ast.DeclStmt) {
+	gd := ds.Decl.(*ast.GenDecl)
+	for _, sp := range gd.Specs {
+		vs, ok := sp.(*ast.ValueSpec)
+		if !ok {
+			continue
+		}
+		for _, val := range vs.Values {
+			v.addUsed(val, v.TypeOf(vs.Type))
+		}
 	}
 }
 

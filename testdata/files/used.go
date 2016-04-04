@@ -50,10 +50,16 @@ func ArgExtraWrong(s1 st) { // WARN s1 can be io.Closer
 	extra(3, s1, s2)
 }
 
-func AssignedStruct(s st) {
+func Assigned(s st) {
 	s.Close()
 	var s2 st
 	s2 = s
+	_ = s2
+}
+
+func Declared(s st) {
+	s.Close()
+	var s2 st = s
 	_ = s2
 }
 

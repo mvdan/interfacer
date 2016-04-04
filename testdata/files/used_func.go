@@ -58,3 +58,11 @@ func CorrectLitAssign() {
 	f2 = f
 	f2(nil)
 }
+
+func CorrectLitDecl() {
+	f := func(rc ReadCloser) {
+		rc.Close()
+	}
+	var f2 func(ReadCloser) = f
+	f2(nil)
+}
