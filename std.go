@@ -154,6 +154,7 @@ var stdPkgs = map[string]struct{}{
 	"runtime/internal/atomic":               {},
 	"image/internal/imageutil":              {},
 	"go/internal/gccgoimporter":             {},
+	"internal/syscall/windows/sysdll":       {},
 	"internal/golang.org/x/net/http2/hpack": {},
 }
 
