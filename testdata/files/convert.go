@@ -12,3 +12,8 @@ func ConvertStruct(m mint) {
 	m.Close()
 	_ = mint2(m)
 }
+
+func ConvertBasic(m mint) {
+	m.Close()
+	println(int(m))
+}
