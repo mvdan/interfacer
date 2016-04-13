@@ -58,8 +58,3 @@ func ProcessInputFile(f *os.File) error {
 	// use as an io.Reader
 }
 ```
-
-### Caveats
-
-* Vendor support only on 1.6 or later. The necessary parts were not
-  added to `go/build` until 1.6.
