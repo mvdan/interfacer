@@ -492,8 +492,8 @@ func (v *visitor) simpleName(fullName string) string {
 	m := fullPathParts.FindStringSubmatch(fullName)
 	fullPkg := strings.TrimSuffix(m[2], ".")
 	star, pkg, name := m[1], m[4], m[5]
-	if name, e := v.impNames[fullPkg]; e {
-		pkg = name + "."
+	if pkgName, e := v.impNames[fullPkg]; e {
+		pkg = pkgName + "."
 	}
 	return star + pkg + name
 }
