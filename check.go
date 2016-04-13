@@ -16,6 +16,7 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/kisielk/gotool"
 	"golang.org/x/tools/go/loader"
 
 	"github.com/mvdan/interfacer/internal/util"
@@ -130,10 +131,7 @@ func CheckArgs(args []string, onWarns func(string, []Warn)) error {
 	if err != nil {
 		return err
 	}
-	paths, err := recurse(args...)
-	if err != nil {
-		return err
-	}
+	paths := gotool.ImportPaths(args)
 	c := newCache()
 	rest, err := c.FromArgs(paths, false)
 	if err != nil {

@@ -18,6 +18,8 @@ import (
 	"regexp"
 	"strings"
 	"testing"
+
+	"github.com/kisielk/gotool"
 )
 
 const testdata = "testdata"
@@ -32,10 +34,7 @@ func goFiles(t *testing.T, p string) []string {
 	if strings.HasSuffix(p, ".go") {
 		return []string{p}
 	}
-	dirs, err := recurse(p)
-	if err != nil {
-		t.Fatal(err)
-	}
+	dirs := gotool.ImportPaths([]string{p})
 	var paths []string
 	for _, dir := range dirs {
 		files, err := ioutil.ReadDir(dir)
@@ -131,7 +130,7 @@ func doTestWarns(t *testing.T, name string, exp []Warn, args ...string) {
 		t.Fatalf("Did not want error in %s:\n%v", name, err)
 	}
 	if !reflect.DeepEqual(exp, got) {
-		t.Fatalf("Output mismatch in %s:\nExpected:\n%sGot:\n%s",
+		t.Fatalf("Output mismatch in %s:\nExpected:\n%s\nGot:\n%s",
 			name, warnsJoin(exp), warnsJoin(got))
 	}
 }
@@ -160,7 +159,7 @@ func doTestString(t *testing.T, name, exp string, args ...string) {
 	exp = endNewline(exp)
 	got := b.String()
 	if exp != got {
-		t.Fatalf("Output mismatch in %s:\nExpected:\n%sGot:\n%s",
+		t.Fatalf("Output mismatch in %s:\nExpected:\n%s\nGot:\n%s",
 			name, exp, got)
 	}
 }
@@ -250,6 +249,7 @@ func TestMain(m *testing.M) {
 		panic(err)
 	}
 	build.Default.GOPATH = wd
+	gotool.DefaultContext.BuildContext.GOPATH = wd
 	os.Exit(m.Run())
 }
 
@@ -286,7 +286,7 @@ func doTestError(t *testing.T, name, exp string, args ...string) {
 	}
 	got := err.Error()
 	if exp != got {
-		t.Fatalf("Error mismatch in %s:\nExpected:\n%sGot:\n%s",
+		t.Fatalf("Error mismatch in %s:\nExpected:\n%s\nGot:\n%s",
 			name, exp, got)
 	}
 }
@@ -301,8 +301,6 @@ func TestErrors(t *testing.T) {
 	doTestError(t, "./missing", "no initial packages were loaded")
 	// non-local non-existent non-recursive
 	doTestError(t, "missing", "no initial packages were loaded")
-	// local non-existent recursive
-	doTestError(t, "./missing-rec/...", "lstat ./missing-rec: no such file or directory")
 	// Mixing Go files and dirs
 	doTestError(t, "wrong-args", "named files must be .go files: bar", "foo.go", "bar")
 }
@@ -315,6 +313,6 @@ func TestExtraArg(t *testing.T) {
 	got := err.Error()
 	want := "unwanted extra args: [foo bar]"
 	if got != want {
-		t.Fatalf("Error mismatch:\nExpected:\n%sGot:\n%s", want, got)
+		t.Fatalf("Error mismatch:\nExpected:\n%s\nGot:\n%s", want, got)
 	}
 }
