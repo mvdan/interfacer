@@ -86,8 +86,8 @@ func wantedWarnings(t *testing.T, p string) []Warn {
 		if err != nil {
 			t.Fatal(err)
 		}
-		defer src.Close()
 		f, err := parser.ParseFile(fset, path, src, parser.ParseComments)
+		src.Close()
 		if err != nil {
 			t.Fatal(err)
 		}
