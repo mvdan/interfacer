@@ -166,12 +166,15 @@ func FromScope(scope *types.Scope) (ifaces, funcs map[string]string) {
 	return ifaces, funcs
 }
 
-func mentionsType(fname, tname string) bool {
-	if fname == "" || tname == "" {
+func mentionsName(fname, name string) bool {
+	if fname == "" || name == "" {
 		return false
 	}
-	capit := strings.ToUpper(tname[:1]) + tname[1:]
-	lower := strings.ToLower(tname)
+	if len(name) < 2 {
+		return false
+	}
+	capit := strings.ToUpper(name[:1]) + name[1:]
+	lower := strings.ToLower(name)
 	return strings.Contains(fname, capit) || strings.HasPrefix(fname, lower)
 }
 

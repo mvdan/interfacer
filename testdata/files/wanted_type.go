@@ -36,3 +36,11 @@ func barClose(b *bar) {
 func DoCloseFoobar(b *bar) { // WARN b can be Closer
 	b.Close()
 }
+
+type NetConn struct{}
+
+func (n NetConn) Close() {}
+
+func closeConn(conn *NetConn) {
+	conn.Close()
+}

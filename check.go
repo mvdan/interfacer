@@ -513,8 +513,9 @@ func (v *visitor) paramNewType(funcName string, param *types.Var, usage *varUsag
 		return ""
 	}
 	if named := typeNamed(t); named != nil {
-		name := named.Obj().Name()
-		if mentionsType(funcName, name) {
+		tname := named.Obj().Name()
+		vname := param.Name()
+		if mentionsName(funcName, tname) || mentionsName(funcName, vname) {
 			return ""
 		}
 	}
