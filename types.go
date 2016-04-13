@@ -41,7 +41,8 @@ func typeFuncMap(t types.Type) map[string]string {
 	case *types.Pointer:
 		return typeFuncMap(x.Elem())
 	case *types.Named:
-		if u, ok := x.Underlying().(*types.Interface); ok {
+		u := x.Underlying()
+		if types.IsInterface(u) {
 			return typeFuncMap(u)
 		}
 		return methoderFuncMap(x, true)
@@ -95,12 +96,10 @@ func interesting(t types.Type) bool {
 	case *types.Interface:
 		return x.NumMethods() > 1
 	case *types.Named:
-		switch u := x.Underlying().(type) {
-		case *types.Interface:
+		if u := x.Underlying(); types.IsInterface(u) {
 			return interesting(u)
-		default:
-			return x.NumMethods() >= 1
 		}
+		return x.NumMethods() >= 1
 	case *types.Pointer:
 		return interesting(x.Elem())
 	default:

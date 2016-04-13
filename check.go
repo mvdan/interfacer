@@ -524,7 +524,7 @@ func (v *visitor) paramNewType(funcName string, param *types.Var, usage *varUsag
 	if ifname == "" {
 		return ""
 	}
-	if _, ok := t.Underlying().(*types.Interface); ok {
+	if types.IsInterface(t.Underlying()) {
 		if have := funcMapString(typeFuncMap(t)); have == iftype {
 			return ""
 		}
