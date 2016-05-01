@@ -207,22 +207,23 @@ func (v *visitor) checkPkg(info *loader.PackageInfo) []Warn {
 	return v.packageWarns()
 }
 
-func paramType(sign *types.Signature, i int) types.Type {
+func paramVarAndType(sign *types.Signature, i int) (*types.Var, types.Type) {
 	params := sign.Params()
 	extra := sign.Variadic() && i >= params.Len()-1
 	if !extra {
 		if i >= params.Len() {
 			// builtins with multiple signatures
-			return nil
+			return nil, nil
 		}
-		return params.At(i).Type()
+		vr := params.At(i)
+		return vr, vr.Type()
 	}
 	last := params.At(params.Len() - 1)
 	switch x := last.Type().(type) {
 	case *types.Slice:
-		return x.Elem()
+		return nil, x.Elem()
 	default:
-		return x
+		return nil, x
 	}
 }
 
@@ -422,12 +423,21 @@ func (v *visitor) onCall(ce *ast.CallExpr) {
 
 func (v *visitor) onMethodCall(ce *ast.CallExpr, sign *types.Signature) {
 	for i, e := range ce.Args {
-		v.addUsed(e, paramType(sign, i))
+		paramObj, t := paramVarAndType(sign, i)
+		// Don't if this is a parameter being re-used as itself
+		// in a recursive call
+		if id, ok := e.(*ast.Ident); ok {
+			if paramObj == v.ObjectOf(id) {
+				continue
+			}
+		}
+		v.addUsed(e, t)
 	}
 	sel, ok := ce.Fun.(*ast.SelectorExpr)
 	if !ok {
 		return
 	}
+	// receiver func call on the left side
 	if usage := v.varUsage(sel.X); usage != nil {
 		usage.calls[sel.Sel.Name] = struct{}{}
 	}
