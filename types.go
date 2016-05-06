@@ -7,7 +7,6 @@ import (
 	"bytes"
 	"fmt"
 	"go/types"
-	"io"
 	"sort"
 	"strings"
 
@@ -62,10 +61,9 @@ func funcMapString(iface map[string]string) string {
 	var b bytes.Buffer
 	for i, fname := range fnames {
 		if i > 0 {
-			io.WriteString(&b, "; ")
+			fmt.Fprint(&b, "; ")
 		}
-		io.WriteString(&b, fname)
-		io.WriteString(&b, iface[fname])
+		fmt.Fprint(&b, fname, iface[fname])
 	}
 	return b.String()
 }
