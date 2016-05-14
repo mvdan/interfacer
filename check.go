@@ -72,16 +72,6 @@ func progPackages(prog *loader.Program) ([]*types.Package, error) {
 	return pkgs, nil
 }
 
-// relPathErr converts errors by go/types and go/loader that use
-// absolute paths into errors with relative paths.
-func relPathErr(err error, wd string) error {
-	errStr := fmt.Sprintf("%v", err)
-	if strings.HasPrefix(errStr, wd) {
-		return fmt.Errorf(errStr[len(wd)+1:])
-	}
-	return err
-}
-
 // Warn is an interfacer warning suggesting a better type for a function
 // parameter.
 type Warn struct {
@@ -146,7 +136,7 @@ func CheckArgs(args []string, onWarns func(string, []Warn)) error {
 	}
 	pkgs, err := progPackages(prog)
 	if err != nil {
-		return relPathErr(err, wd)
+		return err
 	}
 	v := &visitor{
 		cache: c,
