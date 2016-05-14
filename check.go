@@ -153,15 +153,12 @@ func CheckArgs(args []string, onWarns func(string, []Warn)) error {
 
 // CheckArgsList is like CheckArgs, but returning a list of all the
 // warnings instead.
-func CheckArgsList(args []string) ([]Warn, error) {
-	var all []Warn
+func CheckArgsList(args []string) (all []Warn, err error) {
 	onWarns := func(path string, warns []Warn) {
 		all = append(all, warns...)
 	}
-	if err := CheckArgs(args, onWarns); err != nil {
-		return nil, err
-	}
-	return all, nil
+	err = CheckArgs(args, onWarns)
+	return
 }
 
 // CheckArgsOutput is like CheckArgs, but intended for human-readable
