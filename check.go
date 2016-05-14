@@ -302,14 +302,6 @@ func (v *visitor) implementsIface(sign *types.Signature) bool {
 func (v *visitor) Visit(node ast.Node) ast.Visitor {
 	var fd *funcDecl
 	switch x := node.(type) {
-	case *ast.FuncLit:
-		fd = &funcDecl{
-			sign:    v.Types[x].Type.(*types.Signature),
-			astType: x.Type,
-		}
-		if v.implementsIface(fd.sign) {
-			return nil
-		}
 	case *ast.FuncDecl:
 		fd = &funcDecl{
 			name:    x.Name.Name,

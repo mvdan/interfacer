@@ -37,8 +37,8 @@ func FooArgWrong(rc ReadCloser) { // WARN rc can be io.Closer
 	f(rc.Close())
 }
 
-func FooNestedWrong(rc ReadCloser) { // WARN rc can be io.Reader
-	f := func(rc ReadCloser) { // WARN rc can be io.Closer
+func FooNestedWrongIgnored(rc ReadCloser) { // WARN rc can be io.Reader
+	f := func(rc ReadCloser) {
 		rc.Close()
 	}
 	f(nil)

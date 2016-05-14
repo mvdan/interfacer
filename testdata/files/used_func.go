@@ -36,13 +36,6 @@ func CorrectAssign() {
 	holder = Correct2
 }
 
-func WrongLit() {
-	f := func(rc ReadCloser) { // WARN rc can be Closer
-		rc.Close()
-	}
-	f(nil)
-}
-
 func CorrectLit() {
 	f := func(rc ReadCloser) {
 		rc.Close()

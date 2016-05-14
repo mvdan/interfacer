@@ -165,9 +165,6 @@ func FromScope(scope *types.Scope) (ifaces, funcs map[string]string) {
 }
 
 func mentionsName(fname, name string) bool {
-	if fname == "" || name == "" {
-		return false
-	}
 	if len(name) < 2 {
 		return false
 	}
