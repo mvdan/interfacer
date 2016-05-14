@@ -32,3 +32,7 @@ func SliceIface(rcs []ReadCloser) {
 func TypeConversion(i int) int64 {
 	return int64(i)
 }
+
+func LocalType() {
+	type str string
+}
