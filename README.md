@@ -5,7 +5,7 @@
 A linter that suggests interface types. In other words, it warns about
 the usage of types that are more specific than necessary.
 
-	go get github.com/mvdan/interfacer/cmd/interfacer
+	go get -u github.com/mvdan/interfacer/cmd/interfacer
 
 ### Usage
 
