@@ -51,11 +51,7 @@ func (v *visitor) interfaceMatching(param *types.Var, usage *varUsage) (string, 
 	called := make(map[string]string, len(usage.calls))
 	allCalls(usage, called, ftypes)
 	s := funcMapString(called)
-	name := v.ifaceOf(s)
-	if name == "" {
-		return "", ""
-	}
-	return name, s
+	return v.ifaceOf(s), s
 }
 
 func progPackages(prog *loader.Program) ([]*types.Package, error) {
@@ -378,9 +374,8 @@ func compositeIdentType(t types.Type, i int) types.Type {
 		return x.Elem()
 	case *types.Slice:
 		return x.Elem()
-	default:
-		return nil
 	}
+	return nil
 }
 
 func (v *visitor) onComposite(cl *ast.CompositeLit) {
@@ -498,9 +493,8 @@ func willAddAllocation(t types.Type) bool {
 	switch t.Underlying().(type) {
 	case *types.Pointer, *types.Interface:
 		return false
-	default:
-		return true
 	}
+	return true
 }
 
 func (v *visitor) paramNewType(funcName string, param *types.Var, usage *varUsage) string {
