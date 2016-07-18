@@ -131,7 +131,7 @@ func doTestWarns(t *testing.T, name string, exp []Warn, args ...string) {
 		t.Fatalf("Did not want error in %s:\n%v", name, err)
 	}
 	if !reflect.DeepEqual(exp, got) {
-		t.Fatalf("Output mismatch in %s:\nExpected:\n%s\nGot:\n%s",
+		t.Fatalf("Output mismatch in %s:\nwant:\n%sgot:\n%s",
 			name, warnsJoin(exp), warnsJoin(got))
 	}
 }

@@ -34,15 +34,22 @@ func toDiscard(usage *varUsage) bool {
 	return false
 }
 
+func allCalls(usage *varUsage, all, ftypes map[string]string) {
+	for fname := range usage.calls {
+		all[fname] = ftypes[fname]
+	}
+	for to := range usage.assigned {
+		allCalls(to, all, ftypes)
+	}
+}
+
 func (v *visitor) interfaceMatching(param *types.Var, usage *varUsage) (string, string) {
 	if toDiscard(usage) {
 		return "", ""
 	}
-	allFuncs := typeFuncMap(param.Type())
+	ftypes := typeFuncMap(param.Type())
 	called := make(map[string]string, len(usage.calls))
-	for fname := range usage.calls {
-		called[fname] = allFuncs[fname]
-	}
+	allCalls(usage, called, ftypes)
 	s := funcMapString(called)
 	name := v.ifaceOf(s)
 	if name == "" {
