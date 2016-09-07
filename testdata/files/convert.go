@@ -8,7 +8,7 @@ func (m mint) Close() error {
 
 type mint2 mint
 
-func ConvertStruct(m mint) {
+func ConvertNamed(m mint) {
 	m.Close()
 	_ = mint2(m)
 }
@@ -16,4 +16,13 @@ func ConvertStruct(m mint) {
 func ConvertBasic(m mint) {
 	m.Close()
 	println(int(m))
+}
+
+type Closer interface {
+	Close() error
+}
+
+func ConvertIface(m mint) { // WARN m can be io.Closer
+	m.Close()
+	_ = Closer(m)
 }
