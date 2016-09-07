@@ -49,8 +49,12 @@ func WrongConvertCloser(m mstr) { // WARN m can be io.Closer
 	m.Close()
 }
 
+func WrongFuncLit(m mstr, dc1 func(c Closer)) { // WARN m can be io.Closer
+	dc1(m)
+}
+
 type doClose func(c Closer)
 
-func WrongFuncVar(m mstr, dc doClose) { // WARN m can be io.Closer
-	dc(m)
+func WrongFuncVar(m mstr, dc2 doClose) { // WARN m can be io.Closer
+	dc2(m)
 }
