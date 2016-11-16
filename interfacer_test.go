@@ -5,7 +5,6 @@ package interfacer
 
 import (
 	"bytes"
-	"flag"
 	"fmt"
 	"go/ast"
 	"go/build"
@@ -241,7 +240,6 @@ func runNonlocalTests(t *testing.T, paths ...string) {
 }
 
 func TestMain(m *testing.M) {
-	flag.Parse()
 	if err := os.Chdir(testdata); err != nil {
 		panic(err)
 	}
