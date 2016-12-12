@@ -120,10 +120,6 @@ type visitor struct {
 // passing its import path and the warnings found. Returns an error, if
 // any.
 func CheckArgs(args []string, onWarns func(string, []Warn)) error {
-	wd, err := os.Getwd()
-	if err != nil {
-		return err
-	}
 	paths := gotool.ImportPaths(args)
 	c := newCache()
 	rest, err := c.FromArgs(paths, false)
@@ -143,8 +139,10 @@ func CheckArgs(args []string, onWarns func(string, []Warn)) error {
 	}
 	v := &visitor{
 		cache: c,
-		wd:    wd,
 		fset:  prog.Fset,
+	}
+	if v.wd, err = os.Getwd(); err != nil {
+		return err
 	}
 	for _, pkg := range pkgs {
 		c.grabNames(pkg)
