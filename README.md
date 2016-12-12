@@ -1,5 +1,6 @@
 # interfacer
 
+[![GoDoc](https://godoc.org/github.com/mvdan/interfacer?status.svg)](https://godoc.org/github.com/mvdan/interfacer)
 [![Build Status](https://travis-ci.org/mvdan/interfacer.svg?branch=master)](https://travis-ci.org/mvdan/interfacer)
 
 A linter that suggests interface types. In other words, it warns about
