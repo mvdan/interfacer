@@ -217,6 +217,8 @@ func runLocalTests(t *testing.T, paths ...string) {
 }
 
 func runNonlocalTests(t *testing.T, paths ...string) {
+	// std
+	doTestString(t, "std-pkg", "sync/atomic\n", "sync/atomic")
 	defer chdirUndo(t, "src")()
 	if len(paths) > 0 {
 		for _, p := range paths {

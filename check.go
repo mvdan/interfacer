@@ -121,7 +121,7 @@ type visitor struct {
 // any.
 func CheckArgs(args []string, onWarns func(string, []Warn)) error {
 	paths := gotool.ImportPaths(args)
-	c := newCache()
+	c := newCache(paths)
 	rest, err := c.FromArgs(paths, false)
 	if err != nil {
 		return err
@@ -395,7 +395,7 @@ func (v *visitor) onCall(ce *ast.CallExpr) {
 	default:
 		// type conversion
 		if len(ce.Args) == 1 {
-			v.addUsed(ce.Args[0], x.Underlying())
+			v.addUsed(ce.Args[0], x)
 		}
 	}
 }
