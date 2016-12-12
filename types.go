@@ -69,10 +69,9 @@ func funcMapString(iface map[string]string) string {
 }
 
 func tupleStrs(t *types.Tuple) []string {
-	l := make([]string, 0, t.Len())
+	l := make([]string, t.Len())
 	for i := 0; i < t.Len(); i++ {
-		v := t.At(i)
-		l = append(l, v.Type().String())
+		l[i] = t.At(i).Type().String()
 	}
 	return l
 }

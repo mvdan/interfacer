@@ -60,17 +60,17 @@ func progPackages(prog *loader.Program) ([]*types.Package, error) {
 	// For now, make it deterministic by sorting import paths
 	// alphabetically.
 	unordered := prog.InitialPackages()
-	paths := make([]string, 0, len(unordered))
-	for _, info := range unordered {
+	paths := make([]string, len(unordered))
+	for i, info := range unordered {
 		if info.Errors != nil {
 			return nil, info.Errors[0]
 		}
-		paths = append(paths, info.Pkg.Path())
+		paths[i] = info.Pkg.Path()
 	}
 	sort.Sort(util.ByAlph(paths))
-	pkgs := make([]*types.Package, 0, len(unordered))
-	for _, path := range paths {
-		pkgs = append(pkgs, prog.Package(path).Pkg)
+	pkgs := make([]*types.Package, len(unordered))
+	for i, path := range paths {
+		pkgs[i] = prog.Package(path).Pkg
 	}
 	return pkgs, nil
 }
