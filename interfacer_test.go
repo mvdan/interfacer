@@ -260,7 +260,7 @@ func TestWarns(t *testing.T) {
 	runNonlocalTests(t)
 }
 
-func doTestError(t *testing.T, name, exp string, args ...string) {
+func doTestError(t *testing.T, name, cont string, args ...string) {
 	switch len(args) {
 	case 0:
 		args = []string{name}
@@ -274,15 +274,15 @@ func doTestError(t *testing.T, name, exp string, args ...string) {
 		t.Fatalf("Wanted error in %s, but none found.", name)
 	}
 	got := err.Error()
-	if exp != got {
+	if !strings.Contains(got, cont) {
 		t.Fatalf("Error mismatch in %s:\nExpected:\n%s\nGot:\n%s",
-			name, exp, got)
+			name, cont, got)
 	}
 }
 
 func TestErrors(t *testing.T) {
 	// non-existent Go file
-	doTestError(t, "missing.go", "open missing.go: no such file or directory")
+	doTestError(t, "missing.go", "missing.go: no such file or directory")
 	// local non-existent non-recursive
 	doTestError(t, "./missing", "no initial packages were loaded")
 	// non-local non-existent non-recursive
