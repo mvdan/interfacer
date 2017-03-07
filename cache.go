@@ -4,11 +4,10 @@
 package interfacer
 
 import (
+	"go/ast"
 	"go/types"
 
 	"golang.org/x/tools/go/loader"
-
-	"github.com/mvdan/interfacer/internal/util"
 )
 
 //go:generate sh -c "go list std | go run generate/std/main.go -o std.go"
@@ -108,7 +107,7 @@ func (c *cache) fillCache(pkg *types.Package) {
 			if _, e := stdIfaces[iftype]; e {
 				continue
 			}
-			if util.Exported(name) {
+			if ast.IsExported(name) {
 				cur.exp.ifaces[iftype] = fullName(name)
 			}
 		}
@@ -116,7 +115,7 @@ func (c *cache) fillCache(pkg *types.Package) {
 			if _, e := stdFuncs[ftype]; e {
 				continue
 			}
-			if !util.Exported(name) {
+			if !ast.IsExported(name) {
 				cur.unexp.funcs[ftype] = fullName(name)
 			} else {
 				cur.exp.funcs[ftype] = fullName(name)

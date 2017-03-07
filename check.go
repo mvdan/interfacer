@@ -497,7 +497,7 @@ func willAddAllocation(t types.Type) bool {
 
 func (v *visitor) paramNewType(funcName string, param *types.Var, usage *varUsage) string {
 	t := param.Type()
-	if !util.Exported(funcName) && willAddAllocation(t) {
+	if !ast.IsExported(funcName) && willAddAllocation(t) {
 		return ""
 	}
 	if named := typeNamed(t); named != nil {

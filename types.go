@@ -22,15 +22,14 @@ func methoderFuncMap(m methoder, skip bool) map[string]string {
 	ifuncs := make(map[string]string, m.NumMethods())
 	for i := 0; i < m.NumMethods(); i++ {
 		f := m.Method(i)
-		fname := f.Name()
-		if !util.Exported(fname) {
+		if !f.Exported() {
 			if skip {
 				continue
 			}
 			return nil
 		}
 		sign := f.Type().(*types.Signature)
-		ifuncs[fname] = signString(sign)
+		ifuncs[f.Name()] = signString(sign)
 	}
 	return ifuncs
 }

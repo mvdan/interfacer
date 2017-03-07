@@ -7,6 +7,7 @@ import (
 	"bufio"
 	"flag"
 	"fmt"
+	"go/ast"
 	"go/importer"
 	"go/types"
 	"io"
@@ -111,7 +112,7 @@ func generate(w io.Writer, pkgs []string) error {
 	grabTypes := func(path string, scope *types.Scope, all bool) {
 		ifs, funs := interfacer.FromScope(scope)
 		for iface, name := range ifs {
-			if !all && !util.Exported(name) {
+			if !all && !ast.IsExported(name) {
 				continue
 			}
 			if _, e := ifaces[iface]; e {
@@ -120,7 +121,7 @@ func generate(w io.Writer, pkgs []string) error {
 			ifaces[iface] = fullName(path, name)
 		}
 		for fun, name := range funs {
-			if !all && !util.Exported(name) {
+			if !all && !ast.IsExported(name) {
 				continue
 			}
 			if _, e := funcs[fun]; e {
