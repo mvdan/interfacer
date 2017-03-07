@@ -18,8 +18,6 @@ import (
 
 	"github.com/kisielk/gotool"
 	"golang.org/x/tools/go/loader"
-
-	"github.com/mvdan/interfacer/internal/util"
 )
 
 func toDiscard(usage *varUsage) bool {
@@ -67,7 +65,7 @@ func progPackages(prog *loader.Program) ([]*types.Package, error) {
 		}
 		paths[i] = info.Pkg.Path()
 	}
-	sort.Sort(util.ByAlph(paths))
+	sort.Strings(paths)
 	pkgs := make([]*types.Package, len(unordered))
 	for i, path := range paths {
 		pkgs[i] = prog.Package(path).Pkg

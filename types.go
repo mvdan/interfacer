@@ -9,8 +9,6 @@ import (
 	"go/types"
 	"sort"
 	"strings"
-
-	"github.com/mvdan/interfacer/internal/util"
 )
 
 type methoder interface {
@@ -56,7 +54,7 @@ func funcMapString(iface map[string]string) string {
 	for fname := range iface {
 		fnames = append(fnames, fname)
 	}
-	sort.Sort(util.ByAlph(fnames))
+	sort.Strings(fnames)
 	var b bytes.Buffer
 	for i, fname := range fnames {
 		if i > 0 {
