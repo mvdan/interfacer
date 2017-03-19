@@ -16,8 +16,10 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/kisielk/gotool"
 	"golang.org/x/tools/go/loader"
+	"golang.org/x/tools/go/ssa/ssautil"
+
+	"github.com/kisielk/gotool"
 )
 
 func toDiscard(usage *varUsage) bool {
@@ -127,24 +129,27 @@ func CheckArgs(args []string, onWarns func(string, []Warn)) error {
 	if len(rest) > 0 {
 		return fmt.Errorf("unwanted extra args: %v", rest)
 	}
-	prog, err := c.Load()
+	lprog, err := c.Load()
 	if err != nil {
 		return err
 	}
-	pkgs, err := progPackages(prog)
+	prog := ssautil.CreateProgram(lprog, 0)
+	prog.Build()
+
+	pkgs, err := progPackages(lprog)
 	if err != nil {
 		return err
 	}
 	v := &visitor{
 		cache: c,
-		fset:  prog.Fset,
+		fset:  lprog.Fset,
 	}
 	if v.wd, err = os.Getwd(); err != nil {
 		return err
 	}
 	for _, pkg := range pkgs {
 		c.grabNames(pkg)
-		warns := v.checkPkg(prog.AllPackages[pkg])
+		warns := v.checkPkg(lprog.AllPackages[pkg])
 		onWarns(pkg.Path(), warns)
 	}
 	return nil

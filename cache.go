@@ -18,8 +18,7 @@ type cache struct {
 
 	cur pkgCache
 
-	grabbed  map[string]pkgCache
-	impPaths map[string]struct{}
+	grabbed map[string]pkgCache
 }
 
 type pkgCache struct {
@@ -32,21 +31,9 @@ type typeSet struct {
 }
 
 func newCache(paths []string) *cache {
-	c := &cache{
-		impPaths: make(map[string]struct{}, len(paths)),
-		grabbed:  make(map[string]pkgCache),
-	}
-	for _, path := range paths {
-		c.impPaths[path] = struct{}{}
-	}
+	c := &cache{grabbed: make(map[string]pkgCache)}
 	c.AllowErrors = true
 	c.TypeChecker.Error = func(e error) {}
-	c.TypeChecker.DisableUnusedImportCheck = true
-	c.TypeCheckFuncBodies = func(path string) bool {
-		_, isStd := stdPkgs[path]
-		_, isArg := c.impPaths[path]
-		return !isStd || isArg
-	}
 	return c
 }
 
