@@ -287,7 +287,7 @@ func (v *visitor) comparedWith(e, with ast.Expr) {
 
 func (v *visitor) implementsIface(sign *types.Signature) bool {
 	s := signString(sign)
-	return v.funcOf(s) != ""
+	return v.isFuncType(s)
 }
 
 func (v *visitor) Visit(node ast.Node) ast.Visitor {

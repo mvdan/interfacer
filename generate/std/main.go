@@ -28,9 +28,9 @@ var stdIfaces = map[string]string{
 	"{{$pt.Type}}": "{{$pt.Path}}",
 {{end}}}
 
-var stdFuncs = map[string]string{
+var stdFuncs = map[string]bool{
 {{range $_, $pt := .Funcs -}}
-	"{{$pt.Type}}": "{{$pt.Path}}",
+	"{{$pt.Type}}": true,
 {{end}}}
 `))
 

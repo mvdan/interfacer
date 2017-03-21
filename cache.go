@@ -37,14 +37,14 @@ func newCache(paths []string) *cache {
 	return c
 }
 
-func (c *cache) funcOf(t string) string {
-	if s := stdFuncs[t]; s != "" {
-		return s
+func (c *cache) isFuncType(t string) bool {
+	if stdFuncs[t] {
+		return true
 	}
 	if s := c.cur.exp.funcs[t]; s != "" {
-		return s
+		return true
 	}
-	return c.cur.unexp.funcs[t]
+	return c.cur.unexp.funcs[t] != ""
 }
 
 func (c *cache) ifaceOf(t string) string {
@@ -96,7 +96,7 @@ func (c *cache) fillCache(pkg *types.Package) {
 			}
 		}
 		for ftype, name := range funs {
-			if _, e := stdFuncs[ftype]; e {
+			if stdFuncs[ftype] {
 				continue
 			}
 			if !ast.IsExported(name) {
