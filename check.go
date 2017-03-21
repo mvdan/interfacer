@@ -323,16 +323,9 @@ func (v *visitor) Visit(node ast.Node) ast.Visitor {
 			v.discard(x.X)
 			v.discard(x.Y)
 		}
-	case *ast.DeclStmt:
-		gd := x.Decl.(*ast.GenDecl)
-		for _, sp := range gd.Specs {
-			vs, ok := sp.(*ast.ValueSpec)
-			if !ok {
-				continue
-			}
-			for _, val := range vs.Values {
-				v.addUsed(val, v.TypeOf(vs.Type))
-			}
+	case *ast.ValueSpec:
+		for _, val := range x.Values {
+			v.addUsed(val, v.TypeOf(x.Type))
 		}
 	case *ast.AssignStmt:
 		for i, val := range x.Rhs {
