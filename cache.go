@@ -64,9 +64,6 @@ func (c *cache) grabNames(pkg *types.Package) {
 
 func (c *cache) fillCache(pkg *types.Package) {
 	path := pkg.Path()
-	if _, e := stdPkgs[path]; e {
-		return
-	}
 	if _, e := c.grabbed[path]; e {
 		return
 	}
