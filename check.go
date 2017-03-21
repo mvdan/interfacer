@@ -10,7 +10,6 @@ import (
 	"go/types"
 	"io"
 	"os"
-	"path/filepath"
 	"regexp"
 	"sort"
 	"strconv"
@@ -438,9 +437,8 @@ func (v *visitor) groupWarns(fd *funcDecl, group []*types.Var) []Warn {
 			return nil
 		}
 		pos := v.fset.Position(param.Pos())
-		// go/loader seems to like absolute paths
-		if rel, err := filepath.Rel(v.wd, pos.Filename); err == nil {
-			pos.Filename = rel
+		if strings.HasPrefix(pos.Filename, v.wd) {
+			pos.Filename = pos.Filename[len(v.wd)+1:]
 		}
 		warns = append(warns, Warn{
 			Pos:     pos,
