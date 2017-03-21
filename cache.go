@@ -99,10 +99,10 @@ func (c *cache) fillCache(pkg *types.Package) {
 			if stdFuncs[ftype] {
 				continue
 			}
-			if !ast.IsExported(name) {
-				cur.unexp.funcs[ftype] = fullName(name)
-			} else {
+			if ast.IsExported(name) {
 				cur.exp.funcs[ftype] = fullName(name)
+			} else {
+				cur.unexp.funcs[ftype] = fullName(name)
 			}
 		}
 	}
