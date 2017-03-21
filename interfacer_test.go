@@ -125,7 +125,7 @@ func warnsJoin(warns []Warn) string {
 }
 
 func doTestWarns(t *testing.T, name string, exp []Warn, args ...string) {
-	got, err := CheckArgsList(args)
+	got, err := CheckArgs(args)
 	if err != nil {
 		t.Fatalf("Did not want error in %s:\n%v", name, err)
 	}
@@ -136,14 +136,13 @@ func doTestWarns(t *testing.T, name string, exp []Warn, args ...string) {
 }
 
 func endNewline(s string) string {
-	if strings.HasSuffix(s, "\n") {
+	if s == "" || strings.HasSuffix(s, "\n") {
 		return s
 	}
 	return s + "\n"
 }
 
 func doTestString(t *testing.T, name, exp string, args ...string) {
-	var b bytes.Buffer
 	switch len(args) {
 	case 0:
 		args = []string{name}
@@ -152,12 +151,12 @@ func doTestString(t *testing.T, name, exp string, args ...string) {
 			args = nil
 		}
 	}
-	err := CheckArgsOutput(args, &b, true)
+	warns, err := CheckArgs(args)
 	if err != nil {
 		t.Fatalf("Did not want error in %s:\n%v", name, err)
 	}
 	exp = endNewline(exp)
-	got := b.String()
+	got := warnsJoin(warns)
 	if exp != got {
 		t.Fatalf("Output mismatch in %s:\nExpected:\n%s\nGot:\n%s",
 			name, exp, got)
@@ -213,12 +212,12 @@ func runLocalTests(t *testing.T, paths ...string) {
 	}
 	// non-recursive
 	doTest(t, "./single")
-	doTestString(t, "no-args", ".", "")
+	doTestString(t, "no-args", "", "")
 }
 
 func runNonlocalTests(t *testing.T, paths ...string) {
 	// std
-	doTestString(t, "std-pkg", "sync/atomic\n", "sync/atomic")
+	doTestString(t, "std-pkg", "", "sync/atomic")
 	defer chdirUndo(t, "src")()
 	if len(paths) > 0 {
 		for _, p := range paths {
@@ -235,10 +234,10 @@ func runNonlocalTests(t *testing.T, paths ...string) {
 	// non-recursive
 	doTest(t, "single")
 	// make sure we don't miss a package's imports
-	doTestString(t, "grab-import", "grab-import\ngrab-import/use.go:27:15: s can be def2.Fooer")
+	doTestString(t, "grab-import", "grab-import/use.go:27:15: s can be def2.Fooer")
 	defer chdirUndo(t, "nested/pkg")()
 	// relative paths
-	doTestString(t, "rel-path", "nested/pkg\nsimple.go:12:17: rc can be Closer", "./...")
+	doTestString(t, "rel-path", "simple.go:12:17: rc can be Closer", "./...")
 }
 
 func TestMain(m *testing.M) {
@@ -269,7 +268,7 @@ func doTestError(t *testing.T, name, cont string, args ...string) {
 			args = nil
 		}
 	}
-	err := CheckArgsOutput(args, ioutil.Discard, false)
+	_, err := CheckArgs(args)
 	if err == nil {
 		t.Fatalf("Wanted error in %s, but none found.", name)
 	}
@@ -292,7 +291,7 @@ func TestErrors(t *testing.T) {
 }
 
 func TestExtraArg(t *testing.T) {
-	err := CheckArgsOutput([]string{"single", "--", "foo", "bar"}, ioutil.Discard, false)
+	_, err := CheckArgs([]string{"single", "--", "foo", "bar"})
 	got := err.Error()
 	want := "unwanted extra args: [foo bar]"
 	if got != want {

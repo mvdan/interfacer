@@ -11,12 +11,16 @@ import (
 	"github.com/mvdan/interfacer"
 )
 
-var verbose = flag.Bool("v", false, "print the names of packages as they are checked")
+var _ = flag.Bool("v", false, "print the names of packages as they are checked")
 
 func main() {
 	flag.Parse()
-	if err := interfacer.CheckArgsOutput(flag.Args(), os.Stdout, *verbose); err != nil {
+	warns, err := interfacer.CheckArgs(flag.Args())
+	if err != nil {
 		fmt.Fprintln(os.Stderr, err)
 		os.Exit(1)
+	}
+	for _, warn := range warns {
+		fmt.Println(warn)
 	}
 }

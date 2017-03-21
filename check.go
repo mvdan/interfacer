@@ -8,7 +8,6 @@ import (
 	"go/ast"
 	"go/token"
 	"go/types"
-	"io"
 	"os"
 	"regexp"
 	"sort"
@@ -118,28 +117,28 @@ type visitor struct {
 // args. It will call the onWarns function as each package is processed,
 // passing its import path and the warnings found. Returns an error, if
 // any.
-func CheckArgs(args []string, onWarns func(string, []Warn)) error {
+func CheckArgs(args []string) ([]Warn, error) {
 	paths := gotool.ImportPaths(args)
 	conf := loader.Config{}
 	conf.AllowErrors = true
 	conf.TypeChecker.Error = func(e error) {}
 	rest, err := conf.FromArgs(paths, false)
 	if err != nil {
-		return err
+		return nil, err
 	}
 	if len(rest) > 0 {
-		return fmt.Errorf("unwanted extra args: %v", rest)
+		return nil, fmt.Errorf("unwanted extra args: %v", rest)
 	}
 	lprog, err := conf.Load()
 	if err != nil {
-		return err
+		return nil, err
 	}
 	prog := ssautil.CreateProgram(lprog, 0)
 	prog.Build()
 
 	pkgs, err := progPackages(lprog)
 	if err != nil {
-		return err
+		return nil, err
 	}
 	c := &cache{grabbed: make(map[string]pkgCache)}
 	v := &visitor{
@@ -147,38 +146,14 @@ func CheckArgs(args []string, onWarns func(string, []Warn)) error {
 		fset:  lprog.Fset,
 	}
 	if v.wd, err = os.Getwd(); err != nil {
-		return err
+		return nil, err
 	}
+	var total []Warn
 	for _, pkg := range pkgs {
 		c.grabNames(pkg)
-		warns := v.checkPkg(lprog.AllPackages[pkg])
-		onWarns(pkg.Path(), warns)
+		total = append(total, v.checkPkg(lprog.AllPackages[pkg])...)
 	}
-	return nil
-}
-
-// CheckArgsList is like CheckArgs, but returning a list of all the
-// warnings instead.
-func CheckArgsList(args []string) (all []Warn, err error) {
-	onWarns := func(path string, warns []Warn) {
-		all = append(all, warns...)
-	}
-	err = CheckArgs(args, onWarns)
-	return
-}
-
-// CheckArgsOutput is like CheckArgs, but intended for human-readable
-// text output.
-func CheckArgsOutput(args []string, w io.Writer, verbose bool) error {
-	onWarns := func(path string, warns []Warn) {
-		if verbose {
-			fmt.Fprintln(w, path)
-		}
-		for _, warn := range warns {
-			fmt.Fprintln(w, warn.String())
-		}
-	}
-	return CheckArgs(args, onWarns)
+	return total, nil
 }
 
 func (v *visitor) checkPkg(info *loader.PackageInfo) []Warn {
