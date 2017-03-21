@@ -120,15 +120,17 @@ type visitor struct {
 // any.
 func CheckArgs(args []string, onWarns func(string, []Warn)) error {
 	paths := gotool.ImportPaths(args)
-	c := newCache(paths)
-	rest, err := c.FromArgs(paths, false)
+	conf := loader.Config{}
+	conf.AllowErrors = true
+	conf.TypeChecker.Error = func(e error) {}
+	rest, err := conf.FromArgs(paths, false)
 	if err != nil {
 		return err
 	}
 	if len(rest) > 0 {
 		return fmt.Errorf("unwanted extra args: %v", rest)
 	}
-	lprog, err := c.Load()
+	lprog, err := conf.Load()
 	if err != nil {
 		return err
 	}
@@ -139,6 +141,7 @@ func CheckArgs(args []string, onWarns func(string, []Warn)) error {
 	if err != nil {
 		return err
 	}
+	c := &cache{grabbed: make(map[string]pkgCache)}
 	v := &visitor{
 		cache: c,
 		fset:  lprog.Fset,

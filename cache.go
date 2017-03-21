@@ -30,13 +30,6 @@ type typeSet struct {
 	funcs  map[string]string
 }
 
-func newCache(paths []string) *cache {
-	c := &cache{grabbed: make(map[string]pkgCache)}
-	c.AllowErrors = true
-	c.TypeChecker.Error = func(e error) {}
-	return c
-}
-
 func (c *cache) isFuncType(t string) bool {
 	if stdFuncs[t] {
 		return true
