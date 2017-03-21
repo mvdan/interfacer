@@ -315,54 +315,58 @@ func (v *visitor) Visit(node ast.Node) ast.Visitor {
 	case *ast.IncDecStmt:
 		v.discard(x.X)
 	case *ast.BinaryExpr:
-		v.onBinary(x)
+		switch x.Op {
+		case token.EQL, token.NEQ:
+			v.comparedWith(x.X, x.Y)
+			v.comparedWith(x.Y, x.X)
+		default:
+			v.discard(x.X)
+			v.discard(x.Y)
+		}
 	case *ast.DeclStmt:
-		v.onDecl(x)
+		gd := x.Decl.(*ast.GenDecl)
+		for _, sp := range gd.Specs {
+			vs, ok := sp.(*ast.ValueSpec)
+			if !ok {
+				continue
+			}
+			for _, val := range vs.Values {
+				v.addUsed(val, v.TypeOf(vs.Type))
+			}
+		}
 	case *ast.AssignStmt:
-		v.onAssign(x)
+		for i, val := range x.Rhs {
+			left := x.Lhs[i]
+			if x.Tok == token.ASSIGN {
+				v.addUsed(val, v.TypeOf(left))
+			}
+			v.addAssign(left, val)
+		}
 	case *ast.CompositeLit:
-		v.onComposite(x)
+		for i, e := range x.Elts {
+			switch y := e.(type) {
+			case *ast.KeyValueExpr:
+				v.addUsed(y.Key, v.TypeOf(y.Value))
+				v.addUsed(y.Value, v.TypeOf(y.Key))
+			case *ast.Ident:
+				v.addUsed(y, compositeIdentType(v.TypeOf(x), i))
+			}
+		}
 	case *ast.CallExpr:
-		v.onCall(x)
+		switch y := v.TypeOf(x.Fun).Underlying().(type) {
+		case *types.Signature:
+			v.onMethodCall(x, y)
+		default:
+			// type conversion
+			if len(x.Args) == 1 {
+				v.addUsed(x.Args[0], y)
+			}
+		}
 	}
 	if fd != nil {
 		v.funcs = append(v.funcs, fd)
 	}
 	return v
-}
-
-func (v *visitor) onBinary(be *ast.BinaryExpr) {
-	switch be.Op {
-	case token.EQL, token.NEQ:
-		v.comparedWith(be.X, be.Y)
-		v.comparedWith(be.Y, be.X)
-	default:
-		v.discard(be.X)
-		v.discard(be.Y)
-	}
-}
-
-func (v *visitor) onDecl(ds *ast.DeclStmt) {
-	gd := ds.Decl.(*ast.GenDecl)
-	for _, sp := range gd.Specs {
-		vs, ok := sp.(*ast.ValueSpec)
-		if !ok {
-			continue
-		}
-		for _, val := range vs.Values {
-			v.addUsed(val, v.TypeOf(vs.Type))
-		}
-	}
-}
-
-func (v *visitor) onAssign(as *ast.AssignStmt) {
-	for i, val := range as.Rhs {
-		left := as.Lhs[i]
-		if as.Tok == token.ASSIGN {
-			v.addUsed(val, v.TypeOf(left))
-		}
-		v.addAssign(left, val)
-	}
 }
 
 func compositeIdentType(t types.Type, i int) types.Type {
@@ -377,30 +381,6 @@ func compositeIdentType(t types.Type, i int) types.Type {
 		return x.Elem()
 	}
 	return nil
-}
-
-func (v *visitor) onComposite(cl *ast.CompositeLit) {
-	for i, e := range cl.Elts {
-		switch x := e.(type) {
-		case *ast.KeyValueExpr:
-			v.addUsed(x.Key, v.TypeOf(x.Value))
-			v.addUsed(x.Value, v.TypeOf(x.Key))
-		case *ast.Ident:
-			v.addUsed(x, compositeIdentType(v.TypeOf(cl), i))
-		}
-	}
-}
-
-func (v *visitor) onCall(ce *ast.CallExpr) {
-	switch x := v.TypeOf(ce.Fun).Underlying().(type) {
-	case *types.Signature:
-		v.onMethodCall(ce, x)
-	default:
-		// type conversion
-		if len(ce.Args) == 1 {
-			v.addUsed(ce.Args[0], x)
-		}
-	}
 }
 
 func (v *visitor) onMethodCall(ce *ast.CallExpr, sign *types.Signature) {
