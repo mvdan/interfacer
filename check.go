@@ -15,9 +15,11 @@ import (
 	"strings"
 
 	"golang.org/x/tools/go/loader"
+	"golang.org/x/tools/go/ssa"
 	"golang.org/x/tools/go/ssa/ssautil"
 
 	"github.com/kisielk/gotool"
+	"github.com/mvdan/lint"
 )
 
 func toDiscard(usage *varUsage) bool {
@@ -73,19 +75,6 @@ func progPackages(prog *loader.Program) ([]*types.Package, error) {
 	return pkgs, nil
 }
 
-// Warn is an interfacer warning suggesting a better type for a function
-// parameter.
-type Warn struct {
-	Pos     token.Position
-	Name    string
-	NewType string
-}
-
-func (w Warn) String() string {
-	return fmt.Sprintf("%s:%d:%d: %s can be %s",
-		w.Pos.Filename, w.Pos.Line, w.Pos.Column, w.Name, w.NewType)
-}
-
 type varUsage struct {
 	calls   map[string]struct{}
 	discard bool
@@ -114,10 +103,8 @@ type visitor struct {
 }
 
 // CheckArgs checks the packages specified by their import paths in
-// args. It will call the onWarns function as each package is processed,
-// passing its import path and the warnings found. Returns an error, if
-// any.
-func CheckArgs(args []string) ([]Warn, error) {
+// args.
+func CheckArgs(args []string) ([]string, error) {
 	paths := gotool.ImportPaths(args)
 	conf := loader.Config{}
 	conf.AllowErrors = true
@@ -135,7 +122,25 @@ func CheckArgs(args []string) ([]Warn, error) {
 	}
 	prog := ssautil.CreateProgram(lprog, 0)
 	prog.Build()
+	issues, err := new(Checker).Check(lprog, prog)
+	wd, err := os.Getwd()
+	if err != nil {
+		return nil, err
+	}
+	lines := make([]string, len(issues))
+	for i, issue := range issues {
+		fpos := prog.Fset.Position(issue.Pos).String()
+		if strings.HasPrefix(fpos, wd) {
+			fpos = fpos[len(wd)+1:]
+		}
+		lines[i] = fmt.Sprintf("%s: %s", fpos, issue.Msg)
+	}
+	return lines, nil
+}
 
+type Checker struct{}
+
+func (*Checker) Check(lprog *loader.Program, prog *ssa.Program) ([]lint.Issue, error) {
 	pkgs, err := progPackages(lprog)
 	if err != nil {
 		return nil, err
@@ -145,10 +150,7 @@ func CheckArgs(args []string) ([]Warn, error) {
 		cache: c,
 		fset:  lprog.Fset,
 	}
-	if v.wd, err = os.Getwd(); err != nil {
-		return nil, err
-	}
-	var total []Warn
+	var total []lint.Issue
 	for _, pkg := range pkgs {
 		c.grabNames(pkg)
 		total = append(total, v.checkPkg(lprog.AllPackages[pkg])...)
@@ -156,7 +158,7 @@ func CheckArgs(args []string) ([]Warn, error) {
 	return total, nil
 }
 
-func (v *visitor) checkPkg(info *loader.PackageInfo) []Warn {
+func (v *visitor) checkPkg(info *loader.PackageInfo) []lint.Issue {
 	v.PackageInfo = info
 	v.discardFuncs = make(map[*types.Signature]struct{})
 	v.vars = make(map[*types.Var]*varUsage)
@@ -172,7 +174,7 @@ func (v *visitor) checkPkg(info *loader.PackageInfo) []Warn {
 		}
 		ast.Walk(v, f)
 	}
-	return v.packageWarns()
+	return v.packageIssues()
 }
 
 func paramVarAndType(sign *types.Signature, i int) (*types.Var, types.Type) {
@@ -390,21 +392,21 @@ func (fd *funcDecl) paramGroups() [][]*types.Var {
 	return groups
 }
 
-func (v *visitor) packageWarns() []Warn {
-	var warns []Warn
+func (v *visitor) packageIssues() []lint.Issue {
+	var warns []lint.Issue
 	for _, fd := range v.funcs {
 		if _, e := v.discardFuncs[fd.sign]; e {
 			continue
 		}
 		for _, group := range fd.paramGroups() {
-			warns = append(warns, v.groupWarns(fd, group)...)
+			warns = append(warns, v.groupIssues(fd, group)...)
 		}
 	}
 	return warns
 }
 
-func (v *visitor) groupWarns(fd *funcDecl, group []*types.Var) []Warn {
-	var warns []Warn
+func (v *visitor) groupIssues(fd *funcDecl, group []*types.Var) []lint.Issue {
+	var warns []lint.Issue
 	for _, param := range group {
 		usage := v.vars[param]
 		if usage == nil {
@@ -414,14 +416,9 @@ func (v *visitor) groupWarns(fd *funcDecl, group []*types.Var) []Warn {
 		if newType == "" {
 			return nil
 		}
-		pos := v.fset.Position(param.Pos())
-		if strings.HasPrefix(pos.Filename, v.wd) {
-			pos.Filename = pos.Filename[len(v.wd)+1:]
-		}
-		warns = append(warns, Warn{
-			Pos:     pos,
-			Name:    param.Name(),
-			NewType: newType,
+		warns = append(warns, lint.Issue{
+			Pos: param.Pos(),
+			Msg: fmt.Sprintf("%s can be %s", param.Name(), newType),
 		})
 	}
 	return warns

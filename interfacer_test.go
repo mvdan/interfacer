@@ -4,7 +4,6 @@
 package interfacer
 
 import (
-	"bytes"
 	"fmt"
 	"go/ast"
 	"go/build"
@@ -24,7 +23,7 @@ import (
 const testdata = "testdata"
 
 var (
-	warnsRe  = regexp.MustCompile(`^WARN (.*)\n?$`)
+	issuesRe = regexp.MustCompile(`^WARN (.*)\n?$`)
 	singleRe = regexp.MustCompile(`([^ ]*) can be ([^ ]*)(,|$)`)
 )
 
@@ -51,34 +50,34 @@ func goFiles(t *testing.T, p string) []string {
 
 type identVisitor struct {
 	fset   *token.FileSet
-	idents map[string]token.Position
+	idents map[string]token.Pos
 }
 
-func identKey(pos token.Position, name string) string {
-	return fmt.Sprintf("%d %s", pos.Line, name)
+func identKey(line int, name string) string {
+	return fmt.Sprintf("%d %s", line, name)
 }
 
 func (v *identVisitor) Visit(n ast.Node) ast.Visitor {
 	switch x := n.(type) {
 	case *ast.Ident:
-		pos := v.fset.Position(x.Pos())
-		v.idents[identKey(pos, x.Name)] = pos
+		line := v.fset.Position(x.Pos()).Line
+		v.idents[identKey(line, x.Name)] = x.Pos()
 	}
 	return v
 }
 
-func identPositions(fset *token.FileSet, f *ast.File) map[string]token.Position {
+func identPositions(fset *token.FileSet, f *ast.File) map[string]token.Pos {
 	v := &identVisitor{
 		fset:   fset,
-		idents: make(map[string]token.Position),
+		idents: make(map[string]token.Pos),
 	}
 	ast.Walk(v, f)
 	return v.idents
 }
 
-func wantedWarnings(t *testing.T, p string) []Warn {
+func wantedIssues(t *testing.T, p string) []string {
 	fset := token.NewFileSet()
-	var warns []Warn
+	lines := make([]string, 0)
 	for _, path := range goFiles(t, p) {
 		src, err := os.Open(path)
 		if err != nil {
@@ -91,58 +90,41 @@ func wantedWarnings(t *testing.T, p string) []Warn {
 		}
 		identPos := identPositions(fset, f)
 		for _, group := range f.Comments {
-			cm := warnsRe.FindStringSubmatch(group.Text())
+			cm := issuesRe.FindStringSubmatch(group.Text())
 			if cm == nil {
 				continue
 			}
 			for _, m := range singleRe.FindAllStringSubmatch(cm[1], -1) {
 				vname, tname := m[1], m[2]
-				comPos := fset.Position(group.Pos())
-				warns = append(warns, Warn{
-					Pos:     identPos[identKey(comPos, vname)],
-					Name:    vname,
-					NewType: tname,
-				})
+				line := fset.Position(group.Pos()).Line
+				pos := fset.Position(identPos[identKey(line, vname)])
+				lines = append(lines, fmt.Sprintf("%s: %s can be %s",
+					pos, vname, tname))
 			}
 		}
 	}
-	return warns
+	return lines
 }
 
 func doTest(t *testing.T, p string) {
 	t.Run(p, func(t *testing.T) {
-		warns := wantedWarnings(t, p)
-		doTestWarns(t, p, warns, p)
+		lines := wantedIssues(t, p)
+		doTestLines(t, p, lines, p)
 	})
 }
 
-func warnsJoin(warns []Warn) string {
-	var b bytes.Buffer
-	for _, warn := range warns {
-		fmt.Fprintln(&b, warn.String())
-	}
-	return b.String()
-}
-
-func doTestWarns(t *testing.T, name string, exp []Warn, args ...string) {
+func doTestLines(t *testing.T, name string, want []string, args ...string) {
 	got, err := CheckArgs(args)
 	if err != nil {
 		t.Fatalf("Did not want error in %s:\n%v", name, err)
 	}
-	if !reflect.DeepEqual(exp, got) {
-		t.Fatalf("Output mismatch in %s:\nwant:\n%sgot:\n%s",
-			name, warnsJoin(exp), warnsJoin(got))
+	if !reflect.DeepEqual(want, got) {
+		t.Fatalf("Output mismatch in %s:\nwant: %v\ngot: %v",
+			name, want, got)
 	}
 }
 
-func endNewline(s string) string {
-	if s == "" || strings.HasSuffix(s, "\n") {
-		return s
-	}
-	return s + "\n"
-}
-
-func doTestString(t *testing.T, name, exp string, args ...string) {
+func doTestString(t *testing.T, name, want string, args ...string) {
 	switch len(args) {
 	case 0:
 		args = []string{name}
@@ -151,15 +133,14 @@ func doTestString(t *testing.T, name, exp string, args ...string) {
 			args = nil
 		}
 	}
-	warns, err := CheckArgs(args)
+	issues, err := CheckArgs(args)
 	if err != nil {
 		t.Fatalf("Did not want error in %s:\n%v", name, err)
 	}
-	exp = endNewline(exp)
-	got := warnsJoin(warns)
-	if exp != got {
+	got := strings.Join(issues, "\n")
+	if want != got {
 		t.Fatalf("Output mismatch in %s:\nExpected:\n%s\nGot:\n%s",
-			name, exp, got)
+			name, want, got)
 	}
 }
 
@@ -253,7 +234,7 @@ func TestMain(m *testing.M) {
 	os.Exit(m.Run())
 }
 
-func TestWarns(t *testing.T) {
+func TestIssues(t *testing.T) {
 	runFileTests(t)
 	runLocalTests(t)
 	runNonlocalTests(t)
@@ -277,17 +258,6 @@ func doTestError(t *testing.T, name, cont string, args ...string) {
 		t.Fatalf("Error mismatch in %s:\nExpected:\n%s\nGot:\n%s",
 			name, cont, got)
 	}
-}
-
-func TestErrors(t *testing.T) {
-	// non-existent Go file
-	doTestError(t, "missing.go", "missing.go: no such file or directory")
-	// local non-existent non-recursive
-	doTestError(t, "./missing", "no initial packages were loaded")
-	// non-local non-existent non-recursive
-	doTestError(t, "missing", "no initial packages were loaded")
-	// Mixing Go files and dirs
-	doTestError(t, "wrong-args", "named files must be .go files: bar", "foo.go", "bar")
 }
 
 func TestExtraArg(t *testing.T) {

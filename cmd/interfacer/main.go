@@ -15,12 +15,12 @@ var _ = flag.Bool("v", false, "print the names of packages as they are checked")
 
 func main() {
 	flag.Parse()
-	warns, err := interfacer.CheckArgs(flag.Args())
+	lines, err := interfacer.CheckArgs(flag.Args())
 	if err != nil {
 		fmt.Fprintln(os.Stderr, err)
 		os.Exit(1)
 	}
-	for _, warn := range warns {
-		fmt.Println(warn)
+	for _, line := range lines {
+		fmt.Println(line)
 	}
 }
