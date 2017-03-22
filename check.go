@@ -92,7 +92,6 @@ type visitor struct {
 	*cache
 	*loader.PackageInfo
 
-	wd    string
 	fset  *token.FileSet
 	funcs []*funcDecl
 

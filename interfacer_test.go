@@ -240,26 +240,6 @@ func TestIssues(t *testing.T) {
 	runNonlocalTests(t)
 }
 
-func doTestError(t *testing.T, name, cont string, args ...string) {
-	switch len(args) {
-	case 0:
-		args = []string{name}
-	case 1:
-		if args[0] == "" {
-			args = nil
-		}
-	}
-	_, err := CheckArgs(args)
-	if err == nil {
-		t.Fatalf("Wanted error in %s, but none found.", name)
-	}
-	got := err.Error()
-	if !strings.Contains(got, cont) {
-		t.Fatalf("Error mismatch in %s:\nExpected:\n%s\nGot:\n%s",
-			name, cont, got)
-	}
-}
-
 func TestExtraArg(t *testing.T) {
 	_, err := CheckArgs([]string{"single", "--", "foo", "bar"})
 	got := err.Error()
