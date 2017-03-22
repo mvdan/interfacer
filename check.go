@@ -129,11 +129,11 @@ func CheckArgs(args []string) ([]string, error) {
 	}
 	lines := make([]string, len(issues))
 	for i, issue := range issues {
-		fpos := prog.Fset.Position(issue.Pos).String()
+		fpos := prog.Fset.Position(issue.Pos()).String()
 		if strings.HasPrefix(fpos, wd) {
 			fpos = fpos[len(wd)+1:]
 		}
-		lines[i] = fmt.Sprintf("%s: %s", fpos, issue.Msg)
+		lines[i] = fmt.Sprintf("%s: %s", fpos, issue.Message())
 	}
 	return lines, nil
 }
@@ -393,20 +393,28 @@ func (fd *funcDecl) paramGroups() [][]*types.Var {
 }
 
 func (v *visitor) packageIssues() []lint.Issue {
-	var warns []lint.Issue
+	var issues []lint.Issue
 	for _, fd := range v.funcs {
 		if _, e := v.discardFuncs[fd.sign]; e {
 			continue
 		}
 		for _, group := range fd.paramGroups() {
-			warns = append(warns, v.groupIssues(fd, group)...)
+			issues = append(issues, v.groupIssues(fd, group)...)
 		}
 	}
-	return warns
+	return issues
 }
 
+type Issue struct {
+	pos token.Pos
+	msg string
+}
+
+func (i Issue) Pos() token.Pos  { return i.pos }
+func (i Issue) Message() string { return i.msg }
+
 func (v *visitor) groupIssues(fd *funcDecl, group []*types.Var) []lint.Issue {
-	var warns []lint.Issue
+	var issues []lint.Issue
 	for _, param := range group {
 		usage := v.vars[param]
 		if usage == nil {
@@ -416,12 +424,12 @@ func (v *visitor) groupIssues(fd *funcDecl, group []*types.Var) []lint.Issue {
 		if newType == "" {
 			return nil
 		}
-		warns = append(warns, lint.Issue{
-			Pos: param.Pos(),
-			Msg: fmt.Sprintf("%s can be %s", param.Name(), newType),
+		issues = append(issues, Issue{
+			pos: param.Pos(),
+			msg: fmt.Sprintf("%s can be %s", param.Name(), newType),
 		})
 	}
-	return warns
+	return issues
 }
 
 var fullPathParts = regexp.MustCompile(`^(\*)?(([^/]+/)*([^/]+\.))?([^/]+)$`)
