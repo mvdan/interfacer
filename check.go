@@ -122,6 +122,9 @@ func CheckArgs(args []string) ([]string, error) {
 	prog := ssautil.CreateProgram(lprog, 0)
 	prog.Build()
 	issues, err := new(Checker).Check(lprog, prog)
+	if err != nil {
+		return nil, err
+	}
 	wd, err := os.Getwd()
 	if err != nil {
 		return nil, err
