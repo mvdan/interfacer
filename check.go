@@ -89,7 +89,7 @@ type funcDecl struct {
 }
 
 type visitor struct {
-	*cache
+	pkgTypes
 	*loader.PackageInfo
 
 	fset  *token.FileSet
@@ -144,14 +144,12 @@ func (*Checker) Check(lprog *loader.Program, prog *ssa.Program) ([]lint.Issue, e
 	if err != nil {
 		return nil, err
 	}
-	c := &cache{}
 	v := &visitor{
-		cache: c,
-		fset:  lprog.Fset,
+		fset: lprog.Fset,
 	}
 	var total []lint.Issue
 	for _, pkg := range pkgs {
-		c.fillCache(pkg)
+		v.getTypes(pkg)
 		total = append(total, v.checkPkg(lprog.AllPackages[pkg])...)
 	}
 	return total, nil

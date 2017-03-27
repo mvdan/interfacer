@@ -6,35 +6,25 @@ package interfacer
 import (
 	"go/ast"
 	"go/types"
-
-	"golang.org/x/tools/go/loader"
 )
 
-type cache struct {
-	loader.Config
-
-	cur pkgCache
-}
-
-type pkgCache struct {
+type pkgTypes struct {
 	ifaces map[string]string
 	funcs  map[string]string
 }
 
-func (c *cache) isFuncType(t string) bool {
-	return c.cur.funcs[t] != ""
+func (p *pkgTypes) isFuncType(t string) bool {
+	return p.funcs[t] != ""
 }
 
-func (c *cache) ifaceOf(t string) string {
-	return c.cur.ifaces[t]
+func (p *pkgTypes) ifaceOf(t string) string {
+	return p.ifaces[t]
 }
 
-func (c *cache) fillCache(pkg *types.Package) {
+func (p *pkgTypes) getTypes(pkg *types.Package) {
+	p.ifaces = make(map[string]string)
+	p.funcs = make(map[string]string)
 	path := pkg.Path()
-	c.cur = pkgCache{
-		ifaces: make(map[string]string),
-		funcs:  make(map[string]string),
-	}
 	addTypes := func(impPath string, ifs, funs map[string]string, top bool) {
 		fullName := func(name string) string {
 			if !top {
@@ -45,12 +35,12 @@ func (c *cache) fillCache(pkg *types.Package) {
 		for iftype, name := range ifs {
 			// only suggest exported interfaces
 			if ast.IsExported(name) {
-				c.cur.ifaces[iftype] = fullName(name)
+				p.ifaces[iftype] = fullName(name)
 			}
 		}
 		for ftype, name := range funs {
 			// ignore non-exported func signatures too
-			c.cur.funcs[ftype] = fullName(name)
+			p.funcs[ftype] = fullName(name)
 		}
 	}
 	for _, imp := range pkg.Imports() {
