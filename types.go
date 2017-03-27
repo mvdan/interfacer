@@ -65,24 +65,24 @@ func funcMapString(iface map[string]string) string {
 	return b.String()
 }
 
-func tupleStrs(t *types.Tuple) []string {
-	l := make([]string, t.Len())
+func tupleJoin(buf *bytes.Buffer, t *types.Tuple) {
+	buf.WriteByte('(')
 	for i := 0; i < t.Len(); i++ {
-		l[i] = t.At(i).Type().String()
+		if i > 0 {
+			buf.WriteString(", ")
+		}
+		buf.WriteString(t.At(i).Type().String())
 	}
-	return l
+	buf.WriteByte(')')
 }
 
+// signString is similar to Signature.String(), but it ignores
+// param/result names.
 func signString(sign *types.Signature) string {
-	ps := tupleStrs(sign.Params())
-	rs := tupleStrs(sign.Results())
-	if len(rs) == 0 {
-		return fmt.Sprintf("(%s)", strings.Join(ps, ", "))
-	}
-	if len(rs) == 1 {
-		return fmt.Sprintf("(%s) %s", strings.Join(ps, ", "), rs[0])
-	}
-	return fmt.Sprintf("(%s) (%s)", strings.Join(ps, ", "), strings.Join(rs, ", "))
+	var buf bytes.Buffer
+	tupleJoin(&buf, sign.Params())
+	tupleJoin(&buf, sign.Results())
+	return buf.String()
 }
 
 func interesting(t types.Type) bool {

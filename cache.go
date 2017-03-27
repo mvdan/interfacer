@@ -24,7 +24,6 @@ func (p *pkgTypes) ifaceOf(t string) string {
 func (p *pkgTypes) getTypes(pkg *types.Package) {
 	p.ifaces = make(map[string]string)
 	p.funcs = make(map[string]bool)
-	path := pkg.Path()
 	addTypes := func(impPath string, ifs map[string]string, funs map[string]bool, top bool) {
 		fullName := func(name string) string {
 			if !top {
@@ -48,5 +47,5 @@ func (p *pkgTypes) getTypes(pkg *types.Package) {
 		addTypes(imp.Path(), ifs, funs, false)
 	}
 	ifs, funs := fromScope(pkg.Scope())
-	addTypes(path, ifs, funs, true)
+	addTypes(pkg.Path(), ifs, funs, true)
 }
