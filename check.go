@@ -10,7 +10,6 @@ import (
 	"go/types"
 	"os"
 	"regexp"
-	"sort"
 	"strconv"
 	"strings"
 
@@ -52,27 +51,6 @@ func (v *visitor) interfaceMatching(param *types.Var, usage *varUsage) (string, 
 	allCalls(usage, called, ftypes)
 	s := funcMapString(called)
 	return v.ifaceOf(s), s
-}
-
-func progPackages(prog *loader.Program) ([]*types.Package, error) {
-	// InitialPackages() is not in the order that we passed to it
-	// via Import() calls.
-	// For now, make it deterministic by sorting import paths
-	// alphabetically.
-	unordered := prog.InitialPackages()
-	paths := make([]string, len(unordered))
-	for i, info := range unordered {
-		if info.Errors != nil {
-			return nil, info.Errors[0]
-		}
-		paths[i] = info.Pkg.Path()
-	}
-	sort.Strings(paths)
-	pkgs := make([]*types.Package, len(unordered))
-	for i, path := range paths {
-		pkgs[i] = prog.Package(path).Pkg
-	}
-	return pkgs, nil
 }
 
 type varUsage struct {
@@ -143,15 +121,12 @@ func CheckArgs(args []string) ([]string, error) {
 type Checker struct{}
 
 func (*Checker) Check(lprog *loader.Program, prog *ssa.Program) ([]lint.Issue, error) {
-	pkgs, err := progPackages(lprog)
-	if err != nil {
-		return nil, err
-	}
 	v := &visitor{
 		fset: lprog.Fset,
 	}
 	var total []lint.Issue
-	for _, pkg := range pkgs {
+	for _, pinfo := range lprog.InitialPackages() {
+		pkg := pinfo.Pkg
 		v.getTypes(pkg)
 		total = append(total, v.checkPkg(lprog.AllPackages[pkg])...)
 	}
