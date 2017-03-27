@@ -13,19 +13,19 @@ type ReadCloser interface {
 	Closer
 }
 
-func CompareNil(rc ReadCloser) { // WARN rc can be io.Closer
+func CompareNil(rc ReadCloser) { // WARN rc can be Closer
 	if rc != nil {
 		rc.Close()
 	}
 }
 
-func CompareIface(rc ReadCloser) { // WARN rc can be io.Closer
+func CompareIface(rc ReadCloser) { // WARN rc can be Closer
 	if rc != ReadCloser(nil) {
 		rc.Close()
 	}
 }
 
-func CompareIfaceDiff(rc ReadCloser) { // WARN rc can be io.Closer
+func CompareIfaceDiff(rc ReadCloser) { // WARN rc can be Closer
 	if rc != Reader(nil) {
 		rc.Close()
 	}
@@ -37,13 +37,13 @@ func (m mint) Close() error {
 	return nil
 }
 
-func CompareStruct(m mint) { // WARN m can be io.Closer
+func CompareStruct(m mint) { // WARN m can be Closer
 	if m != mint(3) {
 		m.Close()
 	}
 }
 
-func CompareStructVar(m mint) { // WARN m can be io.Closer
+func CompareStructVar(m mint) { // WARN m can be Closer
 	m2 := mint(2)
 	if m == m2 {
 		m.Close()

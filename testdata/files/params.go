@@ -28,7 +28,7 @@ func Args(rc ReadCloser) {
 	rc.Close()
 }
 
-func ArgsWrong(rc ReadCloser) { // WARN rc can be io.Reader
+func ArgsWrong(rc ReadCloser) { // WARN rc can be Reader
 	b := make([]byte, 10)
 	rc.Read(b)
 }
@@ -39,7 +39,7 @@ func ArgsLit(rs ReadSeeker) {
 	rs.Seek(20, 0)
 }
 
-func ArgsLitWrong(rs ReadSeeker) { // WARN rs can be io.Seeker
+func ArgsLitWrong(rs ReadSeeker) { // WARN rs can be Seeker
 	rs.Seek(20, 0)
 }
 
@@ -48,7 +48,7 @@ func ArgsLit2(rs ReadSeeker) {
 	rs.Seek(20, 0)
 }
 
-func ArgsLit2Wrong(rs ReadSeeker) { // WARN rs can be io.Reader
+func ArgsLit2Wrong(rs ReadSeeker) { // WARN rs can be Reader
 	rs.Read([]byte{})
 }
 
@@ -57,7 +57,7 @@ func ArgsNil(rs ReadSeeker) {
 	rs.Seek(20, 0)
 }
 
-func ArgsNilWrong(rs ReadSeeker) { // WARN rs can be io.Reader
+func ArgsNilWrong(rs ReadSeeker) { // WARN rs can be Reader
 	rs.Read(nil)
 }
 
@@ -69,7 +69,7 @@ func (s st) Args(rc ReadCloser) {
 	rc.Close()
 }
 
-func (s st) ArgsWrong(rc ReadCloser) { // WARN rc can be io.Reader
+func (s st) ArgsWrong(rc ReadCloser) { // WARN rc can be Reader
 	b := make([]byte, 10)
 	rc.Read(b)
 }
@@ -94,7 +94,7 @@ func ArgsMismatch(a argBad) {
 	a.Read(10)
 }
 
-func ArgsMatch(a argGood) { // WARN a can be io.Reader
+func ArgsMatch(a argGood) { // WARN a can be Reader
 	b := make([]byte, 10)
 	a.Read(b)
 }

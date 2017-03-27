@@ -20,7 +20,7 @@ func Const(s Seeker) {
 	s.Seek(offset, whence)
 }
 
-func ConstWrong(rs ReadSeeker) { // WARN rs can be io.Seeker
+func ConstWrong(rs ReadSeeker) { // WARN rs can be Seeker
 	var whence int = 0
 	rs.Seek(offset, whence)
 }
@@ -31,7 +31,7 @@ func LocalConst(s Seeker) {
 	s.Seek(offset2, whence)
 }
 
-func LocalConstWrong(rs ReadSeeker) { // WARN rs can be io.Seeker
+func LocalConstWrong(rs ReadSeeker) { // WARN rs can be Seeker
 	const offset2 = 2
 	var whence int = 0
 	rs.Seek(offset2, whence)

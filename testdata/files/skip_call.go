@@ -44,17 +44,17 @@ type Closer interface {
 	Close() error
 }
 
-func WrongConvertCloser(m mstr) { // WARN m can be io.Closer
+func WrongConvertCloser(m mstr) { // WARN m can be Closer
 	_ = Closer(m)
 	m.Close()
 }
 
-func WrongFuncLit(m mstr, dc1 func(c Closer)) { // WARN m can be io.Closer
+func WrongFuncLit(m mstr, dc1 func(c Closer)) { // WARN m can be Closer
 	dc1(m)
 }
 
 type doClose func(c Closer)
 
-func WrongFuncVar(m mstr, dc2 doClose) { // WARN m can be io.Closer
+func WrongFuncVar(m mstr, dc2 doClose) { // WARN m can be Closer
 	dc2(m)
 }

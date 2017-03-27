@@ -22,7 +22,7 @@ type Closer interface {
 	Close() error
 }
 
-func ConvertIface(m mint) { // WARN m can be io.Closer
+func ConvertIface(m mint) { // WARN m can be Closer
 	m.Close()
 	_ = Closer(m)
 }

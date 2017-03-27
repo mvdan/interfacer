@@ -1,11 +1,15 @@
 package foo
 
+type Closer interface {
+	Close() error
+}
+
 type FooCloser interface {
 	Foo()
 	Close() error
 }
 
-func ShadowArg(fc FooCloser) { // WARN fc can be io.Closer
+func ShadowArg(fc FooCloser) { // WARN fc can be Closer
 	fc.Close()
 	for {
 		fc := 3

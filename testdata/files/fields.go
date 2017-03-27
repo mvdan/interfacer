@@ -1,5 +1,9 @@
 package foo
 
+type Closer interface {
+	Close() error
+}
+
 type st struct {
 	field int
 	m     map[int]int
@@ -18,7 +22,7 @@ func Foo(s *st) {
 	s.field = 3
 }
 
-func FooWrong(s *st) { // WARN s can be io.Closer
+func FooWrong(s *st) { // WARN s can be Closer
 	s.Close()
 }
 
@@ -35,7 +39,7 @@ func Foo2(s *st2) {
 	s.st1.field = 3
 }
 
-func Foo2Wrong(s *st2) { // WARN s can be io.Closer
+func Foo2Wrong(s *st2) { // WARN s can be Closer
 	s.Close()
 }
 
@@ -45,7 +49,7 @@ func FooPassed(s *st) {
 	s2.field = 2
 }
 
-func FooPassedWrong(s *st) { // WARN s can be io.Closer
+func FooPassedWrong(s *st) { // WARN s can be Closer
 	s.Close()
 	s2 := s
 	s2.Close()

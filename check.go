@@ -144,14 +144,14 @@ func (*Checker) Check(lprog *loader.Program, prog *ssa.Program) ([]lint.Issue, e
 	if err != nil {
 		return nil, err
 	}
-	c := &cache{grabbed: make(map[string]pkgCache)}
+	c := &cache{}
 	v := &visitor{
 		cache: c,
 		fset:  lprog.Fset,
 	}
 	var total []lint.Issue
 	for _, pkg := range pkgs {
-		c.grabNames(pkg)
+		c.fillCache(pkg)
 		total = append(total, v.checkPkg(lprog.AllPackages[pkg])...)
 	}
 	return total, nil

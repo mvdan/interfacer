@@ -111,7 +111,7 @@ func anyInteresting(params *types.Tuple) bool {
 	return false
 }
 
-func FromScope(scope *types.Scope) (ifaces, funcs map[string]string) {
+func fromScope(scope *types.Scope) (ifaces, funcs map[string]string) {
 	ifaces = make(map[string]string)
 	funcs = make(map[string]string)
 	ifaceFuncs := make(map[string]string)

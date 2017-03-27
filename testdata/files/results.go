@@ -15,7 +15,7 @@ func Results(rc ReadCloser) {
 	println(err)
 }
 
-func ResultsWrong(rc ReadCloser) { // WARN rc can be io.Closer
+func ResultsWrong(rc ReadCloser) { // WARN rc can be Closer
 	err := rc.Close()
 	println(err)
 }
