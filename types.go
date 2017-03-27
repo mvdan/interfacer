@@ -111,10 +111,9 @@ func anyInteresting(params *types.Tuple) bool {
 	return false
 }
 
-func fromScope(scope *types.Scope) (ifaces, funcs map[string]string) {
+func fromScope(scope *types.Scope) (ifaces map[string]string, funcs map[string]bool) {
 	ifaces = make(map[string]string)
-	funcs = make(map[string]string)
-	ifaceFuncs := make(map[string]string)
+	funcs = make(map[string]bool)
 	for _, name := range scope.Names() {
 		tn, ok := scope.Lookup(name).(*types.TypeName)
 		if !ok {
@@ -132,11 +131,7 @@ func fromScope(scope *types.Scope) (ifaces, funcs map[string]string) {
 				if !anyInteresting(sign.Params()) {
 					continue
 				}
-				s := signString(sign)
-				if _, e := ifaceFuncs[s]; e {
-					continue
-				}
-				ifaceFuncs[s] = tn.Name() + "." + f.Name()
+				funcs[signString(sign)] = true
 			}
 			s := funcMapString(iface)
 			if _, e := ifaces[s]; !e {
@@ -146,15 +141,7 @@ func fromScope(scope *types.Scope) (ifaces, funcs map[string]string) {
 			if !anyInteresting(x.Params()) {
 				continue
 			}
-			s := signString(x)
-			if _, e := funcs[s]; !e {
-				funcs[s] = tn.Name()
-			}
-		}
-	}
-	for s, name := range ifaceFuncs {
-		if _, e := funcs[s]; !e {
-			funcs[s] = name
+			funcs[signString(x)] = true
 		}
 	}
 	return ifaces, funcs
