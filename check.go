@@ -59,9 +59,7 @@ type varUsage struct {
 }
 
 type funcDecl struct {
-	name    string
-	sign    *types.Signature
-	astType *ast.FuncType
+	astDecl *ast.FuncDecl
 	ssaFn   *ssa.Function
 }
 
@@ -241,12 +239,10 @@ func (c *Checker) Visit(node ast.Node) ast.Visitor {
 			return nil
 		}
 		fd = &funcDecl{
-			name:    x.Name.Name,
-			sign:    c.Defs[x.Name].Type().(*types.Signature),
-			astType: x.Type,
+			astDecl: x,
 			ssaFn:   ssaFn,
 		}
-		if c.funcSigns[signString(fd.sign)] {
+		if c.funcSigns[signString(fd.ssaFn.Signature)] {
 			// implements interface
 			return nil
 		}
@@ -347,13 +343,13 @@ func (c *Checker) onMethodCall(ce *ast.CallExpr, sign *types.Signature) {
 }
 
 func (fd *funcDecl) paramGroups() [][]*types.Var {
-	astList := fd.astType.Params.List
+	astList := fd.astDecl.Type.Params.List
 	groups := make([][]*types.Var, len(astList))
 	signIndex := 0
 	for i, field := range astList {
 		group := make([]*types.Var, len(field.Names))
 		for j := range field.Names {
-			group[j] = fd.sign.Params().At(signIndex)
+			group[j] = fd.ssaFn.Signature.Params().At(signIndex)
 			signIndex++
 		}
 		groups[i] = group
@@ -364,7 +360,7 @@ func (fd *funcDecl) paramGroups() [][]*types.Var {
 func (c *Checker) packageIssues() []lint.Issue {
 	var issues []lint.Issue
 	for _, fd := range c.funcs {
-		if _, e := c.discardFuncs[fd.sign]; e {
+		if _, e := c.discardFuncs[fd.ssaFn.Signature]; e {
 			continue
 		}
 		for _, group := range fd.paramGroups() {
@@ -389,7 +385,7 @@ func (c *Checker) groupIssues(fd *funcDecl, group []*types.Var) []lint.Issue {
 		if usage == nil {
 			return nil
 		}
-		newType := c.paramNewType(fd.name, param, usage)
+		newType := c.paramNewType(fd.astDecl.Name.Name, param, usage)
 		if newType == "" {
 			return nil
 		}
