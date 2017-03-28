@@ -40,7 +40,7 @@ func allCalls(usage *varUsage, all, ftypes map[string]string) {
 	}
 }
 
-func (v *visitor) interfaceMatching(param *types.Var, usage *varUsage) (string, string) {
+func (c *Checker) interfaceMatching(param *types.Var, usage *varUsage) (string, string) {
 	if toDiscard(usage) {
 		return "", ""
 	}
@@ -48,7 +48,7 @@ func (v *visitor) interfaceMatching(param *types.Var, usage *varUsage) (string, 
 	called := make(map[string]string, len(usage.calls))
 	allCalls(usage, called, ftypes)
 	s := funcMapString(called)
-	return v.ifaces[s], s
+	return c.ifaces[s], s
 }
 
 type varUsage struct {
@@ -62,18 +62,6 @@ type funcDecl struct {
 	name    string
 	sign    *types.Signature
 	astType *ast.FuncType
-}
-
-type visitor struct {
-	pkgTypes
-	*loader.PackageInfo
-
-	fset  *token.FileSet
-	funcs []*funcDecl
-
-	discardFuncs map[*types.Signature]struct{}
-
-	vars map[*types.Var]*varUsage
 }
 
 // CheckArgs checks the packages specified by their import paths in
@@ -114,29 +102,40 @@ func CheckArgs(args []string) ([]string, error) {
 	return lines, nil
 }
 
-type Checker struct{}
+type Checker struct {
+	lprog *loader.Program
+	prog  *ssa.Program
 
-func (*Checker) Check(lprog *loader.Program, prog *ssa.Program) ([]lint.Issue, error) {
-	v := &visitor{
-		fset: lprog.Fset,
-	}
+	pkgTypes
+	*loader.PackageInfo
+
+	fset  *token.FileSet
+	funcs []*funcDecl
+
+	discardFuncs map[*types.Signature]struct{}
+
+	vars map[*types.Var]*varUsage
+}
+
+func (c *Checker) Check(lprog *loader.Program, prog *ssa.Program) ([]lint.Issue, error) {
+	c.lprog, c.prog = lprog, prog
 	var total []lint.Issue
 	for _, pinfo := range lprog.InitialPackages() {
 		pkg := pinfo.Pkg
-		v.getTypes(pkg)
-		total = append(total, v.checkPkg(lprog.AllPackages[pkg])...)
+		c.getTypes(pkg)
+		total = append(total, c.checkPkg(lprog.AllPackages[pkg])...)
 	}
 	return total, nil
 }
 
-func (v *visitor) checkPkg(info *loader.PackageInfo) []lint.Issue {
-	v.PackageInfo = info
-	v.discardFuncs = make(map[*types.Signature]struct{})
-	v.vars = make(map[*types.Var]*varUsage)
+func (c *Checker) checkPkg(info *loader.PackageInfo) []lint.Issue {
+	c.PackageInfo = info
+	c.discardFuncs = make(map[*types.Signature]struct{})
+	c.vars = make(map[*types.Var]*varUsage)
 	for _, f := range info.Files {
-		ast.Walk(v, f)
+		ast.Walk(c, f)
 	}
-	return v.packageIssues()
+	return c.packageIssues()
 }
 
 func paramVarAndType(sign *types.Signature, i int) (*types.Var, types.Type) {
@@ -159,17 +158,17 @@ func paramVarAndType(sign *types.Signature, i int) (*types.Var, types.Type) {
 	}
 }
 
-func (v *visitor) varUsage(e ast.Expr) *varUsage {
+func (c *Checker) varUsage(e ast.Expr) *varUsage {
 	id, ok := e.(*ast.Ident)
 	if !ok {
 		return nil
 	}
-	param, ok := v.ObjectOf(id).(*types.Var)
+	param, ok := c.ObjectOf(id).(*types.Var)
 	if !ok {
 		// not a variable
 		return nil
 	}
-	if usage, e := v.vars[param]; e {
+	if usage, e := c.vars[param]; e {
 		return usage
 	}
 	if !interesting(param.Type()) {
@@ -179,15 +178,15 @@ func (v *visitor) varUsage(e ast.Expr) *varUsage {
 		calls:    make(map[string]struct{}),
 		assigned: make(map[*varUsage]struct{}),
 	}
-	v.vars[param] = usage
+	c.vars[param] = usage
 	return usage
 }
 
-func (v *visitor) addUsed(e ast.Expr, as types.Type) {
+func (c *Checker) addUsed(e ast.Expr, as types.Type) {
 	if as == nil {
 		return
 	}
-	if usage := v.varUsage(e); usage != nil {
+	if usage := c.varUsage(e); usage != nil {
 		// using variable
 		iface, ok := as.Underlying().(*types.Interface)
 		if !ok {
@@ -198,15 +197,15 @@ func (v *visitor) addUsed(e ast.Expr, as types.Type) {
 			m := iface.Method(i)
 			usage.calls[m.Name()] = struct{}{}
 		}
-	} else if t, ok := v.TypeOf(e).(*types.Signature); ok {
+	} else if t, ok := c.TypeOf(e).(*types.Signature); ok {
 		// using func
-		v.discardFuncs[t] = struct{}{}
+		c.discardFuncs[t] = struct{}{}
 	}
 }
 
-func (v *visitor) addAssign(to, from ast.Expr) {
-	pto := v.varUsage(to)
-	pfrom := v.varUsage(from)
+func (c *Checker) addAssign(to, from ast.Expr) {
+	pto := c.varUsage(to)
+	pfrom := c.varUsage(from)
 	if pto == nil || pfrom == nil {
 		// either isn't interesting
 		return
@@ -214,89 +213,89 @@ func (v *visitor) addAssign(to, from ast.Expr) {
 	pfrom.assigned[pto] = struct{}{}
 }
 
-func (v *visitor) discard(e ast.Expr) {
-	if usage := v.varUsage(e); usage != nil {
+func (c *Checker) discard(e ast.Expr) {
+	if usage := c.varUsage(e); usage != nil {
 		usage.discard = true
 	}
 }
 
-func (v *visitor) comparedWith(e, with ast.Expr) {
+func (c *Checker) comparedWith(e, with ast.Expr) {
 	if _, ok := with.(*ast.BasicLit); ok {
-		v.discard(e)
+		c.discard(e)
 	}
 }
 
-func (v *visitor) Visit(node ast.Node) ast.Visitor {
+func (c *Checker) Visit(node ast.Node) ast.Visitor {
 	var fd *funcDecl
 	switch x := node.(type) {
 	case *ast.FuncDecl:
 		fd = &funcDecl{
 			name:    x.Name.Name,
-			sign:    v.Defs[x.Name].Type().(*types.Signature),
+			sign:    c.Defs[x.Name].Type().(*types.Signature),
 			astType: x.Type,
 		}
-		if v.funcSigns[signString(fd.sign)] {
+		if c.funcSigns[signString(fd.sign)] {
 			// implements interface
 			return nil
 		}
 	case *ast.SelectorExpr:
-		if _, ok := v.TypeOf(x.Sel).(*types.Signature); !ok {
-			v.discard(x.X)
+		if _, ok := c.TypeOf(x.Sel).(*types.Signature); !ok {
+			c.discard(x.X)
 		}
 	case *ast.StarExpr:
-		v.discard(x.X)
+		c.discard(x.X)
 	case *ast.UnaryExpr:
-		v.discard(x.X)
+		c.discard(x.X)
 	case *ast.IndexExpr:
-		v.discard(x.X)
+		c.discard(x.X)
 	case *ast.IncDecStmt:
-		v.discard(x.X)
+		c.discard(x.X)
 	case *ast.BinaryExpr:
 		switch x.Op {
 		case token.EQL, token.NEQ:
-			v.comparedWith(x.X, x.Y)
-			v.comparedWith(x.Y, x.X)
+			c.comparedWith(x.X, x.Y)
+			c.comparedWith(x.Y, x.X)
 		default:
-			v.discard(x.X)
-			v.discard(x.Y)
+			c.discard(x.X)
+			c.discard(x.Y)
 		}
 	case *ast.ValueSpec:
 		for _, val := range x.Values {
-			v.addUsed(val, v.TypeOf(x.Type))
+			c.addUsed(val, c.TypeOf(x.Type))
 		}
 	case *ast.AssignStmt:
 		for i, val := range x.Rhs {
 			left := x.Lhs[i]
 			if x.Tok == token.ASSIGN {
-				v.addUsed(val, v.TypeOf(left))
+				c.addUsed(val, c.TypeOf(left))
 			}
-			v.addAssign(left, val)
+			c.addAssign(left, val)
 		}
 	case *ast.CompositeLit:
 		for i, e := range x.Elts {
 			switch y := e.(type) {
 			case *ast.KeyValueExpr:
-				v.addUsed(y.Key, v.TypeOf(y.Value))
-				v.addUsed(y.Value, v.TypeOf(y.Key))
+				c.addUsed(y.Key, c.TypeOf(y.Value))
+				c.addUsed(y.Value, c.TypeOf(y.Key))
 			case *ast.Ident:
-				v.addUsed(y, compositeIdentType(v.TypeOf(x), i))
+				c.addUsed(y, compositeIdentType(c.TypeOf(x), i))
 			}
 		}
 	case *ast.CallExpr:
-		switch y := v.TypeOf(x.Fun).Underlying().(type) {
+		switch y := c.TypeOf(x.Fun).Underlying().(type) {
 		case *types.Signature:
-			v.onMethodCall(x, y)
+			c.onMethodCall(x, y)
 		default:
 			// type conversion
 			if len(x.Args) == 1 {
-				v.addUsed(x.Args[0], y)
+				c.addUsed(x.Args[0], y)
 			}
 		}
 	}
 	if fd != nil {
-		v.funcs = append(v.funcs, fd)
+		c.funcs = append(c.funcs, fd)
 	}
-	return v
+	return c
 }
 
 func compositeIdentType(t types.Type, i int) types.Type {
@@ -313,24 +312,24 @@ func compositeIdentType(t types.Type, i int) types.Type {
 	return nil
 }
 
-func (v *visitor) onMethodCall(ce *ast.CallExpr, sign *types.Signature) {
+func (c *Checker) onMethodCall(ce *ast.CallExpr, sign *types.Signature) {
 	for i, e := range ce.Args {
 		paramObj, t := paramVarAndType(sign, i)
 		// Don't if this is a parameter being re-used as itself
 		// in a recursive call
 		if id, ok := e.(*ast.Ident); ok {
-			if paramObj == v.ObjectOf(id) {
+			if paramObj == c.ObjectOf(id) {
 				continue
 			}
 		}
-		v.addUsed(e, t)
+		c.addUsed(e, t)
 	}
 	sel, ok := ce.Fun.(*ast.SelectorExpr)
 	if !ok {
 		return
 	}
 	// receiver func call on the left side
-	if usage := v.varUsage(sel.X); usage != nil {
+	if usage := c.varUsage(sel.X); usage != nil {
 		usage.calls[sel.Sel.Name] = struct{}{}
 	}
 }
@@ -350,14 +349,14 @@ func (fd *funcDecl) paramGroups() [][]*types.Var {
 	return groups
 }
 
-func (v *visitor) packageIssues() []lint.Issue {
+func (c *Checker) packageIssues() []lint.Issue {
 	var issues []lint.Issue
-	for _, fd := range v.funcs {
-		if _, e := v.discardFuncs[fd.sign]; e {
+	for _, fd := range c.funcs {
+		if _, e := c.discardFuncs[fd.sign]; e {
 			continue
 		}
 		for _, group := range fd.paramGroups() {
-			issues = append(issues, v.groupIssues(fd, group)...)
+			issues = append(issues, c.groupIssues(fd, group)...)
 		}
 	}
 	return issues
@@ -371,14 +370,14 @@ type Issue struct {
 func (i Issue) Pos() token.Pos  { return i.pos }
 func (i Issue) Message() string { return i.msg }
 
-func (v *visitor) groupIssues(fd *funcDecl, group []*types.Var) []lint.Issue {
+func (c *Checker) groupIssues(fd *funcDecl, group []*types.Var) []lint.Issue {
 	var issues []lint.Issue
 	for _, param := range group {
-		usage := v.vars[param]
+		usage := c.vars[param]
 		if usage == nil {
 			return nil
 		}
-		newType := v.paramNewType(fd.name, param, usage)
+		newType := c.paramNewType(fd.name, param, usage)
 		if newType == "" {
 			return nil
 		}
@@ -398,7 +397,7 @@ func willAddAllocation(t types.Type) bool {
 	return true
 }
 
-func (v *visitor) paramNewType(funcName string, param *types.Var, usage *varUsage) string {
+func (c *Checker) paramNewType(funcName string, param *types.Var, usage *varUsage) string {
 	t := param.Type()
 	if !ast.IsExported(funcName) && willAddAllocation(t) {
 		return ""
@@ -410,7 +409,7 @@ func (v *visitor) paramNewType(funcName string, param *types.Var, usage *varUsag
 			return ""
 		}
 	}
-	ifname, iftype := v.interfaceMatching(param, usage)
+	ifname, iftype := c.interfaceMatching(param, usage)
 	if ifname == "" {
 		return ""
 	}
