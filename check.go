@@ -122,7 +122,20 @@ func (c *Checker) Check(lprog *loader.Program, prog *ssa.Program) ([]lint.Issue,
 	c.lprog, c.prog = lprog, prog
 	var total []lint.Issue
 	c.ssaByPos = make(map[token.Pos]*ssa.Function)
+	wantPkg := make(map[*types.Package]bool)
+	for _, pinfo := range lprog.InitialPackages() {
+		wantPkg[pinfo.Pkg] = true
+	}
 	for fn := range ssautil.AllFunctions(prog) {
+		if fn.Pkg == nil { // builtin?
+			continue
+		}
+		if len(fn.Blocks) == 0 { // stub
+			continue
+		}
+		if !wantPkg[fn.Pkg.Pkg] { // not part of given pkgs
+			continue
+		}
 		c.ssaByPos[fn.Pos()] = fn
 	}
 	for _, pinfo := range lprog.InitialPackages() {
@@ -138,6 +151,26 @@ func (c *Checker) checkPkg(info *loader.PackageInfo) []lint.Issue {
 	c.discardFuncs = make(map[*types.Signature]struct{})
 	c.vars = make(map[*types.Var]*varUsage)
 	for _, f := range info.Files {
+		ast.Inspect(f, func(node ast.Node) bool {
+			decl, ok := node.(*ast.FuncDecl)
+			if !ok {
+				return true
+			}
+			ssaFn := c.ssaByPos[decl.Name.Pos()]
+			if ssaFn == nil {
+				return true
+			}
+			fd := &funcDecl{
+				astDecl: decl,
+				ssaFn:   ssaFn,
+			}
+			if c.funcSigns[signString(fd.ssaFn.Signature)] {
+				// implements interface
+				return true
+			}
+			c.funcs = append(c.funcs, fd)
+			return true
+		})
 		ast.Walk(c, f)
 	}
 	return c.packageIssues()
@@ -231,21 +264,7 @@ func (c *Checker) comparedWith(e, with ast.Expr) {
 }
 
 func (c *Checker) Visit(node ast.Node) ast.Visitor {
-	var fd *funcDecl
 	switch x := node.(type) {
-	case *ast.FuncDecl:
-		ssaFn := c.ssaByPos[x.Name.Pos()]
-		if ssaFn == nil {
-			return nil
-		}
-		fd = &funcDecl{
-			astDecl: x,
-			ssaFn:   ssaFn,
-		}
-		if c.funcSigns[signString(fd.ssaFn.Signature)] {
-			// implements interface
-			return nil
-		}
 	case *ast.SelectorExpr:
 		if _, ok := c.TypeOf(x.Sel).(*types.Signature); !ok {
 			c.discard(x.X)
@@ -299,9 +318,6 @@ func (c *Checker) Visit(node ast.Node) ast.Visitor {
 				c.addUsed(x.Args[0], y)
 			}
 		}
-	}
-	if fd != nil {
-		c.funcs = append(c.funcs, fd)
 	}
 	return c
 }
