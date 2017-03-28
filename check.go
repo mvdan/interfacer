@@ -9,8 +9,6 @@ import (
 	"go/token"
 	"go/types"
 	"os"
-	"regexp"
-	"strconv"
 	"strings"
 
 	"golang.org/x/tools/go/loader"
@@ -75,8 +73,7 @@ type visitor struct {
 
 	discardFuncs map[*types.Signature]struct{}
 
-	vars     map[*types.Var]*varUsage
-	impNames map[string]string
+	vars map[*types.Var]*varUsage
 }
 
 // CheckArgs checks the packages specified by their import paths in
@@ -137,16 +134,7 @@ func (v *visitor) checkPkg(info *loader.PackageInfo) []lint.Issue {
 	v.PackageInfo = info
 	v.discardFuncs = make(map[*types.Signature]struct{})
 	v.vars = make(map[*types.Var]*varUsage)
-	v.impNames = make(map[string]string)
 	for _, f := range info.Files {
-		for _, imp := range f.Imports {
-			if imp.Name == nil {
-				continue
-			}
-			name := imp.Name.Name
-			path, _ := strconv.Unquote(imp.Path.Value)
-			v.impNames[path] = name
-		}
 		ast.Walk(v, f)
 	}
 	return v.packageIssues()
@@ -403,18 +391,6 @@ func (v *visitor) groupIssues(fd *funcDecl, group []*types.Var) []lint.Issue {
 	return issues
 }
 
-var fullPathParts = regexp.MustCompile(`^(\*)?(([^/]+/)*([^/]+\.))?([^/]+)$`)
-
-func (v *visitor) simpleName(fullName string) string {
-	m := fullPathParts.FindStringSubmatch(fullName)
-	fullPkg := strings.TrimSuffix(m[2], ".")
-	star, pkg, name := m[1], m[4], m[5]
-	if pkgName, e := v.impNames[fullPkg]; e {
-		pkg = pkgName + "."
-	}
-	return star + pkg + name
-}
-
 func willAddAllocation(t types.Type) bool {
 	switch t.Underlying().(type) {
 	case *types.Pointer, *types.Interface:
@@ -444,5 +420,5 @@ func (v *visitor) paramNewType(funcName string, param *types.Var, usage *varUsag
 			return ""
 		}
 	}
-	return v.simpleName(ifname)
+	return ifname
 }

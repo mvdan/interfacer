@@ -215,7 +215,7 @@ func runNonlocalTests(t *testing.T, paths ...string) {
 	// non-recursive
 	doTest(t, "single")
 	// make sure we don't miss a package's imports
-	doTestString(t, "grab-import", "grab-import/use.go:27:15: s can be def2.Fooer")
+	doTestString(t, "grab-import", "grab-import/use.go:27:15: s can be grab-import/def/nested.Fooer")
 	defer chdirUndo(t, "nested/pkg")()
 	// relative paths
 	doTestString(t, "rel-path", "simple.go:12:17: rc can be Closer", "./...")

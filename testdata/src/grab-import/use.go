@@ -24,6 +24,6 @@ type st2 struct{}
 
 func (s st2) Foo()
 
-func FooWrong(s st2) { // WARN s can be def2.Fooer
+func FooWrong(s st2) { // WARN s can be grab-import/def/nested.Fooer
 	s.Foo()
 }
