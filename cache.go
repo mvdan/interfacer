@@ -9,21 +9,13 @@ import (
 )
 
 type pkgTypes struct {
-	ifaces map[string]string
-	funcs  map[string]bool
-}
-
-func (p *pkgTypes) isFuncType(t string) bool {
-	return p.funcs[t]
-}
-
-func (p *pkgTypes) ifaceOf(t string) string {
-	return p.ifaces[t]
+	ifaces    map[string]string
+	funcSigns map[string]bool
 }
 
 func (p *pkgTypes) getTypes(pkg *types.Package) {
 	p.ifaces = make(map[string]string)
-	p.funcs = make(map[string]bool)
+	p.funcSigns = make(map[string]bool)
 	addTypes := func(impPath string, ifs map[string]string, funs map[string]bool, top bool) {
 		fullName := func(name string) string {
 			if !top {
@@ -39,7 +31,7 @@ func (p *pkgTypes) getTypes(pkg *types.Package) {
 		}
 		for ftype := range funs {
 			// ignore non-exported func signatures too
-			p.funcs[ftype] = true
+			p.funcSigns[ftype] = true
 		}
 	}
 	for _, imp := range pkg.Imports() {

@@ -50,7 +50,7 @@ func (v *visitor) interfaceMatching(param *types.Var, usage *varUsage) (string, 
 	called := make(map[string]string, len(usage.calls))
 	allCalls(usage, called, ftypes)
 	s := funcMapString(called)
-	return v.ifaceOf(s), s
+	return v.ifaces[s], s
 }
 
 type varUsage struct {
@@ -239,11 +239,6 @@ func (v *visitor) comparedWith(e, with ast.Expr) {
 	}
 }
 
-func (v *visitor) implementsIface(sign *types.Signature) bool {
-	s := signString(sign)
-	return v.isFuncType(s)
-}
-
 func (v *visitor) Visit(node ast.Node) ast.Visitor {
 	var fd *funcDecl
 	switch x := node.(type) {
@@ -253,7 +248,8 @@ func (v *visitor) Visit(node ast.Node) ast.Visitor {
 			sign:    v.Defs[x.Name].Type().(*types.Signature),
 			astType: x.Type,
 		}
-		if v.implementsIface(fd.sign) {
+		if v.funcSigns[signString(fd.sign)] {
+			// implements interface
 			return nil
 		}
 	case *ast.SelectorExpr:
