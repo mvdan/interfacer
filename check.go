@@ -82,7 +82,6 @@ func CheckArgs(args []string) ([]string, error) {
 	paths := gotool.ImportPaths(args)
 	conf := loader.Config{}
 	conf.AllowErrors = true
-	conf.TypeChecker.Error = func(e error) {}
 	rest, err := conf.FromArgs(paths, false)
 	if err != nil {
 		return nil, err
