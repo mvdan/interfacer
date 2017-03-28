@@ -16,13 +16,13 @@ func BasicWrong(rc io.ReadCloser) { // WARN rc can be io.Closer
 	rc.Close()
 }
 
-type st struct{}
+type St struct{}
 
-func (s *st) Basic(c io.Closer) {
+func (s *St) Basic(c io.Closer) {
 	c.Close()
 }
 
-func (s *st) BasicWrong(rc io.ReadCloser) { // WARN rc can be io.Closer
+func (s *St) BasicWrong(rc io.ReadCloser) { // WARN rc can be io.Closer
 	rc.Close()
 }
 

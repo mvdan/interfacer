@@ -62,6 +62,7 @@ type funcDecl struct {
 	name    string
 	sign    *types.Signature
 	astType *ast.FuncType
+	ssaFn   *ssa.Function
 }
 
 // CheckArgs checks the packages specified by their import paths in
@@ -112,6 +113,8 @@ type Checker struct {
 	fset  *token.FileSet
 	funcs []*funcDecl
 
+	ssaByPos map[token.Pos]*ssa.Function
+
 	discardFuncs map[*types.Signature]struct{}
 
 	vars map[*types.Var]*varUsage
@@ -120,6 +123,10 @@ type Checker struct {
 func (c *Checker) Check(lprog *loader.Program, prog *ssa.Program) ([]lint.Issue, error) {
 	c.lprog, c.prog = lprog, prog
 	var total []lint.Issue
+	c.ssaByPos = make(map[token.Pos]*ssa.Function)
+	for fn := range ssautil.AllFunctions(prog) {
+		c.ssaByPos[fn.Pos()] = fn
+	}
 	for _, pinfo := range lprog.InitialPackages() {
 		pkg := pinfo.Pkg
 		c.getTypes(pkg)
@@ -229,10 +236,15 @@ func (c *Checker) Visit(node ast.Node) ast.Visitor {
 	var fd *funcDecl
 	switch x := node.(type) {
 	case *ast.FuncDecl:
+		ssaFn := c.ssaByPos[x.Name.Pos()]
+		if ssaFn == nil {
+			return nil
+		}
 		fd = &funcDecl{
 			name:    x.Name.Name,
 			sign:    c.Defs[x.Name].Type().(*types.Signature),
 			astType: x.Type,
+			ssaFn:   ssaFn,
 		}
 		if c.funcSigns[signString(fd.sign)] {
 			// implements interface

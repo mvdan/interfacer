@@ -61,15 +61,15 @@ func ArgsNilWrong(rs ReadSeeker) { // WARN rs can be Reader
 	rs.Read(nil)
 }
 
-type st struct{}
+type St struct{}
 
-func (s st) Args(rc ReadCloser) {
+func (s St) Args(rc ReadCloser) {
 	var b []byte
 	rc.Read(b)
 	rc.Close()
 }
 
-func (s st) ArgsWrong(rc ReadCloser) { // WARN rc can be Reader
+func (s St) ArgsWrong(rc ReadCloser) { // WARN rc can be Reader
 	b := make([]byte, 10)
 	rc.Read(b)
 }

@@ -28,11 +28,11 @@ func FooImpl(rc ReadCloser, i int64) {
 	rc.Close()
 }
 
-type st struct{}
+type St struct{}
 
-func (s *st) Foo(rc ReadCloser, i int64) {}
+func (s *St) Foo(rc ReadCloser, i int64) {}
 
-func DoNotSuggestUnexportedIface(s *st, rc ReadCloser) {
+func DoNotSuggestUnexportedIface(s *St, rc ReadCloser) {
 	a := int64(3)
 	s.Foo(rc, a)
 }

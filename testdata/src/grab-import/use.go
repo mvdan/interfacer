@@ -5,9 +5,9 @@ import (
 	def2 "grab-import/def/nested"
 )
 
-type st struct{}
+type St struct{}
 
-func (s *st) Foo(rc def.ReadCloser, i int) int {
+func (s *St) Foo(rc def.ReadCloser, i int) int {
 	rc.Close()
 	return def.SomeVar
 }

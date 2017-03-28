@@ -1,13 +1,13 @@
 package single
 
-type st struct{}
+type St struct{}
 
-func (s *st) Close() {}
+func (s *St) Close() {}
 
-func (s *st) Basic(c Closer) {
+func (s *St) Basic(c Closer) {
 	c.Close()
 }
 
-func (s *st) BasicWrong(rc ReadCloser) { // WARN rc can be Closer
+func (s *St) BasicWrong(rc ReadCloser) { // WARN rc can be Closer
 	rc.Close()
 }

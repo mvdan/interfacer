@@ -12,13 +12,13 @@ type InterestingUnexported interface {
 	bar(f string) int
 }
 
-type st struct{}
+type St struct{}
 
-func (s st) Foo(f string) {}
+func (s St) Foo(f string) {}
 
-func (s st) nonExported() {}
+func (s St) nonExported() {}
 
-func Bar(s st) {
+func Bar(s St) {
 	s.Foo("")
 }
 

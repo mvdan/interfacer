@@ -13,64 +13,64 @@ type ReadCloser interface {
 	Closer
 }
 
-type st struct{}
+type St struct{}
 
-func (s st) Read(p []byte) (int, error) {
+func (s St) Read(p []byte) (int, error) {
 	return 0, nil
 }
-func (s st) Close() error {
+func (s St) Close() error {
 	return nil
 }
-func (s st) Other() {}
+func (s St) Other() {}
 
 func FooCloser(c Closer) {
 	c.Close()
 }
 
-func FooSt(s st) {
+func FooSt(s St) {
 	s.Other()
 }
 
-func Bar(s st) {
+func Bar(s St) {
 	s.Close()
 	FooSt(s)
 }
 
-func BarWrong(s st) { // WARN s can be Closer
+func BarWrong(s St) { // WARN s can be Closer
 	s.Close()
 	FooCloser(s)
 }
 
 func extra(n int, cs ...Closer) {}
 
-func ArgExtraWrong(s1 st) { // WARN s1 can be Closer
-	var s2 st
+func ArgExtraWrong(s1 St) { // WARN s1 can be Closer
+	var s2 St
 	s1.Close()
 	s2.Close()
 	extra(3, s1, s2)
 }
 
-func Assigned(s st) {
+func Assigned(s St) {
 	s.Close()
-	var s2 st
+	var s2 St
 	s2 = s
 	_ = s2
 }
 
-func Declared(s st) {
+func Declared(s St) {
 	s.Close()
-	var s2 st = s
+	var s2 St = s
 	_ = s2
 }
 
-func AssignedIface(s st) { // WARN s can be Closer
+func AssignedIface(s St) { // WARN s can be Closer
 	s.Close()
 	var c Closer
 	c = s
 	_ = c
 }
 
-func AssignedIfaceDiff(s st) { // WARN s can be ReadCloser
+func AssignedIfaceDiff(s St) { // WARN s can be ReadCloser
 	s.Close()
 	var r Reader
 	r = s
@@ -82,7 +82,7 @@ func doRead(r Reader) {
 	r.Read(b)
 }
 
-func ArgIfaceDiff(s st) { // WARN s can be ReadCloser
+func ArgIfaceDiff(s St) { // WARN s can be ReadCloser
 	s.Close()
 	doRead(s)
 }

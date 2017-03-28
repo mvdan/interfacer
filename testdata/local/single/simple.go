@@ -20,6 +20,6 @@ func BasicWrong(rc ReadCloser) { // WARN rc can be Closer
 	rc.Close()
 }
 
-func OtherWrong(s st) { // WARN s can be Closer
+func OtherWrong(s St) { // WARN s can be Closer
 	s.Close()
 }

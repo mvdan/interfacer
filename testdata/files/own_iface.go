@@ -9,13 +9,13 @@ type Barer interface {
 	Bar(fc FooCloser) int
 }
 
-type st struct{}
+type St struct{}
 
-func (s st) Bar(fc FooCloser) int {
+func (s St) Bar(fc FooCloser) int {
 	return 2
 }
 
-func Foo(s st) { // WARN s can be Barer
+func Foo(s St) { // WARN s can be Barer
 	_ = s.Bar(nil)
 }
 
