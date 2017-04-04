@@ -121,6 +121,11 @@ type Checker struct {
 	vars map[*types.Var]*varUsage
 }
 
+var (
+	_ lint.Checker = (*Checker)(nil)
+	_ lint.WithSSA = (*Checker)(nil)
+)
+
 func (c *Checker) Program(lprog *loader.Program) {
 	c.lprog = lprog
 }
