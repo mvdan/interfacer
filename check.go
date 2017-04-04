@@ -82,7 +82,10 @@ func CheckArgs(args []string) ([]string, error) {
 	}
 	prog := ssautil.CreateProgram(lprog, 0)
 	prog.Build()
-	issues, err := new(Checker).Check(lprog, prog)
+	c := new(Checker)
+	c.Program(lprog)
+	c.ProgramSSA(prog)
+	issues, err := c.Check()
 	if err != nil {
 		return nil, err
 	}
@@ -118,15 +121,22 @@ type Checker struct {
 	vars map[*types.Var]*varUsage
 }
 
-func (c *Checker) Check(lprog *loader.Program, prog *ssa.Program) ([]lint.Issue, error) {
-	c.lprog, c.prog = lprog, prog
+func (c *Checker) Program(lprog *loader.Program) {
+	c.lprog = lprog
+}
+
+func (c *Checker) ProgramSSA(prog *ssa.Program) {
+	c.prog = prog
+}
+
+func (c *Checker) Check() ([]lint.Issue, error) {
 	var total []lint.Issue
 	c.ssaByPos = make(map[token.Pos]*ssa.Function)
 	wantPkg := make(map[*types.Package]bool)
-	for _, pinfo := range lprog.InitialPackages() {
+	for _, pinfo := range c.lprog.InitialPackages() {
 		wantPkg[pinfo.Pkg] = true
 	}
-	for fn := range ssautil.AllFunctions(prog) {
+	for fn := range ssautil.AllFunctions(c.prog) {
 		if fn.Pkg == nil { // builtin?
 			continue
 		}
@@ -138,10 +148,10 @@ func (c *Checker) Check(lprog *loader.Program, prog *ssa.Program) ([]lint.Issue,
 		}
 		c.ssaByPos[fn.Pos()] = fn
 	}
-	for _, pinfo := range lprog.InitialPackages() {
+	for _, pinfo := range c.lprog.InitialPackages() {
 		pkg := pinfo.Pkg
 		c.getTypes(pkg)
-		total = append(total, c.checkPkg(lprog.AllPackages[pkg])...)
+		total = append(total, c.checkPkg(c.lprog.AllPackages[pkg])...)
 	}
 	return total, nil
 }
