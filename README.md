@@ -27,18 +27,15 @@ foo.go:10:19: f can be io.Reader
 
 ### Basic idea
 
-This package relies on `go/types` for the heavy lifting: name
-resolution, constant folding and type inference. It also uses
-`go/loader` to resolve the packages specified by import paths.
-
-It inspects the parameters of your functions to see if they fit an
-interface type that is less specific than the current type.
+This tool inspects the parameters of your functions to see if they fit
+an interface type that is less specific than the current type.
 
 The example above illustrates this point. Overly specific interfaces
 also trigger a warning - if `f` were an `io.ReadCloser`, the same
 message would appear.
 
-It suggests interface types defined both in `std` and in your packages.
+It suggests interface types defined both in the func's package and the
+package's imports.
 
 ### False positives
 
