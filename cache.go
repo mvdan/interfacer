@@ -16,10 +16,16 @@ type pkgTypes struct {
 func (p *pkgTypes) getTypes(pkg *types.Package) {
 	p.ifaces = make(map[string]string)
 	p.funcSigns = make(map[string]bool)
-	addTypes := func(impPath string, ifs map[string]string, funs map[string]bool, top bool) {
+	done := make(map[*types.Package]bool)
+	addTypes := func(pkg *types.Package, top bool) {
+		if done[pkg] {
+			return
+		}
+		done[pkg] = true
+		ifs, funs := fromScope(pkg.Scope())
 		fullName := func(name string) string {
 			if !top {
-				return impPath + "." + name
+				return pkg.Path() + "." + name
 			}
 			return name
 		}
@@ -35,9 +41,10 @@ func (p *pkgTypes) getTypes(pkg *types.Package) {
 		}
 	}
 	for _, imp := range pkg.Imports() {
-		ifs, funs := fromScope(imp.Scope())
-		addTypes(imp.Path(), ifs, funs, false)
+		addTypes(imp, false)
+		for _, imp2 := range imp.Imports() {
+			addTypes(imp2, false)
+		}
 	}
-	ifs, funs := fromScope(pkg.Scope())
-	addTypes(pkg.Path(), ifs, funs, true)
+	addTypes(pkg, true)
 }

@@ -35,7 +35,7 @@ also trigger a warning - if `f` were an `io.ReadCloser`, the same
 message would appear.
 
 It suggests interface types defined both in the func's package and the
-package's imports.
+package's imports (two levels; direct imports and their direct imports).
 
 ### False positives
 
