@@ -156,37 +156,39 @@ func (c *Checker) Check() ([]lint.Issue, error) {
 	for _, pinfo := range c.lprog.InitialPackages() {
 		pkg := pinfo.Pkg
 		c.getTypes(pkg)
-		total = append(total, c.checkPkg(c.lprog.AllPackages[pkg])...)
+		c.PackageInfo = c.lprog.AllPackages[pkg]
+		total = append(total, c.checkPkg()...)
 	}
 	return total, nil
 }
 
-func (c *Checker) checkPkg(info *loader.PackageInfo) []lint.Issue {
-	c.PackageInfo = info
+func (c *Checker) checkPkg() []lint.Issue {
 	c.discardFuncs = make(map[*types.Signature]struct{})
 	c.vars = make(map[*types.Var]*varUsage)
-	for _, f := range info.Files {
-		ast.Inspect(f, func(node ast.Node) bool {
-			decl, ok := node.(*ast.FuncDecl)
-			if !ok {
-				return true
-			}
-			ssaFn := c.ssaByPos[decl.Name.Pos()]
-			if ssaFn == nil {
-				return true
-			}
-			fd := &funcDecl{
-				astDecl: decl,
-				ssaFn:   ssaFn,
-			}
-			if c.funcSigns[signString(fd.ssaFn.Signature)] {
-				// implements interface
-				return true
-			}
-			c.funcs = append(c.funcs, fd)
+	c.funcs = c.funcs[:0]
+	findFuncs := func(node ast.Node) bool {
+		decl, ok := node.(*ast.FuncDecl)
+		if !ok {
 			return true
-		})
-		ast.Walk(c, f)
+		}
+		ssaFn := c.ssaByPos[decl.Name.Pos()]
+		if ssaFn == nil {
+			return true
+		}
+		fd := &funcDecl{
+			astDecl: decl,
+			ssaFn:   ssaFn,
+		}
+		if c.funcSigns[signString(fd.ssaFn.Signature)] {
+			// implements interface
+			return true
+		}
+		c.funcs = append(c.funcs, fd)
+		ast.Walk(c, decl.Body)
+		return true
+	}
+	for _, f := range c.Files {
+		ast.Inspect(f, findFuncs)
 	}
 	return c.packageIssues()
 }
