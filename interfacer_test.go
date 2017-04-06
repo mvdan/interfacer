@@ -119,8 +119,8 @@ func doTestLines(t *testing.T, name string, want []string, args ...string) {
 		t.Fatalf("Did not want error in %s:\n%v", name, err)
 	}
 	if !reflect.DeepEqual(want, got) {
-		t.Fatalf("Output mismatch in %s:\nwant: %v\ngot: %v",
-			name, want, got)
+		t.Fatalf("Output mismatch in %s:\nwant:\n%s\ngot:\n%s",
+			name, strings.Join(want, "\n"), strings.Join(got, "\n"))
 	}
 }
 
