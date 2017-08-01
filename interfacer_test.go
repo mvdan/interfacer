@@ -144,8 +144,8 @@ func doTestString(t *testing.T, name, want string, args ...string) {
 	}
 }
 
-func inputPaths(t *testing.T, glob string) []string {
-	all, err := filepath.Glob(glob)
+func inputPaths(t *testing.T) []string {
+	all, err := filepath.Glob("*")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -170,7 +170,7 @@ func chdirUndo(t *testing.T, d string) func() {
 func runFileTests(t *testing.T, paths ...string) {
 	defer chdirUndo(t, "files")()
 	if len(paths) == 0 {
-		paths = inputPaths(t, "*")
+		paths = inputPaths(t)
 	}
 	for _, p := range paths {
 		doTest(t, p)
@@ -185,7 +185,7 @@ func runLocalTests(t *testing.T, paths ...string) {
 		}
 		return
 	}
-	for _, p := range inputPaths(t, "*") {
+	for _, p := range inputPaths(t) {
 		paths = append(paths, "./"+p+"/...")
 	}
 	for _, p := range paths {
@@ -206,8 +206,7 @@ func runNonlocalTests(t *testing.T, paths ...string) {
 		}
 		return
 	}
-	paths = inputPaths(t, "*")
-	for _, p := range paths {
+	for _, p := range inputPaths(t) {
 		doTest(t, p+"/...")
 	}
 	// local recursive
