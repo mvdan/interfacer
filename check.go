@@ -111,7 +111,6 @@ type Checker struct {
 	pkgTypes
 	*loader.PackageInfo
 
-	fset  *token.FileSet
 	funcs []*funcDecl
 
 	ssaByPos map[token.Pos]*ssa.Function
