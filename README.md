@@ -1,12 +1,12 @@
 # interfacer
 
-[![GoDoc](https://godoc.org/github.com/mvdan/interfacer?status.svg)](https://godoc.org/github.com/mvdan/interfacer)
+[![GoDoc](https://godoc.org/mvdan.cc/interfacer?status.svg)](https://godoc.org/mvdan.cc/interfacer)
 [![Build Status](https://travis-ci.org/mvdan/interfacer.svg?branch=master)](https://travis-ci.org/mvdan/interfacer)
 
 A linter that suggests interface types. In other words, it warns about
 the usage of types that are more specific than necessary.
 
-	go get -u github.com/mvdan/interfacer/cmd/interfacer
+	go get -u mvdan.cc/interfacer
 
 ### Usage
 
