@@ -8,6 +8,11 @@ the usage of types that are more specific than necessary.
 
 	go get -u mvdan.cc/interfacer
 
+Note that this linter's suggestions tend to be subjective, as interfaces
+are not always the better option. You should select the proposed changes
+that make sense in your codebase, instead of following all of them
+blindly.
+
 ### Usage
 
 ```go
